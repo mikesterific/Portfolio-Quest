@@ -20,8 +20,13 @@ export class GameUIScene extends Phaser.Scene {
     this.setupUI()
     this.setupEventListeners()
     
+    // Start the first game scene (Skill Village) and set up initial state
+    this.scene.start('SkillVillageScene')
+    this.updateCurrentSceneDisplay('SkillVillageScene')
+    
     // Notify Vue that the game is ready
     gameEventBridge.emitGameEvent('game:ready', undefined)
+    gameEventBridge.emitGameEvent('game:scene-changed', { sceneName: 'SkillVillageScene' })
   }
 
   private setupUI(): void {
@@ -70,13 +75,11 @@ export class GameUIScene extends Phaser.Scene {
   }
 
   private setupEventListeners(): void {
-    // Listen for scene changes from other scenes
-    const sceneManager = this.scene.manager as any // Type assertion for events
-    sceneManager.on('start', (event: any, scene: Phaser.Scene) => {
-      if (scene.scene.key !== 'GameUIScene') {
-        this.updateCurrentSceneDisplay(scene.scene.key)
-        gameEventBridge.emitGameEvent('game:scene-changed', { sceneName: scene.scene.key })
-      }
+    // Listen for scene changes through game events instead of scene manager
+    // This will be triggered by other scenes when they start
+    gameEventBridge.onGameEvent('game:scene-starting', (data) => {
+      this.updateCurrentSceneDisplay(data.sceneName)
+      gameEventBridge.emitGameEvent('game:scene-changed', { sceneName: data.sceneName })
     })
 
     // Listen for Vue events

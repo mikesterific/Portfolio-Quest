@@ -283,6 +283,7 @@ export class ResumeTowerScene extends Phaser.Scene {
 
   private goToScene(sceneName: string): void {
     console.log(`[ResumeTowerScene] Transitioning to: ${sceneName}`)
+    gameEventBridge.emitGameEvent('game:scene-starting', { sceneName })
     this.scene.start(sceneName)
   }
 

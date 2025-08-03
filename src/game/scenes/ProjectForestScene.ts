@@ -245,6 +245,7 @@ export class ProjectForestScene extends Phaser.Scene {
 
   private goToScene(sceneName: string): void {
     console.log(`[ProjectForestScene] Transitioning to: ${sceneName}`)
+    gameEventBridge.emitGameEvent('game:scene-starting', { sceneName })
     this.scene.start(sceneName)
   }
 

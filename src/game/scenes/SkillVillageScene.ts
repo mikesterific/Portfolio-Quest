@@ -180,6 +180,7 @@ export class SkillVillageScene extends Phaser.Scene {
 
   private goToScene(sceneName: string): void {
     console.log(`[SkillVillageScene] Transitioning to: ${sceneName}`)
+    gameEventBridge.emitGameEvent('game:scene-starting', { sceneName })
     this.scene.start(sceneName)
   }
 
