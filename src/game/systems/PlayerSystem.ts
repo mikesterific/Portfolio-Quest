@@ -24,9 +24,7 @@ interface PlayerState {
  */
 const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Sprite => {
   // Start with engines off (idle state)
-  console.log(`[${scene.scene.key}] Creating player with texture: hero-spaceship-off`)
   const player = scene.add.sprite(x, y, 'hero-spaceship-off')
-  console.log(`[${scene.scene.key}] Player created with texture: ${player.texture.key}`)
   player.setDisplaySize(PLAYER_CONFIG.SIZE, PLAYER_CONFIG.SIZE)
   scene.physics.add.existing(player)
   
@@ -54,16 +52,11 @@ const updatePlayerEngineState = (
 ): void => {
   const currentEnginesOn = player.getData('enginesOn')
   
-  // Debug logging
-  console.log(`[PlayerSystem] Engine state - isMoving: ${isMoving}, currentEnginesOn: ${currentEnginesOn}`)
-  
   // Only change texture if state actually changed to avoid unnecessary operations
   if (isMoving && !currentEnginesOn) {
-    console.log('[PlayerSystem] Turning engines ON')
     player.setTexture('hero-spaceship-on')
     player.setData('enginesOn', true)
   } else if (!isMoving && currentEnginesOn) {
-    console.log('[PlayerSystem] Turning engines OFF')
     player.setTexture('hero-spaceship-off')
     player.setData('enginesOn', false)
   }
@@ -138,9 +131,6 @@ const updatePlayerVelocity = (
  * Preloads player assets - call this in scene preload methods
  */
 const preloadPlayerAssets = (scene: Phaser.Scene): void => {
-  console.log(`[${scene.scene.key}] Preloading player assets`)
-  console.log(`[${scene.scene.key}] Loading hero-spaceship-off from: src/assets/images/HeroSpaceShipOff.png`)
-  console.log(`[${scene.scene.key}] Loading hero-spaceship-on from: src/assets/images/HeroSpaceShipOn.png`)
   scene.load.image('hero-spaceship-off', 'src/assets/images/HeroSpaceShipOff.png')
   scene.load.image('hero-spaceship-on', 'src/assets/images/HeroSpaceShipOn.png')
 }

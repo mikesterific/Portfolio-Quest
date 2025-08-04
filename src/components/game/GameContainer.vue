@@ -66,22 +66,22 @@ onUnmounted(() => {
 })
 
 function initializeGame(): void {
-  console.log('[GameContainer] Initializing Phaser game')
+          // Initializing Phaser game
   
   // Create Phaser game instance
   game = new Phaser.Game(gameConfig)
   
-  console.log('[GameContainer] Game initialized successfully')
+          // Game initialized successfully
 }
 
 function setupEventListeners(): void {
   // Listen for game events
   gameEventBridge.onGameEvent('game:ready', () => {
-    console.log('[GameContainer] Game is ready!')
+            // Game is ready
   })
 
   gameEventBridge.onGameEvent('game:scene-changed', (data) => {
-    console.log(`[GameContainer] Scene changed to: ${data.sceneName}`)
+            // Scene changed
   })
 
   gameEventBridge.onGameEvent('game:project-selected', (data) => {
@@ -130,7 +130,7 @@ function closeModal(): void {
 
 function cleanupGame(): void {
   if (game) {
-    console.log('[GameContainer] Cleaning up game instance')
+          // Cleaning up game instance
     game.destroy(true)
     game = null
   }

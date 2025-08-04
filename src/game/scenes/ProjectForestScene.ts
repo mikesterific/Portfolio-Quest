@@ -227,7 +227,7 @@ export class ProjectForestScene extends Phaser.Scene {
   }
 
   create(): void {
-    console.log('[ProjectForestScene] Creating Project Forest')
+    // Creating Project Forest
     
     // Initialize scene using functional approach
     this.initializeScene()
@@ -265,7 +265,7 @@ export class ProjectForestScene extends Phaser.Scene {
 
   // Handler methods for interactions
   private handleProjectInteraction = (projectId: string): void => {
-    console.log(`[ProjectForestScene] Opening project: ${projectId}`)
+    // Opening project
     
     // Add chest opening animation
     if (this.state.nearestChest) {
@@ -283,7 +283,7 @@ export class ProjectForestScene extends Phaser.Scene {
   }
 
   private handleSceneTransition = (sceneName: string): void => {
-    console.log(`[ProjectForestScene] Transitioning to: ${sceneName}`)
+    // Transitioning to scene
     gameEventBridge.emitGameEvent('game:scene-starting', { sceneName })
     this.scene.start(sceneName)
   }

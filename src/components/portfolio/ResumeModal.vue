@@ -137,7 +137,7 @@ function formatDate(dateString: string): string {
 
 function downloadResume(): void {
   // In a real application, this would generate and download a PDF
-  console.log('Downloading resume...')
+        // Downloading resume
   alert('Resume download feature would be implemented here!')
 }
 </script>

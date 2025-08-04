@@ -110,7 +110,6 @@ const createPortal = (
   portal.setSize(60, 80)
   portal.setInteractive()
   portal.on('pointerdown', () => {
-    console.log(`[SkillVillageScene] ${portalData.name} portal clicked!`)
     onActivate(portalData.targetScene)
   })
   
@@ -170,24 +169,18 @@ export class SkillVillageScene extends Phaser.Scene {
   }
 
   create(): void {
-    console.log('[SkillVillageScene] Creating Skill Village')
-    
     // Initialize scene using functional approach
     this.initializeScene()
     
-    // Test global click detection
+    // Global click detection
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      console.log('[SkillVillageScene] Global click detected at:', pointer.x, pointer.y)
+      // Click detection for debugging if needed
     })
     
-    // Test mouse movement
+    // Mouse movement tracking  
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      console.log('[SkillVillageScene] Mouse move detected at:', pointer.x, pointer.y)
+      // Mouse movement tracking for debugging if needed
     })
-    
-    // Test if the game canvas has focus
-    console.log('[SkillVillageScene] Game canvas element:', this.game.canvas)
-    console.log('[SkillVillageScene] Input enabled:', this.input.enabled)
     
     // Start this scene as the initial scene
     this.scene.setActive(true)
@@ -227,16 +220,12 @@ export class SkillVillageScene extends Phaser.Scene {
 
   // Handler methods for interactions
   private handleSkillInteraction = (skillId: string): void => {
-    console.log(`[SkillVillageScene] Interacting with skill: ${skillId}`)
     gameEventBridge.emitGameEvent('game:skill-selected', { skillId })
   }
 
   private handleSceneTransition = (sceneName: string): void => {
-    console.log(`[SkillVillageScene] Transitioning to: ${sceneName}`)
-    console.log(`[SkillVillageScene] Calling scene.start with: ${sceneName}`)
     gameEventBridge.emitGameEvent('game:scene-starting', { sceneName })
     this.scene.start(sceneName)
-    console.log(`[SkillVillageScene] Scene transition call completed`)
   }
 
   private setupControls(): void {
@@ -247,7 +236,6 @@ export class SkillVillageScene extends Phaser.Scene {
       if (this.state.nearestPortal) {
         const portalData = this.state.nearestPortal.getData('portalData')
         if (portalData) {
-          console.log('[SkillVillageScene] Portal activated via SPACE:', portalData.name)
           this.handleSceneTransition(portalData.targetScene)
         }
       } else if (this.state.nearestNPC) {
@@ -308,7 +296,6 @@ export class SkillVillageScene extends Phaser.Scene {
         const portalData = this.state.nearestPortal.getData('portalData')
         this.state.interactionPrompt.setText(`Press SPACE to travel to ${portalData.name}`)
         this.state.interactionPrompt.setVisible(true)
-        console.log('[SkillVillageScene] Near portal:', portalData.name)
       } else if (!this.state.nearestNPC) {
         this.state.interactionPrompt.setVisible(false)
       }

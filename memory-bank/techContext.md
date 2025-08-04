@@ -61,6 +61,9 @@
 - Résumé content and formatting
 
 ### Development Dependencies
+- **Node.js Version**: v20.x required (use `nvm use 20` to switch)
+  - Fixes crypto.hash compatibility issues in Vite
+  - Required for proper development server functionality
 - Vite (primary build tool)
 - Vue 3 CLI or create-vue for project scaffolding
 - Asset optimization tools (built into Vite)

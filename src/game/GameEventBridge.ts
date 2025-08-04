@@ -26,7 +26,7 @@ class GameEventBridge {
     event: T,
     data: GameEventData<T>
   ): boolean {
-    console.log(`[GameEventBridge] Emitting: ${event}`, data)
+    // Emitting game event
     const eventListeners = this.listeners.get(event) || []
     eventListeners.forEach(listener => listener(data))
     return eventListeners.length > 0
@@ -39,7 +39,7 @@ class GameEventBridge {
     event: T,
     listener: (data: GameEventData<T>) => void
   ): this {
-    console.log(`[GameEventBridge] Listening for: ${event}`)
+    // Listening for game event
     if (!this.listeners.has(event)) {
       this.listeners.set(event, [])
     }

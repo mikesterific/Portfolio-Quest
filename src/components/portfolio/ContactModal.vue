@@ -140,7 +140,7 @@ async function sendMessage(): Promise<void> {
   
   try {
     // In a real application, you would send this to your backend
-    console.log('Sending message:', form)
+            // Sending message
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000))

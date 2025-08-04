@@ -235,7 +235,7 @@ export class ResumeTowerScene extends Phaser.Scene {
   }
 
   create(): void {
-    console.log('[ResumeTowerScene] Creating Resume Tower')
+    // Creating Resume Tower
     
     // Initialize scene using functional approach
     this.initializeScene()
@@ -274,7 +274,7 @@ export class ResumeTowerScene extends Phaser.Scene {
 
   // Handler methods for interactions
   private handleResumeInteraction = (sectionId: string): void => {
-    console.log(`[ResumeTowerScene] Viewing resume section: ${sectionId}`)
+    // Viewing resume section
     
     // Add book opening animation
     if (this.state.nearestBook) {
@@ -296,7 +296,7 @@ export class ResumeTowerScene extends Phaser.Scene {
   }
 
   private handleSceneTransition = (sceneName: string): void => {
-    console.log(`[ResumeTowerScene] Transitioning to: ${sceneName}`)
+    // Transitioning to scene
     gameEventBridge.emitGameEvent('game:scene-starting', { sceneName })
     this.scene.start(sceneName)
   }

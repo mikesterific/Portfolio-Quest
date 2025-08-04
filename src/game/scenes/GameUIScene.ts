@@ -15,7 +15,7 @@ export class GameUIScene extends Phaser.Scene {
   }
 
   create(): void {
-    console.log('[GameUIScene] Initializing UI overlay')
+    // Initialize UI overlay
     
     this.setupUI()
     this.setupEventListeners()
@@ -84,12 +84,12 @@ export class GameUIScene extends Phaser.Scene {
 
     // Listen for Vue events
     gameEventBridge.onGameEvent('ui:modal-opened', (data) => {
-      console.log(`[GameUIScene] Modal opened: ${data.type}`)
+      // Modal opened
       // Could pause game or adjust UI when modals are open
     })
 
     gameEventBridge.onGameEvent('ui:modal-closed', () => {
-      console.log('[GameUIScene] Modal closed')
+      // Modal closed
       // Resume game interactions
     })
 
@@ -152,7 +152,7 @@ export class GameUIScene extends Phaser.Scene {
     
     try {
       this.currentSceneText.setText(displayName)
-      console.log('[GameUIScene] Updated scene display to:', displayName)
+      // Updated scene display
     } catch (error) {
       console.warn('[GameUIScene] Error updating scene text:', error)
     }
