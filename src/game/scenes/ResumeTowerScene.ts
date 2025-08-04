@@ -1,16 +1,278 @@
 import Phaser from 'phaser'
 import gameEventBridge from '../GameEventBridge'
 
+// Types for scene state
+interface SceneState {
+  player: Phaser.GameObjects.Rectangle | null
+  resumeBooks: Phaser.GameObjects.Group | null
+  cursors: Phaser.Types.Input.Keyboard.CursorKeys | null
+  interactionPrompt: Phaser.GameObjects.Text | null
+  nearestBook: Phaser.GameObjects.GameObject | null
+}
+
+interface ResumeElementData {
+  id: string
+  title: string
+  emoji: string
+  x: number
+  y: number
+  description: string
+}
+
+interface PortalData {
+  id: string
+  name: string
+  targetScene: string
+  x: number
+  y: number
+  color: number
+  emoji: string
+}
+
+// Pure functions for scene logic
+const createResumeElementsData = (): ResumeElementData[] => [
+  { 
+    id: 'full-resume', 
+    title: 'Complete Résumé', 
+    emoji: '📄',
+    x: 400, 
+    y: 300,
+    description: 'My complete professional resume with all details'
+  },
+  { 
+    id: 'experience', 
+    title: 'Work Experience', 
+    emoji: '💼',
+    x: 300, 
+    y: 400,
+    description: 'Professional experience and career highlights'
+  },
+  { 
+    id: 'education', 
+    title: 'Education', 
+    emoji: '🎓',
+    x: 700, 
+    y: 400,
+    description: 'Educational background and certifications'
+  },
+  { 
+    id: 'achievements', 
+    title: 'Achievements', 
+    emoji: '🏆',
+    x: 500, 
+    y: 500,
+    description: 'Awards, recognitions, and notable accomplishments'
+  },
+  { 
+    id: 'contact', 
+    title: 'Contact Information', 
+    emoji: '📧',
+    x: 600, 
+    y: 250,
+    description: 'Get in touch with me for opportunities'
+  }
+]
+
+const createPortalsData = (width: number, height: number): PortalData[] => [
+  {
+    id: 'village',
+    name: 'Skill Village',
+    targetScene: 'SkillVillageScene',
+    x: 50,
+    y: height / 2,
+    color: 0x3498db,
+    emoji: '🏘️'
+  },
+  {
+    id: 'forest',
+    name: 'Project Forest',
+    targetScene: 'ProjectForestScene',
+    x: width - 50,
+    y: height / 2,
+    color: 0x27ae60,
+    emoji: '🌲'
+  }
+]
+
+const calculateDistance = (obj1: { x: number; y: number }, obj2: { x: number; y: number }): number =>
+  Phaser.Math.Distance.Between(obj1.x, obj1.y, obj2.x, obj2.y)
+
+const findNearestObject = <T extends Phaser.GameObjects.GameObject>(
+  player: { x: number; y: number },
+  objects: T[],
+  maxDistance: number
+): T | null => {
+  return objects.reduce((nearest: { object: T | null; distance: number }, obj) => {
+    const sprite = obj as unknown as { x: number; y: number }
+    const distance = calculateDistance(player, sprite)
+    
+    if (distance < maxDistance && distance < nearest.distance) {
+      return { object: obj, distance }
+    }
+    return nearest
+  }, { object: null, distance: Infinity }).object
+}
+
+const updatePlayerVelocity = (
+  playerBody: Phaser.Physics.Arcade.Body,
+  cursors: Phaser.Types.Input.Keyboard.CursorKeys,
+  keyboard: Phaser.Input.Keyboard.KeyboardPlugin,
+  speed: number = 200
+): void => {
+  playerBody.setVelocity(0)
+
+  const isLeftPressed = cursors.left.isDown || keyboard.addKey('A').isDown
+  const isRightPressed = cursors.right.isDown || keyboard.addKey('D').isDown
+  const isUpPressed = cursors.up.isDown || keyboard.addKey('W').isDown
+  const isDownPressed = cursors.down.isDown || keyboard.addKey('S').isDown
+
+  if (isLeftPressed) playerBody.setVelocityX(-speed)
+  else if (isRightPressed) playerBody.setVelocityX(speed)
+
+  if (isUpPressed) playerBody.setVelocityY(-speed)
+  else if (isDownPressed) playerBody.setVelocityY(speed)
+}
+
+// Factory functions for creating game objects
+const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Rectangle => {
+  const player = scene.add.rectangle(x, y, 32, 32, 0xe74c3c)
+  scene.physics.add.existing(player)
+  
+  const playerBody = player.body as Phaser.Physics.Arcade.Body
+  playerBody.setCollideWorldBounds(true)
+  playerBody.setDrag(500)
+  
+  return player
+}
+
+const createResumeBook = (
+  scene: Phaser.Scene, 
+  element: ResumeElementData, 
+  onInteract: (sectionId: string) => void
+): Phaser.GameObjects.Container => {
+  const book = scene.add.container(element.x, element.y)
+  
+  const bookBody = scene.add.rectangle(0, 0, 70, 45, 0x2c3e50, 0.9)
+  bookBody.setStrokeStyle(2, 0x34495e)
+  
+  const bookEmoji = scene.add.text(0, -5, element.emoji, { fontSize: '28px' }).setOrigin(0.5)
+  
+  const bookLabel = scene.add.text(0, 35, element.title, { 
+    fontSize: '11px', 
+    color: '#2c3e50',
+    align: 'center',
+    backgroundColor: '#ecf0f1aa',
+    padding: { x: 4, y: 2 }
+  }).setOrigin(0.5)
+
+  // Add floating effect
+  scene.tweens.add({
+    targets: book,
+    y: element.y - 5,
+    duration: 2000,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut',
+    delay: Phaser.Math.Between(0, 1000)
+  })
+
+  book.add([bookBody, bookEmoji, bookLabel])
+  scene.physics.add.existing(book, true)
+  
+  book.setData('resumeData', element)
+  book.setData('isBook', true)
+  book.setSize(70, 45)
+  book.setInteractive()
+  book.on('pointerdown', () => onInteract(element.id))
+  
+  return book
+}
+
+const createPortal = (
+  scene: Phaser.Scene, 
+  portalData: PortalData,
+  onActivate: (sceneName: string) => void
+): Phaser.GameObjects.Container => {
+  const portal = scene.add.container(portalData.x, portalData.y)
+  
+  portal.add([
+    scene.add.rectangle(0, 0, 60, 80, portalData.color, 0.7),
+    scene.add.text(0, -10, portalData.emoji, { fontSize: '24px' }).setOrigin(0.5),
+    scene.add.text(0, 15, portalData.name.replace(' ', '\n'), { 
+      fontSize: '10px', 
+      align: 'center', 
+      color: '#ffffff' 
+    }).setOrigin(0.5)
+  ])
+  
+  portal.setSize(60, 80)
+  portal.setInteractive()
+  portal.on('pointerdown', () => onActivate(portalData.targetScene))
+  
+  return portal
+}
+
+const setupWorldBackground = (scene: Phaser.Scene): void => {
+  const { width, height } = scene.scale
+
+  scene.add.rectangle(width / 2, height / 2, width, height, 0x8e44ad, 0.3)
+  
+  scene.add.text(width / 2, 60, '🏰 Résumé Tower', {
+    fontSize: '32px',
+    color: '#2c3e50',
+    fontStyle: 'bold'
+  }).setOrigin(0.5)
+
+  scene.add.text(width / 2, 120, 'Explore my professional journey and achievements!', {
+    fontSize: '18px',
+    color: '#34495e'
+  }).setOrigin(0.5)
+}
+
+const createTowerStructure = (scene: Phaser.Scene): void => {
+  const { width, height } = scene.scale
+  const centerX = width / 2
+  const centerY = height / 2
+
+  // Main tower body
+  scene.add.rectangle(centerX, centerY + 50, 200, 300, 0x95a5a6, 0.8)
+    .setStrokeStyle(4, 0x7f8c8d)
+
+  // Tower top
+  scene.add.triangle(centerX, centerY - 100, 0, 60, -60, 0, 60, 0, 0x34495e)
+
+  // Tower windows
+  const windowPositions = [
+    { x: centerX - 40, y: centerY - 20 },
+    { x: centerX + 40, y: centerY - 20 },
+    { x: centerX - 40, y: centerY + 40 },
+    { x: centerX + 40, y: centerY + 40 }
+  ]
+
+  windowPositions.forEach(pos => {
+    scene.add.rectangle(pos.x, pos.y, 25, 35, 0xf39c12, 0.9)
+      .setStrokeStyle(2, 0xd68910)
+  })
+
+  // Tower door
+  scene.add.rectangle(centerX, centerY + 130, 40, 60, 0x8b4513, 0.9)
+    .setStrokeStyle(3, 0x6b3410)
+    
+  scene.add.text(centerX, centerY + 130, '🚪', { fontSize: '32px' }).setOrigin(0.5)
+}
+
 /**
  * Resume Tower Scene - Interactive area for viewing resume/CV
  * Central tower with books, scrolls, and interactive resume elements
  */
 export class ResumeTowerScene extends Phaser.Scene {
-  private player!: Phaser.GameObjects.Rectangle
-  private resumeBooks: Phaser.GameObjects.Group | null = null
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
-  private interactionPrompt!: Phaser.GameObjects.Text
-  private nearestBook: Phaser.GameObjects.GameObject | null = null
+  private state: SceneState = {
+    player: null,
+    resumeBooks: null,
+    cursors: null,
+    interactionPrompt: null,
+    nearestBook: null
+  }
 
   constructor() {
     super({ key: 'ResumeTowerScene' })
@@ -19,194 +281,92 @@ export class ResumeTowerScene extends Phaser.Scene {
   create(): void {
     console.log('[ResumeTowerScene] Creating Resume Tower')
     
-    this.setupWorld()
-    this.createPlayer()
-    this.createResumeElements()
-    this.setupControls()
-    this.setupUI()
+    // Initialize scene using functional approach
+    this.initializeScene()
   }
 
-  private setupWorld(): void {
-    const { width, height } = this.scale
-
-    // Create tower background
-    this.add.rectangle(width / 2, height / 2, width, height, 0x8e44ad, 0.3)
-    
-    // Add tower title
-    this.add.text(width / 2, 60, '🏰 Résumé Tower', {
-      fontSize: '32px',
-      color: '#2c3e50',
-      fontStyle: 'bold'
-    }).setOrigin(0.5)
-
-    this.add.text(width / 2, 120, 'Explore my professional journey and achievements!', {
-      fontSize: '18px',
-      color: '#34495e'
-    }).setOrigin(0.5)
-
-    // Create tower structure
-    this.createTowerStructure()
-  }
-
-  private createTowerStructure(): void {
-    const { width, height } = this.scale
-    const centerX = width / 2
-    const centerY = height / 2
-
-    // Main tower body
-    this.add.rectangle(centerX, centerY + 50, 200, 300, 0x95a5a6, 0.8)
-      .setStrokeStyle(4, 0x7f8c8d)
-
-    // Tower top
-    this.add.triangle(centerX, centerY - 100, 0, 60, -60, 0, 60, 0, 0x34495e)
-
-    // Tower windows
-    const windowPositions = [
-      { x: centerX - 40, y: centerY - 20 },
-      { x: centerX + 40, y: centerY - 20 },
-      { x: centerX - 40, y: centerY + 40 },
-      { x: centerX + 40, y: centerY + 40 }
-    ]
-
-    windowPositions.forEach(pos => {
-      this.add.rectangle(pos.x, pos.y, 25, 35, 0xf39c12, 0.9)
-        .setStrokeStyle(2, 0xd68910)
-    })
-
-    // Tower door
-    this.add.rectangle(centerX, centerY + 130, 40, 60, 0x8b4513, 0.9)
-      .setStrokeStyle(3, 0x6b3410)
-      
-    this.add.text(centerX, centerY + 130, '🚪', { fontSize: '32px' }).setOrigin(0.5)
-  }
-
-  private createPlayer(): void {
+  private initializeScene(): void {
     const { width, height } = this.scale
     
-    this.player = this.add.rectangle(width / 2, height - 150, 32, 32, 0xe74c3c)
-    this.physics.add.existing(this.player)
+    // Setup world background and tower structure
+    setupWorldBackground(this)
+    createTowerStructure(this)
     
-    const playerBody = this.player.body as Phaser.Physics.Arcade.Body
-    playerBody.setCollideWorldBounds(true)
-    playerBody.setDrag(500)
-  }
-
-  private createResumeElements(): void {
-    this.resumeBooks = this.add.group()
-
-    const resumeElements = [
-      { 
-        id: 'full-resume', 
-        title: 'Complete Résumé', 
-        emoji: '📄',
-        x: 400, 
-        y: 300,
-        description: 'My complete professional resume with all details'
-      },
-      { 
-        id: 'experience', 
-        title: 'Work Experience', 
-        emoji: '💼',
-        x: 300, 
-        y: 400,
-        description: 'Professional experience and career highlights'
-      },
-      { 
-        id: 'education', 
-        title: 'Education', 
-        emoji: '🎓',
-        x: 700, 
-        y: 400,
-        description: 'Educational background and certifications'
-      },
-      { 
-        id: 'achievements', 
-        title: 'Achievements', 
-        emoji: '🏆',
-        x: 500, 
-        y: 500,
-        description: 'Awards, recognitions, and notable accomplishments'
-      },
-      { 
-        id: 'contact', 
-        title: 'Contact Information', 
-        emoji: '📧',
-        x: 600, 
-        y: 250,
-        description: 'Get in touch with me for opportunities'
-      }
-    ]
-
+    // Create player
+    this.state.player = createPlayer(this, width / 2, height - 150)
+    
+    // Create resume books
+    this.state.resumeBooks = this.add.group()
+    const resumeElements = createResumeElementsData()
     resumeElements.forEach(element => {
-      const book = this.add.container(element.x, element.y)
-      
-      // Book visual representation
-      const bookBody = this.add.rectangle(0, 0, 70, 45, 0x2c3e50, 0.9)
-      bookBody.setStrokeStyle(2, 0x34495e)
-      
-      const bookEmoji = this.add.text(0, -5, element.emoji, { 
-        fontSize: '28px' 
-      }).setOrigin(0.5)
-      
-      const bookLabel = this.add.text(0, 35, element.title, { 
-        fontSize: '11px', 
-        color: '#2c3e50',
-        align: 'center',
-        backgroundColor: '#ecf0f1aa',
-        padding: { x: 4, y: 2 }
-      }).setOrigin(0.5)
-
-      // Add floating effect
-      this.tweens.add({
-        targets: book,
-        y: element.y - 5,
-        duration: 2000,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-        delay: Phaser.Math.Between(0, 1000)
-      })
-
-      book.add([bookBody, bookEmoji, bookLabel])
-      
-      // Add physics
-      this.physics.add.existing(book, true)
-      
-      // Store resume data
-      book.setData('resumeData', element)
-      book.setData('isBook', true)
-      
-      // Add interactive behavior
-      book.setSize(70, 45)
-      book.setInteractive()
-      book.on('pointerdown', () => this.viewResumeSection(element.id))
-      
-      this.resumeBooks!.add(book)
+      const book = createResumeBook(this, element, this.handleResumeInteraction)
+      this.state.resumeBooks!.add(book)
     })
+    
+    // Setup controls
+    this.setupControls()
+    
+    // Create UI elements
+    this.setupUI()
+    
+    // Create portals
+    const portalsData = createPortalsData(width, height)
+    portalsData.forEach(portalData => {
+      createPortal(this, portalData, this.handleSceneTransition)
+    })
+  }
+
+  // Handler methods for interactions
+  private handleResumeInteraction = (sectionId: string): void => {
+    console.log(`[ResumeTowerScene] Viewing resume section: ${sectionId}`)
+    
+    // Add book opening animation
+    if (this.state.nearestBook) {
+      this.tweens.add({
+        targets: this.state.nearestBook,
+        scaleX: 1.3,
+        scaleY: 1.3,
+        duration: 300,
+        yoyo: true,
+        ease: 'Back.easeOut'
+      })
+    }
+    
+    if (sectionId === 'contact') {
+      gameEventBridge.emitGameEvent('game:contact-opened', undefined)
+    } else {
+      gameEventBridge.emitGameEvent('game:resume-opened', undefined)
+    }
+  }
+
+  private handleSceneTransition = (sceneName: string): void => {
+    console.log(`[ResumeTowerScene] Transitioning to: ${sceneName}`)
+    gameEventBridge.emitGameEvent('game:scene-starting', { sceneName })
+    this.scene.start(sceneName)
   }
 
   private setupControls(): void {
-    this.cursors = this.input.keyboard!.createCursorKeys()
+    this.state.cursors = this.input.keyboard!.createCursorKeys()
     
     // Space for interaction
     this.input.keyboard!.on('keydown-SPACE', () => {
-      if (this.nearestBook) {
-        const resumeData = this.nearestBook.getData('resumeData')
+      if (this.state.nearestBook) {
+        const resumeData = this.state.nearestBook.getData('resumeData')
         if (resumeData) {
-          this.viewResumeSection(resumeData.id)
+          this.handleResumeInteraction(resumeData.id)
         }
       }
     })
 
     // Enter key to open full resume
     this.input.keyboard!.on('keydown-ENTER', () => {
-      this.viewResumeSection('full-resume')
+      this.handleResumeInteraction('full-resume')
     })
   }
 
   private setupUI(): void {
     // Interaction prompt
-    this.interactionPrompt = this.add.text(
+    this.state.interactionPrompt = this.add.text(
       this.scale.width / 2, 
       this.scale.height - 80, 
       '', 
@@ -231,118 +391,34 @@ export class ResumeTowerScene extends Phaser.Scene {
       backgroundColor: '#e74c3c',
       padding: { x: 15, y: 8 }
     }).setOrigin(0.5)
-
-    // Portals to other areas
-    this.createPortals()
-  }
-
-  private createPortals(): void {
-    const { width, height } = this.scale
-
-    // Portal back to Skill Village
-    const villagePortal = this.add.container(50, height / 2)
-    villagePortal.add([
-      this.add.rectangle(0, 0, 60, 80, 0x3498db, 0.7),
-      this.add.text(0, -10, '🏘️', { fontSize: '24px' }).setOrigin(0.5),
-      this.add.text(0, 15, 'Skill\nVillage', { fontSize: '10px', align: 'center', color: '#ffffff' }).setOrigin(0.5)
-    ])
-    villagePortal.setSize(60, 80)
-    villagePortal.setInteractive()
-    villagePortal.on('pointerdown', () => this.goToScene('SkillVillageScene'))
-
-    // Portal to Project Forest
-    const forestPortal = this.add.container(width - 50, height / 2)
-    forestPortal.add([
-      this.add.rectangle(0, 0, 60, 80, 0x27ae60, 0.7),
-      this.add.text(0, -10, '🌲', { fontSize: '24px' }).setOrigin(0.5),
-      this.add.text(0, 15, 'Project\nForest', { fontSize: '10px', align: 'center', color: '#ffffff' }).setOrigin(0.5)
-    ])
-    forestPortal.setSize(60, 80)
-    forestPortal.setInteractive()
-    forestPortal.on('pointerdown', () => this.goToScene('ProjectForestScene'))
-  }
-
-  private viewResumeSection(sectionId: string): void {
-    console.log(`[ResumeTowerScene] Viewing resume section: ${sectionId}`)
-    
-    // Add book opening animation
-    if (this.nearestBook) {
-      this.tweens.add({
-        targets: this.nearestBook,
-        scaleX: 1.3,
-        scaleY: 1.3,
-        duration: 300,
-        yoyo: true,
-        ease: 'Back.easeOut'
-      })
-    }
-    
-    if (sectionId === 'contact') {
-      gameEventBridge.emitGameEvent('game:contact-opened', undefined)
-    } else {
-      gameEventBridge.emitGameEvent('game:resume-opened', undefined)
-    }
-  }
-
-  private goToScene(sceneName: string): void {
-    console.log(`[ResumeTowerScene] Transitioning to: ${sceneName}`)
-    gameEventBridge.emitGameEvent('game:scene-starting', { sceneName })
-    this.scene.start(sceneName)
   }
 
   update(): void {
-    this.handlePlayerMovement()
-    this.checkBookProximity()
+    if (!this.state.player || !this.state.cursors) return
+
+    // Handle player movement using functional approach
+    const playerBody = this.state.player.body as Phaser.Physics.Arcade.Body
+    updatePlayerVelocity(playerBody, this.state.cursors, this.input.keyboard!)
+
+    // Check for book proximity
+    this.updateBookProximity()
   }
 
-  private handlePlayerMovement(): void {
-    const playerBody = this.player.body as Phaser.Physics.Arcade.Body
-    const speed = 200
+  private updateBookProximity(): void {
+    if (!this.state.resumeBooks || !this.state.player || !this.state.interactionPrompt) return
 
-    playerBody.setVelocity(0)
+    const books = this.state.resumeBooks.children.entries as Phaser.GameObjects.GameObject[]
+    const nearestBook = findNearestObject(this.state.player, books, 90)
 
-    if (this.cursors.left.isDown || this.input.keyboard!.addKey('A').isDown) {
-      playerBody.setVelocityX(-speed)
-    } else if (this.cursors.right.isDown || this.input.keyboard!.addKey('D').isDown) {
-      playerBody.setVelocityX(speed)
-    }
-
-    if (this.cursors.up.isDown || this.input.keyboard!.addKey('W').isDown) {
-      playerBody.setVelocityY(-speed)
-    } else if (this.cursors.down.isDown || this.input.keyboard!.addKey('S').isDown) {
-      playerBody.setVelocityY(speed)
-    }
-  }
-
-  private checkBookProximity(): void {
-    if (!this.resumeBooks) return
-
-    let nearestBook: Phaser.GameObjects.GameObject | null = null
-    let nearestDistance = Infinity
-
-    this.resumeBooks.children.entries.forEach(book => {
-      const bookSprite = book as Phaser.GameObjects.Sprite
-      const distance = Phaser.Math.Distance.Between(
-        this.player.x, this.player.y,
-        bookSprite.x, bookSprite.y
-      )
-
-      if (distance < 90 && distance < nearestDistance) {
-        nearestDistance = distance
-        nearestBook = bookSprite
-      }
-    })
-
-    if (nearestBook !== this.nearestBook) {
-      this.nearestBook = nearestBook
+    if (nearestBook !== this.state.nearestBook) {
+      this.state.nearestBook = nearestBook
       
-      if (this.nearestBook) {
-        const bookSprite = this.nearestBook as Phaser.GameObjects.Sprite
-        const resumeData = bookSprite.getData('resumeData')
-        this.interactionPrompt.setText(`Press SPACE to view ${resumeData.title}`)
-        this.interactionPrompt.setVisible(true)
+      if (this.state.nearestBook) {
+        const resumeData = this.state.nearestBook.getData('resumeData')
+        this.state.interactionPrompt.setText(`Press SPACE to view ${resumeData.title}`)
+        this.state.interactionPrompt.setVisible(true)
       } else {
-        this.interactionPrompt.setVisible(false)
+        this.state.interactionPrompt.setVisible(false)
       }
     }
   }

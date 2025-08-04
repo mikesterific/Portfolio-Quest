@@ -71,6 +71,7 @@ export interface GameEvents {
   // From Game to Vue
   'game:ready': void
   'game:scene-changed': { sceneName: string }
+  'game:scene-starting': { sceneName: string }
   'game:project-selected': { projectId: string }
   'game:skill-selected': { skillId: string }
   'game:resume-opened': void
