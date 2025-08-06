@@ -77,12 +77,12 @@ const createProjectsData = (): ProjectData[] => [
 const createPortalsData = (width: number, height: number): PortalData[] => [
   {
     id: 'village',
-    name: 'Skill Village',
-    targetScene: 'SkillVillageScene',
+    name: 'Skills Command Center',
+    targetScene: 'SkillSpaceScene',
     x: 50,
     y: height / 2,
     color: 0x3498db,
-    emoji: '🏘️'
+    emoji: '🚀'
   },
   {
     id: 'tower',

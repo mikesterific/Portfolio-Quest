@@ -20,13 +20,12 @@ export class GameUIScene extends Phaser.Scene {
     this.setupUI()
     this.setupEventListeners()
     
-    // Start the first game scene (Skill Village) and set up initial state
-    this.scene.start('SkillVillageScene')
-    this.updateCurrentSceneDisplay('SkillVillageScene')
+    // Start with the Skills Command Center
+    this.scene.start('SkillSpaceScene')
+    this.updateCurrentSceneDisplay('SkillSpaceScene')
     
-    // Notify Vue that the game is ready
-    gameEventBridge.emitGameEvent('game:ready', undefined)
-    gameEventBridge.emitGameEvent('game:scene-changed', { sceneName: 'SkillVillageScene' })
+    // Emit game event for initial scene
+    gameEventBridge.emitGameEvent('game:scene-changed', { sceneName: 'SkillSpaceScene' })
   }
 
   private setupUI(): void {
@@ -143,7 +142,7 @@ export class GameUIScene extends Phaser.Scene {
     }
 
     const sceneDisplayNames: Record<string, string> = {
-      'SkillVillageScene': '🏘️ Skill Village',
+      'SkillSpaceScene': '🚀 Skills Command Center',
       'ProjectForestScene': '🌲 Project Forest',
       'ResumeTowerScene': '🏰 Résumé Tower'
     }

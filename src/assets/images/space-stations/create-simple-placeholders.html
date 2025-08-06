@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Space Station Placeholder Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        canvas { border: 1px solid #ccc; margin: 5px; }
+        .station-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .station-info { text-align: center; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Space Station Placeholder Generator</h1>
+    <p>Generate simple placeholder sprites for development</p>
+    
+    <div class="station-grid" id="stationGrid"></div>
+    
+    <button onclick="downloadAll()">Download All Stations</button>
+    
+    <script>
+        const stationConfigs = [
+            { id: 'station-a-blue', type: 'A', color: '#4A6FA5', skill: 'Frontend' },
+            { id: 'station-a-green', type: 'A', color: '#5FB85F', skill: 'Testing' },
+            { id: 'station-b-orange', type: 'B', color: '#E67E22', skill: 'Architecture' },
+            { id: 'station-c-purple', type: 'C', color: '#9B59B6', skill: 'Tooling' },
+            { id: 'station-e-red', type: 'E', color: '#E74C3C', skill: 'DevOps' },
+            { id: 'station-b-gray', type: 'B', color: '#7F8C8D', skill: 'Security' },
+            { id: 'station-d-cyan', type: 'D', color: '#1ABC9C', skill: 'AI' },
+            { id: 'station-c-gold', type: 'C', color: '#F39C12', skill: 'Leadership' }
+        ];
+
+        function createStationCanvas(config) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 80;
+            canvas.height = 80;
+            const ctx = canvas.getContext('2d');
+            
+            // Clear background (transparent)
+            ctx.clearRect(0, 0, 80, 80);
+            
+            const center = 40;
+            
+            // Station type specific designs
+            switch (config.type) {
+                case 'A': // Compact research module
+                    ctx.fillStyle = config.color;
+                    ctx.fillRect(20, 25, 40, 30);
+                    ctx.fillStyle = '#34495E';
+                    ctx.fillRect(15, 35, 10, 2);
+                    ctx.fillRect(55, 35, 10, 2);
+                    ctx.fillStyle = '#2C3E50';
+                    ctx.fillRect(32, 32, 16, 16);
+                    ctx.fillStyle = '#00FF88';
+                    ctx.beginPath();
+                    ctx.arc(center, center, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    break;
+                    
+                case 'B': // Industrial platform
+                    ctx.fillStyle = config.color;
+                    ctx.fillRect(15, 30, 50, 20);
+                    ctx.fillStyle = '#34495E';
+                    ctx.fillRect(10, 35, 8, 10);
+                    ctx.fillRect(62, 35, 8, 10);
+                    ctx.fillStyle = '#2C3E50';
+                    ctx.fillRect(34, 20, 12, 25);
+                    break;
+                    
+                case 'C': // Large hub station
+                    ctx.fillStyle = config.color;
+                    ctx.beginPath();
+                    ctx.arc(center, center, 18, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i * 2 * Math.PI) / 6;
+                        const x = center + Math.cos(angle) * 25;
+                        const y = center + Math.sin(angle) * 25;
+                        ctx.fillStyle = '#34495E';
+                        ctx.fillRect(x - 4, y - 8, 8, 16);
+                    }
+                    
+                    ctx.fillStyle = '#2C3E50';
+                    ctx.beginPath();
+                    ctx.arc(center, center, 8, 0, 2 * Math.PI);
+                    ctx.fill();
+                    break;
+                    
+                case 'D': // Specialized research (hexagonal)
+                    ctx.fillStyle = config.color;
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i * Math.PI) / 3;
+                        const x = center + Math.cos(angle) * 20;
+                        const y = center + Math.sin(angle) * 20;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#34495E';
+                    ctx.fillRect(38, 10, 4, 15);
+                    ctx.fillRect(38, 55, 4, 15);
+                    break;
+                    
+                case 'E': // Command station
+                    ctx.fillStyle = config.color;
+                    ctx.fillRect(22, 28, 36, 24);
+                    ctx.fillStyle = '#34495E';
+                    ctx.fillRect(15, 20, 8, 30);
+                    ctx.fillRect(57, 20, 8, 30);
+                    ctx.fillStyle = '#2C3E50';
+                    ctx.fillRect(28, 22, 24, 8);
+                    break;
+            }
+            
+            return canvas;
+        }
+
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename + '.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function downloadAll() {
+            stationConfigs.forEach(config => {
+                const canvas = createStationCanvas(config);
+                downloadCanvas(canvas, config.id);
+            });
+        }
+
+        // Generate and display stations
+        const grid = document.getElementById('stationGrid');
+        stationConfigs.forEach(config => {
+            const container = document.createElement('div');
+            const canvas = createStationCanvas(config);
+            const info = document.createElement('div');
+            info.className = 'station-info';
+            info.innerHTML = `<strong>${config.skill}</strong><br>${config.id}<br>${config.color}`;
+            
+            canvas.onclick = () => downloadCanvas(canvas, config.id);
+            canvas.style.cursor = 'pointer';
+            canvas.title = 'Click to download';
+            
+            container.appendChild(canvas);
+            container.appendChild(info);
+            grid.appendChild(container);
+        });
+    </script>
+</body>
+</html> 

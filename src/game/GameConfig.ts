@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { SkillVillageScene } from './scenes/SkillVillageScene'
+import { SkillSpaceScene } from './scenes/SkillSpaceScene'
 import { ProjectForestScene } from './scenes/ProjectForestScene'
 import { ResumeTowerScene } from './scenes/ResumeTowerScene'
 import { GameUIScene } from './scenes/GameUIScene'
@@ -38,7 +38,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
 
   scene: [
     GameUIScene,
-    SkillVillageScene,
+    SkillSpaceScene,
     ProjectForestScene,
     ResumeTowerScene
   ],
