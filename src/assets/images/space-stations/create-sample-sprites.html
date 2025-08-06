@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Space Station Sprite Creator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #1a1a1a;
+      color: white;
+    }
+
+    canvas {
+      border: 1px solid #444;
+      margin: 5px;
+    }
+
+    .station-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .station-item {
+      text-align: center;
+      background: #2a2a2a;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .station-info {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    button {
+      background: #4A6FA5;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #5a7fb5;
+    }
+
+    .color-preview {
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+      margin-right: 5px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🚀 Space Station Sprite Creator</h1>
+  <p>Creating production-quality 80x80px space station sprites for Portfolio
+    Quest</p>
+
+  <div class="station-grid" id="stationGrid"></div>
+
+  <button onclick="downloadAll()">📦 Download All Stations (ZIP would be
+    ideal)</button>
+  <button onclick="downloadIndividual()">📁 Download Individual Files</button>
+
+  <script>
+    const stationConfigs = [
+      { id: 'station-a-blue', type: 'A', color: '#4A6FA5', skill: 'Frontend', name: 'Compact Research' },
+      { id: 'station-a-green', type: 'A', color: '#5FB85F', skill: 'Testing', name: 'Compact Research' },
+      { id: 'station-b-orange', type: 'B', color: '#E67E22', skill: 'Architecture', name: 'Industrial Platform' },
+      { id: 'station-b-gray', type: 'B', color: '#7F8C8D', skill: 'Security', name: 'Industrial Platform' },
+      { id: 'station-c-purple', type: 'C', color: '#9B59B6', skill: 'Tooling', name: 'Large Hub' },
+      { id: 'station-c-gold', type: 'C', color: '#F39C12', skill: 'Leadership', name: 'Large Hub' },
+      { id: 'station-d-cyan', type: 'D', color: '#1ABC9C', skill: 'AI', name: 'Specialized Research' },
+      { id: 'station-e-red', type: 'E', color: '#E74C3C', skill: 'DevOps', name: 'Command Station' }
+    ];
+
+    function createDetailedStation(config) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 80;
+      canvas.height = 80;
+      const ctx = canvas.getContext('2d');
+
+      // Clear with transparency
+      ctx.clearRect(0, 0, 80, 80);
+
+      const center = 40;
+      const mainColor = config.color;
+      const darkColor = '#2C3E50';
+      const lightColor = '#BDC3C7';
+      const accentColor = '#F39C12';
+
+      // Draw detailed station based on type
+      switch (config.type) {
+        case 'A': // Compact Research Module
+          drawCompactResearchStation(ctx, mainColor, center);
+          break;
+        case 'B': // Industrial Platform
+          drawIndustrialPlatform(ctx, mainColor, center);
+          break;
+        case 'C': // Large Hub Station
+          drawLargeHubStation(ctx, mainColor, center);
+          break;
+        case 'D': // Specialized Research (Hexagonal)
+          drawSpecializedResearch(ctx, mainColor, center);
+          break;
+        case 'E': // Command Station
+          drawCommandStation(ctx, mainColor, center);
+          break;
+      }
+
+      return canvas;
+    }
+
+    function drawCompactResearchStation(ctx, color, center) {
+      // Main hull
+      ctx.fillStyle = color;
+      ctx.fillRect(center - 25, center - 15, 50, 30);
+
+      // Research pods
+      ctx.fillStyle = '#34495E';
+      ctx.fillRect(center - 30, center - 8, 12, 16);
+      ctx.fillRect(center + 18, center - 8, 12, 16);
+
+      // Central lab
+      ctx.fillStyle = '#2C3E50';
+      ctx.fillRect(center - 10, center - 10, 20, 20);
+
+      // Communication arrays
+      ctx.strokeStyle = '#BDC3C7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(center - 35, center);
+      ctx.lineTo(center - 25, center);
+      ctx.moveTo(center + 25, center);
+      ctx.lineTo(center + 35, center);
+      ctx.stroke();
+
+      // Status lights
+      ctx.fillStyle = '#00FF88';
+      ctx.beginPath();
+      ctx.arc(center - 20, center - 20, 3, 0, 2 * Math.PI);
+      ctx.arc(center + 20, center - 20, 3, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Window
+      ctx.fillStyle = '#5DADE2';
+      ctx.fillRect(center - 6, center - 6, 12, 12);
+    }
+
+    function drawIndustrialPlatform(ctx, color, center) {
+      // Main platform
+      ctx.fillStyle = color;
+      ctx.fillRect(center - 30, center - 12, 60, 24);
+
+      // Support struts
+      ctx.fillStyle = '#34495E';
+      ctx.fillRect(center - 35, center - 6, 10, 12);
+      ctx.fillRect(center + 25, center - 6, 10, 12);
+
+      // Central tower
+      ctx.fillStyle = '#2C3E50';
+      ctx.fillRect(center - 8, center - 25, 16, 30);
+
+      // Docking bays
+      ctx.fillStyle = '#566573';
+      ctx.fillRect(center - 25, center - 8, 8, 16);
+      ctx.fillRect(center + 17, center - 8, 8, 16);
+
+      // Industrial details
+      ctx.fillStyle = '#F39C12';
+      ctx.fillRect(center - 20, center - 4, 4, 8);
+      ctx.fillRect(center + 16, center - 4, 4, 8);
+
+      // Antenna
+      ctx.strokeStyle = '#BDC3C7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(center, center - 25);
+      ctx.lineTo(center, center - 35);
+      ctx.stroke();
+    }
+
+    function drawLargeHubStation(ctx, color, center) {
+      // Central hub
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(center, center, 22, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Hub modules (6 directions)
+      ctx.fillStyle = '#34495E';
+      const modulePositions = [
+        [center, center - 30], [center + 26, center - 15],
+        [center + 26, center + 15], [center, center + 30],
+        [center - 26, center + 15], [center - 26, center - 15]
+      ];
+
+      modulePositions.forEach(([x, y]) => {
+        ctx.fillRect(x - 6, y - 10, 12, 20);
+      });
+
+      // Central core
+      ctx.fillStyle = '#2C3E50';
+      ctx.beginPath();
+      ctx.arc(center, center, 12, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Core window
+      ctx.fillStyle = '#5DADE2';
+      ctx.beginPath();
+      ctx.arc(center, center, 6, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Connection struts
+      ctx.strokeStyle = '#566573';
+      ctx.lineWidth = 3;
+      modulePositions.forEach(([x, y]) => {
+        ctx.beginPath();
+        ctx.moveTo(center, center);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      });
+    }
+
+    function drawSpecializedResearch(ctx, color, center) {
+      // Hexagonal hull
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI) / 3;
+        const x = center + Math.cos(angle) * 25;
+        const y = center + Math.sin(angle) * 25;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Research arrays
+      ctx.fillStyle = '#34495E';
+      ctx.fillRect(center - 3, center - 35, 6, 20);
+      ctx.fillRect(center - 3, center + 15, 6, 20);
+
+      // Specialized equipment
+      ctx.fillStyle = '#2C3E50';
+      ctx.beginPath();
+      ctx.arc(center, center, 12, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Sensor dish
+      ctx.fillStyle = '#BDC3C7';
+      ctx.beginPath();
+      ctx.arc(center, center - 30, 8, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Hexagonal details
+      ctx.strokeStyle = '#566573';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI) / 3;
+        const x = center + Math.cos(angle) * 15;
+        const y = center + Math.sin(angle) * 15;
+        ctx.beginPath();
+        ctx.moveTo(center, center);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+    }
+
+    function drawCommandStation(ctx, color, center) {
+      // Main command structure
+      ctx.fillStyle = color;
+      ctx.fillRect(center - 25, center - 15, 50, 30);
+
+      // Command towers
+      ctx.fillStyle = '#34495E';
+      ctx.fillRect(center - 32, center - 25, 12, 40);
+      ctx.fillRect(center + 20, center - 25, 12, 40);
+
+      // Bridge
+      ctx.fillStyle = '#2C3E50';
+      ctx.fillRect(center - 15, center - 22, 30, 12);
+
+      // Communication array
+      ctx.fillStyle = '#BDC3C7';
+      ctx.fillRect(center - 2, center - 35, 4, 15);
+
+      // Command windows
+      ctx.fillStyle = '#5DADE2';
+      ctx.fillRect(center - 12, center - 18, 8, 6);
+      ctx.fillRect(center + 4, center - 18, 8, 6);
+
+      // Status indicators
+      ctx.fillStyle = '#E74C3C';
+      ctx.beginPath();
+      ctx.arc(center - 26, center - 30, 3, 0, 2 * Math.PI);
+      ctx.arc(center + 26, center - 30, 3, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+
+    function downloadCanvas(canvas, filename) {
+      const link = document.createElement('a');
+      link.download = filename + '.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    function downloadAll() {
+      stationConfigs.forEach(config => {
+        const canvas = createDetailedStation(config);
+        downloadCanvas(canvas, config.id);
+      });
+      alert('All 8 space station sprites downloaded! Place them in src/assets/images/space-stations/');
+    }
+
+    function downloadIndividual() {
+      alert('Click on any station to download it individually');
+    }
+
+    // Generate and display stations
+    const grid = document.getElementById('stationGrid');
+    stationConfigs.forEach(config => {
+      const container = document.createElement('div');
+      container.className = 'station-item';
+
+      const canvas = createDetailedStation(config);
+      const info = document.createElement('div');
+      info.className = 'station-info';
+      info.innerHTML = `
+                <strong>${config.skill}</strong><br>
+                <span class="color-preview" style="background-color: ${config.color}"></span>
+                ${config.id}<br>
+                <em>${config.name}</em>
+            `;
+
+      canvas.onclick = () => downloadCanvas(canvas, config.id);
+      canvas.style.cursor = 'pointer';
+      canvas.title = 'Click to download ' + config.id;
+
+      container.appendChild(canvas);
+      container.appendChild(info);
+      grid.appendChild(container);
+    });
+
+    console.log('🚀 Space Station Creator Ready!');
+    console.log('Generated sprites will be 80x80px with detailed industrial designs');
+  </script>
+</body>
+
+</html>

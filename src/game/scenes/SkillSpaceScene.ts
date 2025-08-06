@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import gameEventBridge from '../GameEventBridge'
 import { createPlayer, updatePlayerVelocity, preloadPlayerAssets, findNearestObject } from '../systems/PlayerSystem'
 import { spaceStationConfigs, getStationConfig, stationColorPalette } from '@/assets/images/space-stations/station-data'
+import { getStationSpriteConfig, getColorTint } from '@/assets/images/space-stations/sprite-map-config'
 
 // Types for scene state
 interface SceneState {
@@ -173,35 +174,75 @@ const createPortalsData = (width: number, height: number): Array<PortalData & { 
 const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onInteract: (stationId: string) => void): Phaser.GameObjects.Container => {
   const stationContainer = scene.add.container(station.x, station.y)
   
-  // Get color from palette
-  const stationColor = stationColorPalette[station.colorVariant as keyof typeof stationColorPalette]
+  // Get sprite configuration for this station type
+  const spriteConfig = getStationSpriteConfig(station.stationType)
   
-  // Create station body based on type (simplified for now - will use sprites later)
-  let stationBody: Phaser.GameObjects.Shape
+  let stationBody: Phaser.GameObjects.Image | Phaser.GameObjects.Shape
   
-  switch (station.stationType) {
-    case 'A': // Compact research module
-      stationBody = scene.add.rectangle(0, 0, 70, 50, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-      break
-    case 'B': // Industrial platform  
-      stationBody = scene.add.rectangle(0, 0, 80, 40, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-      break
-    case 'C': // Large hub station
-      stationBody = scene.add.circle(0, 0, 35, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-      break
-    case 'D': // Specialized research (hexagonal)
-      stationBody = scene.add.polygon(0, 0, [
-        [-25, 0], [-12, -22], [12, -22], [25, 0], [12, 22], [-12, 22]
-      ], Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-      break
-    case 'E': // Command station
-      stationBody = scene.add.rectangle(0, 0, 75, 45, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-      break
-    default:
-      stationBody = scene.add.rectangle(0, 0, 60, 50, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
+  if (spriteConfig && scene.textures.exists(spriteConfig.baseRegion.sourceImage)) {
+    // Create sprite from source image region
+    const { baseRegion } = spriteConfig
+    
+    // Create a render texture to extract and tint the region
+    const renderTexture = scene.add.renderTexture(0, 0, 80, 80)
+    
+    // Create temporary image from source
+    const sourceImage = scene.add.image(0, 0, baseRegion.sourceImage)
+    
+    // Calculate scale to fit source region into 80x80 target
+    const scaleX = 80 / baseRegion.width
+    const scaleY = 80 / baseRegion.height
+    const scale = Math.min(scaleX, scaleY)
+    
+    sourceImage.setScale(scale)
+    sourceImage.setCrop(baseRegion.x, baseRegion.y, baseRegion.width, baseRegion.height)
+    
+    // Apply color tint
+    const colorTint = getColorTint(station.colorVariant)
+    sourceImage.setTint(colorTint)
+    
+    // Render to texture
+    renderTexture.draw(sourceImage, 40, 40)
+    
+    // Use the rendered texture as our station body
+    stationBody = renderTexture
+    
+    // Clean up temporary image
+    sourceImage.destroy()
+    
+    console.log(`✅ Created sprite station: ${station.stationType}-${station.colorVariant}`)
+  } else {
+    // Fallback to geometric shape
+    console.warn(`Sprite config not found for station type ${station.stationType}, using fallback`)
+    
+    const stationColor = stationColorPalette[station.colorVariant as keyof typeof stationColorPalette]
+    
+    switch (station.stationType) {
+      case 'A': // Compact research module
+        stationBody = scene.add.rectangle(0, 0, 70, 50, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
+        break
+      case 'B': // Industrial platform  
+        stationBody = scene.add.rectangle(0, 0, 80, 40, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
+        break
+      case 'C': // Large hub station
+        stationBody = scene.add.circle(0, 0, 35, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
+        break
+      case 'D': // Specialized research (hexagonal)
+        stationBody = scene.add.polygon(0, 0, [
+          [-25, 0], [-12, -22], [12, -22], [25, 0], [12, 22], [-12, 22]
+        ], Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
+        break
+      case 'E': // Command station
+        stationBody = scene.add.rectangle(0, 0, 75, 45, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
+        break
+      default:
+        stationBody = scene.add.rectangle(0, 0, 60, 50, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
+    }
+    
+    if ('setStrokeStyle' in stationBody) {
+      stationBody.setStrokeStyle(3, 0x34495E)
+    }
   }
-  
-  stationBody.setStrokeStyle(3, 0x34495E)
   
   // Station identifier
   const stationEmoji = scene.add.text(0, -5, station.emoji, { fontSize: '32px' }).setOrigin(0.5)
@@ -343,6 +384,10 @@ export class SkillSpaceScene extends Phaser.Scene {
 
   preload(): void {
     preloadPlayerAssets(this)
+    
+    // Load space station sprite sheets
+    this.load.image('five-stations', 'src/assets/images/Five Intricate Space Stations in Orbit.png')
+    this.load.image('more-stations', 'src/assets/images/More Space Stations.png')
   }
 
   create(): void {
