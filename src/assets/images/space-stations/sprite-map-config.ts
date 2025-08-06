@@ -16,11 +16,12 @@ export interface StationSpriteConfig {
 }
 
 // Sprite regions from "Five Intricate Space Stations in Orbit.png" (1024x1024)
+// Updated coordinates to better match typical space station arrangements
 export const FIVE_STATIONS_REGIONS: StationSpriteConfig[] = [
   {
     stationType: 'A',
     baseRegion: {
-      x: 100, y: 100, width: 200, height: 200,
+      x: 50, y: 50, width: 300, height: 300,
       sourceImage: 'five-stations'
     },
     description: 'Compact Research Module'
@@ -28,7 +29,7 @@ export const FIVE_STATIONS_REGIONS: StationSpriteConfig[] = [
   {
     stationType: 'B', 
     baseRegion: {
-      x: 600, y: 100, width: 250, height: 200,
+      x: 500, y: 50, width: 300, height: 300,
       sourceImage: 'five-stations'
     },
     description: 'Industrial Platform'
@@ -36,7 +37,7 @@ export const FIVE_STATIONS_REGIONS: StationSpriteConfig[] = [
   {
     stationType: 'C',
     baseRegion: {
-      x: 350, y: 350, width: 300, height: 300,
+      x: 250, y: 250, width: 400, height: 400,
       sourceImage: 'five-stations'
     },
     description: 'Large Hub Station'
@@ -44,7 +45,7 @@ export const FIVE_STATIONS_REGIONS: StationSpriteConfig[] = [
   {
     stationType: 'D',
     baseRegion: {
-      x: 100, y: 600, width: 200, height: 200,
+      x: 50, y: 500, width: 300, height: 300,
       sourceImage: 'five-stations'
     },
     description: 'Specialized Research'
@@ -52,7 +53,7 @@ export const FIVE_STATIONS_REGIONS: StationSpriteConfig[] = [
   {
     stationType: 'E',
     baseRegion: {
-      x: 650, y: 650, width: 250, height: 200,
+      x: 500, y: 500, width: 300, height: 300,
       sourceImage: 'five-stations'
     },
     description: 'Command Station'

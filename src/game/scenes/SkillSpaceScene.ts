@@ -179,38 +179,36 @@ const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onIn
   
   let stationBody: Phaser.GameObjects.Image | Phaser.GameObjects.Shape
   
-  if (spriteConfig && scene.textures.exists(spriteConfig.baseRegion.sourceImage)) {
-    // Create sprite from source image region
-    const { baseRegion } = spriteConfig
+  // Debug: Check if source images are loaded
+  console.log(`🔍 Checking station ${station.stationType}-${station.colorVariant}`)
+  console.log(`   five-stations loaded: ${scene.textures.exists('five-stations')}`)
+  console.log(`   more-stations loaded: ${scene.textures.exists('more-stations')}`)
+  
+  // Simplified approach: Use full source image scaled down with tint
+  if (scene.textures.exists('five-stations')) {
+    console.log(`✅ Using five-stations image for ${station.stationType}`)
     
-    // Create a render texture to extract and tint the region
-    const renderTexture = scene.add.renderTexture(0, 0, 80, 80)
-    
-    // Create temporary image from source
-    const sourceImage = scene.add.image(0, 0, baseRegion.sourceImage)
-    
-    // Calculate scale to fit source region into 80x80 target
-    const scaleX = 80 / baseRegion.width
-    const scaleY = 80 / baseRegion.height
-    const scale = Math.min(scaleX, scaleY)
-    
-    sourceImage.setScale(scale)
-    sourceImage.setCrop(baseRegion.x, baseRegion.y, baseRegion.width, baseRegion.height)
+    // Create sprite from full source image (simplified)
+    stationBody = scene.add.image(0, 0, 'five-stations')
+    stationBody.setDisplaySize(80, 80) // Scale to 80x80
     
     // Apply color tint
     const colorTint = getColorTint(station.colorVariant)
-    sourceImage.setTint(colorTint)
+    stationBody.setTint(colorTint)
     
-    // Render to texture
-    renderTexture.draw(sourceImage, 40, 40)
+    console.log(`✅ Created sprite station: ${station.stationType}-${station.colorVariant} with tint: ${colorTint.toString(16)}`)
+  } else if (scene.textures.exists('more-stations')) {
+    console.log(`✅ Using more-stations image for ${station.stationType}`)
     
-    // Use the rendered texture as our station body
-    stationBody = renderTexture
+    // Create sprite from more-stations image
+    stationBody = scene.add.image(0, 0, 'more-stations')
+    stationBody.setDisplaySize(80, 80) // Scale to 80x80
     
-    // Clean up temporary image
-    sourceImage.destroy()
+    // Apply color tint
+    const colorTint = getColorTint(station.colorVariant)
+    stationBody.setTint(colorTint)
     
-    console.log(`✅ Created sprite station: ${station.stationType}-${station.colorVariant}`)
+    console.log(`✅ Created sprite station: ${station.stationType}-${station.colorVariant} with tint: ${colorTint.toString(16)}`)
   } else {
     // Fallback to geometric shape
     console.warn(`Sprite config not found for station type ${station.stationType}, using fallback`)
@@ -244,8 +242,8 @@ const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onIn
     }
   }
   
-  // Station identifier
-  const stationEmoji = scene.add.text(0, -5, station.emoji, { fontSize: '32px' }).setOrigin(0.5)
+  // Station identifier (smaller and positioned to not cover sprite)
+  const stationEmoji = scene.add.text(35, -35, station.emoji, { fontSize: '16px' }).setOrigin(0.5)
   
   // Station label with space theme
   const stationLabel = scene.add.text(0, 50, station.name, { 
@@ -385,9 +383,27 @@ export class SkillSpaceScene extends Phaser.Scene {
   preload(): void {
     preloadPlayerAssets(this)
     
-    // Load space station sprite sheets
-    this.load.image('five-stations', 'src/assets/images/Five Intricate Space Stations in Orbit.png')
-    this.load.image('more-stations', 'src/assets/images/More Space Stations.png')
+    // Debug: Log what we're trying to load
+    console.log('🔄 Preloading space station images...')
+    
+    // Load space station sprite sheets from public folder
+    this.load.image('five-stations', 'Five Intricate Space Stations in Orbit.png')
+    this.load.image('more-stations', 'More Space Stations.png')
+    
+    // Add load event listeners for debugging
+    this.load.on('filecomplete-image-five-stations', () => {
+      console.log('✅ five-stations loaded successfully!')
+    })
+    
+    this.load.on('filecomplete-image-more-stations', () => {
+      console.log('✅ more-stations loaded successfully!')
+    })
+    
+    this.load.on('loaderror', (file: any) => {
+      console.error('❌ Failed to load:', file.key, file.src)
+    })
+    
+    console.log('🔄 Image loading setup complete')
   }
 
   create(): void {

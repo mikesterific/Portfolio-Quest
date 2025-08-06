@@ -1,109 +1,71 @@
-# Technical Context - Resume Game
+# Technical Context - Portfolio Quest
 
-## Technology Decisions
+## Development Environment
 
-### Frontend Framework
-- **Primary**: Phaser.js for 2D game interface and animations
-- **UI Management**: Vue.js 3 for modals and portfolio components
-- **Hybrid Approach**: Phaser for game world + Vue for popup modals
-- **Build Tool**: Vite for fast development and optimized builds
+### Node.js Version Requirement
+- **Required**: Node.js v20+ (for Vite compatibility)
+- **Issue**: Node.js v18 causes `crypto.hash is not a function` error with Vite
+- **Solution**: Use nvm to switch to Node v20
 
-### Development Tools
-- **Game Engine**: Phaser.js (open-source, web-based game framework)
-- **Build Tool**: Vite (fast development server and optimized builds)
-- **Art Creation**: Aseprite ($20) or free alternatives like Pixel Studio
-- **Animation**: Phaser's built-in animation system + GSAP for UI animations
-- **Design**: Figma for UI elements and planning
+```bash
+# Switch to Node.js v20 (if available)
+nvm use 20.19.1
 
-### Backend Options
-- **Static**: Pure frontend with JSON data files
-- **Dynamic**: Node.js + Express + Firebase/MongoDB (if content management needed)
-- **Assets**: Cloudinary or AWS S3 for media hosting
+# Or install and use latest v20 if not available
+nvm install 20
+nvm use 20
 
-## Technical Requirements
-
-### Performance
-- 60 FPS on large displays via HDMI
-- High-resolution canvas (1920x1080+) with scalable assets
-- Optimized loading with compressed images and minified code
-- Smooth animations without performance degradation
-
-### Display Optimization
-- Responsive design for multiple screen sizes
-- HDMI-specific optimization for TV/monitor display
-- Full-screen capability for presentations
-- High-DPI support for 4K displays
-
-### Accessibility
-- Keyboard navigation (arrow keys for movement)
-- Touch control support for mobile
-- "Skip game" option for traditional portfolio view
-- High-contrast colors and readable text
-- Sound/music toggle options
-
-## Infrastructure Needs
-- **Hosting**: Netlify or Vercel for fast, free deployment
-- **CDN**: Asset delivery optimization for global access
-- **Domain**: Professional domain for business use
-- **Analytics**: Basic tracking for visitor engagement insights
-
-## Dependencies
-### Core Libraries
-- Phaser.js (game engine)
-- Vue.js 3 (UI components and reactivity)
-- Vite (build tool and dev server)
-- GSAP (animations)
-
-### Asset Dependencies
-- Pixel-art sprite sheets and tilesets
-- Sound effects and background music (optional)
-- Portfolio images and project media
-- Résumé content and formatting
-
-### Development Dependencies
-- **Node.js Version**: v20.x required (use `nvm use 20` to switch)
-  - Fixes crypto.hash compatibility issues in Vite
-  - Required for proper development server functionality
-- Vite (primary build tool)
-- Vue 3 CLI or create-vue for project scaffolding
-- Asset optimization tools (built into Vite)
-- Testing frameworks for cross-device compatibility (Vitest for unit tests)
-
-## Functional Programming Implementation (NEW)
-
-### Code Architecture Improvements
-- **Functional Scene Design**: Phaser scenes now use functional patterns within class structure
-- **Pure Function Utilities**: Shared mathematical and logic functions across scenes
-- **Factory Pattern Implementation**: Consistent object creation through factory functions
-- **State Management**: Centralized state interfaces replacing scattered properties
-
-### Technical Benefits Achieved
-- **Better Testability**: Pure functions can be unit tested in isolation
-- **Improved Maintainability**: Shared utilities reduce code duplication across scenes
-- **Enhanced Type Safety**: TypeScript interfaces for all data structures
-- **Reduced Coupling**: Clean separation between data, behavior, and Phaser integration
-
-### Shared Utility Functions
-```typescript
-// Cross-scene utilities implemented
-- calculateDistance(): Distance calculations for proximity detection
-- findNearestObject(): Generic nearest object detection algorithm
-- updatePlayerVelocity(): Standardized player movement logic
-- createPlayer(): Consistent player object creation
-
-// Factory functions for game objects
-- createSkillNPC(), createResumeBook(), createProjectChest()
-- createPortal(): Standardized portal creation with consistent behavior
-- setupWorldBackground(): Reusable background setup patterns
+# Set as default (optional)
+nvm alias default 20
 ```
 
-## Technical Constraints
-- Web-based only (no native app development)
-- Browser compatibility requirements (modern browsers)
-- File size optimization for fast loading
-- Mobile performance considerations
-- Professional appearance requirements (no overly cartoonish elements)
-- Sound/animation toggles for business contexts
+### Development Server
+```bash
+# After switching to Node v20
+npm run dev
+```
 
----
-*Part of Memory Bank System*
+## Core Technologies
+
+### Frontend Framework
+- **Vue 3** with Composition API
+- **TypeScript** for type safety
+- **Vite** for build tooling and dev server
+
+### Game Engine
+- **Phaser.js 3** for interactive portfolio game
+- **Hybrid Architecture**: Vue 3 + Phaser integration
+- **Event Bridge**: Communication between Vue and Phaser
+
+### Asset Management
+- **Space Station Sprites**: CSS Sprite Maps from source images
+  - `Five Intricate Space Stations in Orbit.png` (1024x1024)
+  - `More Space Stations.png` (1536x1024)
+- **Color Tinting**: Dynamic skill-based coloring
+- **Performance**: 80x80px sprites, 60 FPS target
+
+### Space Station Sprite System
+- **Sprite Maps**: Extract regions from source images using coordinates
+- **Color Variants**: 8 skill-specific color tints
+- **Render Textures**: Dynamic sprite generation and tinting
+- **Fallback System**: Geometric shapes if sprites fail to load
+
+## Known Issues & Solutions
+
+### Node.js v18 Compatibility
+**Problem**: `TypeError: crypto.hash is not a function`
+**Solution**: `nvm use 20.19.1` before running dev server
+
+### Vite Cache Issues
+**Problem**: Stale cache causing build errors
+**Solution**: `rm -rf node_modules/.vite`
+
+### Asset Loading
+**Problem**: Large image files affecting performance
+**Solution**: Sprite maps with region cropping
+
+## Performance Optimizations
+- Sprite maps vs individual files (reduces HTTP requests)
+- 80x80px target size for consistent rendering
+- Color tinting instead of multiple asset variants
+- Render textures for dynamic sprite generation
