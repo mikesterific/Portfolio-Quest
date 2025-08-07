@@ -33,8 +33,10 @@ const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObj
   playerBody.setCollideWorldBounds(true)
   playerBody.setDrag(PLAYER_CONFIG.DRAG)
   
-  // Add rotation state tracking
-  player.setData('targetRotation', 0)
+  // Add rotation state tracking - start facing left
+  const initialRotation = 3 * Math.PI / 2 // 270 degrees = facing left (sprite faces up by default)
+  player.setRotation(initialRotation)
+  player.setData('targetRotation', initialRotation)
   player.setData('rotationSpeed', PLAYER_CONFIG.ROTATION_SPEED)
   
   // Add engine state tracking

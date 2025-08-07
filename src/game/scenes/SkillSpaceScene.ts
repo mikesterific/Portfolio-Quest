@@ -61,7 +61,7 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     name: 'Testing Systems\nPlatform', 
     emoji: '🧪', 
     x: 320, 
-    y: 880, 
+    y: 780, 
     category: 'testing',
     stationType: 'A',
     colorVariant: 'green',
@@ -88,7 +88,7 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'tooling',
     name: 'Tooling\nPlatform', 
     emoji: '⚙️', 
-    x: 120, 
+    x: 220, 
     y: 380, 
     category: 'tooling',
     stationType: 'C',
@@ -114,7 +114,7 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'security',
     name: 'Security\nFortress', 
     emoji: '🔒', 
-    x: 650, 
+    x: 850, 
     y: 520, 
     category: 'security',
     stationType: 'B',
@@ -129,8 +129,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'ai',
     name: 'AI Research\nStation', 
     emoji: '🧠', 
-    x: 480, 
-    y: 120, 
+    x: 580, 
+    y: 320, 
     category: 'ai',
     stationType: 'D',
     colorVariant: 'cyan',
@@ -142,8 +142,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'leadership',
     name: 'Leadership\nCenter', 
     emoji: '🎤', 
-    x: 1020, 
-    y: 200, 
+    x: 1120, 
+    y: 300, 
     category: 'leadership',
     stationType: 'C',
     colorVariant: 'gold',
@@ -445,7 +445,7 @@ export class SkillSpaceScene extends Phaser.Scene {
 
   private initializeScene(): void {
     const { width, height } = this.scale
-    
+     
     // Setup space background
     setupSpaceBackground(this)
     
