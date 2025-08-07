@@ -43,7 +43,7 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'frontend',
     name: 'Frontend Development\nStation', 
     emoji: '👨‍💻', 
-    x: 150, 
+    x: 1650, 
     y: 250, 
     category: 'frontend',
     stationType: 'A',
@@ -57,7 +57,7 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     name: 'Testing Systems\nPlatform', 
     emoji: '🧪', 
     x: 320, 
-    y: 480, 
+    y: 880, 
     category: 'testing',
     stationType: 'A',
     colorVariant: 'green',
@@ -69,8 +69,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'architecture',
     name: 'Architecture\nHub', 
     emoji: '📦', 
-    x: 180, 
-    y: 680, 
+    x: 1420, 
+    y: 880, 
     category: 'architecture',
     stationType: 'B',
     colorVariant: 'orange',
@@ -84,8 +84,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'tooling',
     name: 'Tooling\nPlatform', 
     emoji: '⚙️', 
-    x: 920, 
-    y: 280, 
+    x: 120, 
+    y: 380, 
     category: 'tooling',
     stationType: 'C',
     colorVariant: 'purple',
@@ -97,8 +97,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'devops',
     name: 'DevOps\nCommand', 
     emoji: '📡', 
-    x: 1100, 
-    y: 520, 
+    x: 1000, 
+    y: 820, 
     category: 'devops',
     stationType: 'E',
     colorVariant: 'red',
@@ -110,8 +110,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'security',
     name: 'Security\nFortress', 
     emoji: '🔒', 
-    x: 850, 
-    y: 720, 
+    x: 650, 
+    y: 520, 
     category: 'security',
     stationType: 'B',
     colorVariant: 'gray',
@@ -138,8 +138,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'leadership',
     name: 'Leadership\nCenter', 
     emoji: '🎤', 
-    x: 720, 
-    y: 160, 
+    x: 1020, 
+    y: 200, 
     category: 'leadership',
     stationType: 'C',
     colorVariant: 'gold',
@@ -444,8 +444,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     // Setup space background
     setupSpaceBackground(this)
     
-    // Create player
-    this.state.player = createPlayer(this, width / 2, height / 2)
+    // Create player - start on right side, vertically centered
+    this.state.player = createPlayer(this, width - 150, height / 2)
     
     // Create space stations
     this.state.spaceStations = this.add.group()
