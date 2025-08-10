@@ -11,6 +11,7 @@ interface SceneState {
   portals: Phaser.GameObjects.Group | null
   cursors: Phaser.Types.Input.Keyboard.CursorKeys | null
   interactionPrompt: Phaser.GameObjects.Text | null
+  healthText: Phaser.GameObjects.Text | null
   nearestStation: Phaser.GameObjects.GameObject | null
   nearestPortal: Phaser.GameObjects.GameObject | null
   isDocking: boolean
@@ -20,6 +21,11 @@ interface SceneState {
   enemies: Phaser.GameObjects.Group | null
   lasers: Phaser.GameObjects.Group | null
   laserTimer: Phaser.Time.TimerEvent | null
+  enemyLasers: Phaser.GameObjects.Group | null
+  enemyLaserTimer: Phaser.Time.TimerEvent | null
+  playerHealth: number
+  maxPlayerHealth: number
+  isPlayerInvulnerable: boolean
 }
 
 interface SpaceStationData {
@@ -389,17 +395,32 @@ const ensureLaserTexture = (scene: Phaser.Scene): void => {
   g.destroy()
 }
 
+// Utility to generate an enemy laser texture (red) if not present
+const ensureEnemyLaserTexture = (scene: Phaser.Scene): void => {
+  if (scene.textures.exists('enemy-laser')) return
+  const g = scene.add.graphics({ x: 0, y: 0 })
+  g.clear()
+  g.fillStyle(0xff4d3a, 1)
+  g.fillRoundedRect(0, 0, 6, 28, 3)
+  g.generateTexture('enemy-laser', 6, 28)
+  g.destroy()
+}
+
 /**
  * Skills Space Scene - Interactive space command center showcasing technical skills
  * Space stations represent different skill categories in organized sectors
  */
 export class SkillSpaceScene extends Phaser.Scene {
+  private static readonly PLAYER_MAX_HEALTH = 3
+  private static readonly PLAYER_INVULNERABILITY_MS = 800
+
   private state: SceneState = {
     player: null,
     spaceStations: null,
     portals: null,
     cursors: null,
     interactionPrompt: null,
+    healthText: null,
     nearestStation: null,
     nearestPortal: null,
     isDocking: false,
@@ -408,7 +429,12 @@ export class SkillSpaceScene extends Phaser.Scene {
     isModalOpen: false,
     enemies: null,
     lasers: null,
-    laserTimer: null
+    laserTimer: null,
+    enemyLasers: null,
+    enemyLaserTimer: null,
+    playerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
+    maxPlayerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
+    isPlayerInvulnerable: false
   }
 
   constructor() {
@@ -430,6 +456,9 @@ export class SkillSpaceScene extends Phaser.Scene {
 
     // Load explosion sprite (note: file name is intentionally spelled as in asset path)
     this.load.image('enemy-explosion', 'src/assets/images/emeny-explode.png')
+
+    // Load hero explosion sprite
+    this.load.image('hero-explosion', 'src/assets/images/HeroShipExplodes.png')
     
     // Add load event listeners for debugging
     this.load.on('filecomplete', (key: string) => {
@@ -441,6 +470,9 @@ export class SkillSpaceScene extends Phaser.Scene {
       }
       if (key === 'enemy-explosion') {
         console.log('✅ enemy-explosion loaded successfully!')
+      }
+      if (key === 'hero-explosion') {
+        console.log('✅ hero-explosion loaded successfully!')
       }
     })
     
@@ -487,6 +519,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     ensureLaserTexture(this)
     this.state.lasers = this.add.group()
 
+    // Enemy lasers
+    ensureEnemyLaserTexture(this)
+    this.state.enemyLasers = this.add.group()
+
     // Create enemies group and a starter enemy
     this.state.enemies = this.add.group()
     const enemyOffset = 250
@@ -500,6 +536,9 @@ export class SkillSpaceScene extends Phaser.Scene {
     enemy.setData('isEnemy', true)
     this.state.enemies.add(enemy)
 
+    // Enemy periodic firing
+    this.state.enemyLaserTimer = this.time.addEvent({ delay: 800, loop: true, callback: () => this.fireEnemyLaserAtPlayer() })
+    
     // Lasers are fired manually when SPACE is held
     
     // Create space stations
@@ -532,6 +571,17 @@ export class SkillSpaceScene extends Phaser.Scene {
         this.state.lasers,
         this.state.enemies,
         this.handleLaserEnemyOverlap as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+        undefined,
+        this
+      )
+    }
+
+    // Enemy laser vs Player collision detection
+    if (this.state.enemyLasers && this.state.player) {
+      this.physics.add.overlap(
+        this.state.enemyLasers,
+        this.state.player,
+        this.handleEnemyLaserHitPlayer as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
         undefined,
         this
       )
@@ -695,6 +745,17 @@ export class SkillSpaceScene extends Phaser.Scene {
       fontSize: '16px',
       color: '#95A5A6'
     })
+
+    // Health display (top-left)
+    this.state.healthText = this.add.text(24, 24, '', {
+      fontSize: '22px',
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+      fontStyle: 'bold',
+      color: '#FF6B6B',
+      stroke: '#000000',
+      strokeThickness: 3
+    }).setDepth(100)
+    this.updateHealthUI()
   }
 
   update(): void {
@@ -716,6 +777,18 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (this.state.lasers) {
       const now = this.time.now
       this.state.lasers.children.each((laserObj: Phaser.GameObjects.GameObject) => {
+        const createdAt = laserObj.getData('createdAt') as number | undefined
+        if (createdAt && now - createdAt > 2500) {
+          laserObj.destroy()
+        }
+        return false as unknown as boolean | null
+      }, this)
+    }
+
+    // Cleanup enemy lasers after lifetime
+    if (this.state.enemyLasers) {
+      const now = this.time.now
+      this.state.enemyLasers.children.each((laserObj: Phaser.GameObjects.GameObject) => {
         const createdAt = laserObj.getData('createdAt') as number | undefined
         if (createdAt && now - createdAt > 2500) {
           laserObj.destroy()
@@ -833,5 +906,94 @@ export class SkillSpaceScene extends Phaser.Scene {
       ease: 'Cubic.Out',
       onComplete: () => explosion.destroy()
     })
+  }
+
+  private spawnHeroExplosionAt = (x: number, y: number): void => {
+    const explosion = this.add.image(x, y, 'hero-explosion')
+    explosion.setDepth(50)
+    explosion.setBlendMode(Phaser.BlendModes.ADD)
+    explosion.setDisplaySize(180, 180)
+    explosion.setAlpha(1)
+
+    this.tweens.add({
+      targets: explosion,
+      scale: { from: 0.5, to: 1.0 },
+      alpha: { from: 1, to: 0 },
+      duration: 600,
+      ease: 'Cubic.Out',
+      onComplete: () => explosion.destroy()
+    })
+  }
+
+  private fireEnemyLaserAtPlayer = (): void => {
+    if (!this.state.player || !this.state.enemies || !this.state.enemyLasers) return
+    const enemySprite = (this.state.enemies.children.entries[0] as Phaser.GameObjects.Sprite) || null
+    if (!enemySprite) return
+
+    // Spawn from the enemy's nose and fire straight ahead (enemy currently faces right)
+    const rotation = enemySprite.rotation
+    const forward = new Phaser.Math.Vector2(Math.sin(rotation), -Math.cos(rotation)).normalize()
+    const noseOffset = (enemySprite.displayHeight / 2) - 6
+    const spawnX = enemySprite.x + forward.x * noseOffset
+    const spawnY = enemySprite.y + forward.y * noseOffset
+
+    const laser = this.add.sprite(spawnX, spawnY, 'enemy-laser')
+    laser.setBlendMode(Phaser.BlendModes.ADD)
+    laser.setDepth(9)
+    this.physics.add.existing(laser)
+    laser.setData('createdAt', this.time.now)
+
+    // Velocity straight ahead in the enemy's facing direction
+    const body = laser.body as Phaser.Physics.Arcade.Body
+    const speed = 700
+    body.setVelocity(forward.x * speed, forward.y * speed)
+
+    // Orient laser to match enemy's facing
+    laser.rotation = rotation
+
+    this.state.enemyLasers.add(laser)
+  }
+
+  private handleEnemyLaserHitPlayer = (
+    enemyLaserObj: Phaser.GameObjects.GameObject,
+    playerObj: Phaser.GameObjects.GameObject
+  ): void => {
+    const laser = enemyLaserObj as Phaser.GameObjects.Sprite
+    if (laser && laser.active) laser.destroy()
+    const player = playerObj as Phaser.GameObjects.Sprite
+    if (!player) return
+    this.damagePlayer(1)
+  }
+
+  private updateHealthUI(): void {
+    if (!this.state.healthText) return
+    this.state.healthText.setText(`Health: ${this.state.playerHealth}/${this.state.maxPlayerHealth}`)
+  }
+
+  private damagePlayer(amount: number): void {
+    if (!this.state.player) return
+    if (this.state.isPlayerInvulnerable) return
+
+    this.state.playerHealth = Math.max(0, this.state.playerHealth - amount)
+    this.updateHealthUI()
+
+    // Feedback: explosion + brief flicker and invulnerability window
+    this.spawnHeroExplosionAt(this.state.player.x, this.state.player.y)
+    this.state.isPlayerInvulnerable = true
+    this.tweens.add({
+      targets: this.state.player,
+      alpha: { from: 0.3, to: 1 },
+      duration: 150,
+      yoyo: true,
+      repeat: 3
+    })
+    this.time.delayedCall(SkillSpaceScene.PLAYER_INVULNERABILITY_MS, () => {
+      this.state.isPlayerInvulnerable = false
+    })
+
+    // If health depleted, soften controls feedback (no hard game over yet)
+    if (this.state.playerHealth <= 0) {
+      // Optional: further feedback; currently just ensures invulnerability window
+    }
   }
 }

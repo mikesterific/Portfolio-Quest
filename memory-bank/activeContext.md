@@ -16,6 +16,10 @@
 - **Status**: FULLY COMPLETE - Live and functional
 
 **New Initiative (Optional)**: Space Combat Mini-Feature
+- Player lasers collide with enemies; explosion shown on impact.
+- Enemy fires a single nose-mounted laser straight ahead; hero explosion on hit.
+- Current timers: player fire repeat 140ms; enemy fire 800ms; speeds: player 800px/s, enemy 700px/s.
+- Next candidates: enemy movement/patrol AI; combat toggle in UI; basic health counters.
 - Enemy foe introduced in Skills Space scene (nose-to-nose with hero)
 - Controls: `D` = dock/undock/portal, `SPACE` = hold to fire dual lasers
 - Lasers: parallel straight shots from wing mounts; tuned tighter spacing

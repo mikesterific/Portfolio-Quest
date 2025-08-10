@@ -1,5 +1,14 @@
 # Build Progress
 
+## January 10, 2025: Enemy Lasers, Collisions, and Explosions ✅
+- Player lasers now register hits on enemies; on impact we spawn `enemy-explosion` using `src/assets/images/emeny-explode.png` and destroy the enemy.
+- Enemy firing implemented: single red laser emitted from the nose, traveling straight ahead based on enemy rotation. Speed ~700px/s, fires every 800ms.
+- Hero hit reaction: on enemy laser overlap with the player, we spawn `hero-explosion` using `src/assets/images/HeroShipExplodes.png`.
+- UI hint updated: “WASD/Arrows: Navigate | SPACE: Fire lasers | D: Dock/Undock/Interact”.
+- Tweaked explosion animation timing/scale for cleaner look (0.1 → 0.5 scale, 550ms fade).
+- Notes: the enemy explosion file is spelled `emeny-explode.png` in the project; loaders reference this exact filename.
+- Type-check: ✅ Clean.
+
 ## January 9, 2025: Controls Update + Hold-to-Fire Lasers ✅
 - Dock/Interact key remapped from SPACE → `D`
 - SPACE now fires dual lasers from wing mounts; hold to sustain fire, release to stop

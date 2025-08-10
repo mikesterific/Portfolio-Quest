@@ -76,6 +76,8 @@ npm run dev
 - `SPACE`: Fire lasers; holding creates a short-interval repeat until released
 
 ## Laser System
+- Player lasers: procedural `laser-beam` texture (cyan), dual emitters near wing roots; velocity along forward vector.
+- Enemy lasers: procedural `enemy-laser` texture (red), single emitter at nose, velocity straight along enemy facing (uses sprite rotation).
 - Procedural texture `laser-beam` (6x28) with additive blend
 - Dual emitters offset near wing roots; aligned to player rotation (forward vector)
 - Lifetime cleanup (~2.5s) to prevent buildup

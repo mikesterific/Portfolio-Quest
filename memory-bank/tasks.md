@@ -282,8 +282,8 @@ With the Skills Space Scene transformation complete, potential next enhancements
 - [x] Input: Remap docking to `D`; SPACE = hold-to-fire lasers
 - [x] Dual parallel lasers from wing mounts; straight ahead, adjustable offset
 - [ ] Basic enemy movement/AI (advance/patrol)
-- [ ] Player projectiles (laser/bullets) with cooldown
-- [ ] Collision + simple health system (enemy + player)
+- [x] Player projectiles (laser/bullets) with cooldown (SPACE hold-to-fire implemented)
+- [x] Collision + simple health system (enemy destroyed on hit; hero hit spawns explosion)
 - [ ] Toggle to enable/disable combat in UI
 - [ ] Minimal SFX with global sound toggle support
 
