@@ -3,6 +3,12 @@ import gameEventBridge from '../GameEventBridge'
 import { createPlayer, updatePlayerVelocity, preloadPlayerAssets, findNearestObject } from '../systems/PlayerSystem'
 import { spaceStationConfigs, getStationConfig, stationColorPalette } from '@/assets/images/space-stations/station-data'
 import { getColorTint } from '@/assets/images/space-stations/sprite-map-config'
+import { 
+  ShieldMapManager, 
+  CollisionLayer, 
+  CollisionLayerHelper
+} from '../systems/ShieldMappingSystem'
+import type { ShieldZoneConfig } from '../systems/ShieldMappingSystem'
 
 // Types for scene state
 interface SceneState {
@@ -27,6 +33,7 @@ interface SceneState {
   maxPlayerHealth: number
   isPlayerInvulnerable: boolean
   shields: Phaser.GameObjects.Group | null
+  shieldMapManager: ShieldMapManager | null
 }
 
 interface SpaceStationData {
@@ -556,7 +563,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     playerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
     maxPlayerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
     isPlayerInvulnerable: false,
-    shields: null
+    shields: null,
+    shieldMapManager: null
   }
 
   constructor() {
@@ -636,6 +644,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.player = createPlayer(this, width - 150, height / 2)
     // Set player depth to appear above other objects
     this.state.player.setDepth(10)
+    // Set collision layer for player
+    CollisionLayerHelper.setCollisionLayer(this.state.player, CollisionLayer.PLAYER_SHIP)
 
     // Prepare laser assets/group
     ensureLaserTexture(this)
@@ -657,6 +667,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     enemy.setRotation(Math.PI / 2) // face right, toward the hero who faces left
     enemy.setData('isEnemy', true)
     this.state.enemies.add(enemy)
+    // Set collision layer for enemy ship
+    CollisionLayerHelper.setCollisionLayer(enemy, CollisionLayer.ENEMY_SHIP)
 
     // Enemy periodic firing
     this.state.enemyLaserTimer = this.time.addEvent({ delay: 800, loop: true, callback: () => this.fireEnemyLaserAtPlayer() })
@@ -673,11 +685,25 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.state.spaceStations!.add(stationObject)
     })
     
+    // Initialize Shield Mapping System
+    this.state.shieldMapManager = new ShieldMapManager(this)
+    
     // Create shields for each station
     this.state.shields = this.add.group()
     stations.forEach(station => {
       const shield = createStationShield(this, station, station.x, station.y)
       this.state.shields!.add(shield)
+      
+      // Register shield with mapping system
+      const shieldConfig: ShieldZoneConfig = {
+        dockingRadius: 50,       // Inner zone - allows ships to dock
+        barrierRadius: 90,       // Middle zone - blocks projectiles (matches visual shield)
+        detectionRadius: 120,    // Outer zone - early detection
+        stationId: station.id,
+        position: new Phaser.Math.Vector2(station.x, station.y),
+        isActive: true
+      }
+      this.state.shieldMapManager!.registerShield(station.id, shieldConfig)
     })
 
     // Setup controls
@@ -739,6 +765,30 @@ export class SkillSpaceScene extends Phaser.Scene {
           this
         )
       }
+    }
+
+    // Optional: Block enemy ships from entering docking zones
+    if (this.state.enemies && this.state.shieldMapManager) {
+      // Simple periodic check for enemy vs shield barrier
+      this.time.addEvent({
+        delay: 200,
+        loop: true,
+        callback: () => {
+          const enemySprite = (this.state.enemies!.children.entries[0] as Phaser.GameObjects.Sprite) || null
+          if (!enemySprite) return
+          const enemyPos = new Phaser.Math.Vector2(enemySprite.x, enemySprite.y)
+          const result = this.state.shieldMapManager!.getBlockingCollision(enemyPos, CollisionLayer.ENEMY_SHIP)
+          if (result && result.zone) {
+            // Push enemy slightly away from barrier center
+            const fromCenter = enemyPos.clone().subtract(new Phaser.Math.Vector2(result.distance, result.distance))
+            // Simple bounce back by reversing velocity (if has body)
+            const body = enemySprite.body as Phaser.Physics.Arcade.Body
+            if (body) {
+              body.setVelocity(-body.velocity.x * 0.6, -body.velocity.y * 0.6)
+            }
+          }
+        }
+      })
     }
   }
 
@@ -858,6 +908,15 @@ export class SkillSpaceScene extends Phaser.Scene {
       } else if (this.state.nearestStation) {
         const stationData = this.state.nearestStation.getData('stationData')
         if (stationData) {
+          // Prevent docking if shields are up for this station
+          const shieldActive = this.state.shieldMapManager?.getShieldForStation(stationData.id)?.getConfig().isActive
+          if (shieldActive) {
+            if (this.state.interactionPrompt) {
+              this.state.interactionPrompt.setText('Shields up — docking disabled')
+              this.state.interactionPrompt.setVisible(true)
+            }
+            return
+          }
           this.dockWithStation(this.state.nearestStation, stationData.skillId)
         }
       }
@@ -920,12 +979,18 @@ export class SkillSpaceScene extends Phaser.Scene {
       // Handle player movement using functional approach
       updatePlayerVelocity(this.state.player, this.state.cursors, this.input.keyboard!)
 
+      // Enforce shield barrier for player ship
+      this.enforceShieldBarrierForSprite(this.state.player, CollisionLayer.PLAYER_SHIP)
+
       // Check for portal proximity
       this.updatePortalProximity()
 
       // Check for station proximity
       this.updateStationProximity()
     }
+
+    // Also enforce barrier for enemies
+    this.enforceBarrierForEnemies()
 
     // Cleanup lasers after lifetime
     if (this.state.lasers) {
@@ -980,6 +1045,18 @@ export class SkillSpaceScene extends Phaser.Scene {
     const stations = this.state.spaceStations.children.entries as Phaser.GameObjects.GameObject[]
     const nearestStation = findNearestObject(this.state.player, stations, 80)
 
+    // If any shield is active for the nearest station, prevent docking prompt
+    if (nearestStation && this.state.shieldMapManager) {
+      const stationData = nearestStation.getData('stationData')
+      const shieldSystem = this.state.shieldMapManager.getShieldForStation(stationData?.id)
+      if (shieldSystem && shieldSystem.getConfig().isActive) {
+        this.state.interactionPrompt.setText('Shields up — docking disabled')
+        this.state.interactionPrompt.setVisible(true)
+        this.state.nearestStation = null
+        return
+      }
+    }
+
     if (nearestStation !== this.state.nearestStation) {
       this.state.nearestStation = nearestStation
       
@@ -1018,6 +1095,8 @@ export class SkillSpaceScene extends Phaser.Scene {
       laser.setDepth(9)
       this.physics.add.existing(laser)
       laser.setData('createdAt', this.time.now)
+      laser.setData('isPlayerLaser', true)
+      CollisionLayerHelper.setCollisionLayer(laser, CollisionLayer.PLAYER_LASER)
 
       const body = laser.body as Phaser.Physics.Arcade.Body
       body.setAllowRotation(true)
@@ -1099,6 +1178,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     laser.setDepth(9)
     this.physics.add.existing(laser)
     laser.setData('createdAt', this.time.now)
+    laser.setData('isEnemyLaser', true)
+    CollisionLayerHelper.setCollisionLayer(laser, CollisionLayer.ENEMY_LASER)
 
     // Velocity straight ahead in the enemy's facing direction
     const body = laser.body as Phaser.Physics.Arcade.Body
@@ -1189,6 +1270,11 @@ export class SkillSpaceScene extends Phaser.Scene {
         body.enable = false
       }
       
+      // Update mapping system (shield offline)
+      if (this.state.shieldMapManager) {
+        this.state.shieldMapManager.updateShieldState(shieldConfig.stationId, false)
+      }
+      
       // Create shield destruction effect
       this.createShieldDestructionEffect(shield.x, shield.y, shieldConfig.color)
     }
@@ -1248,6 +1334,12 @@ export class SkillSpaceScene extends Phaser.Scene {
             if (body) {
               body.enable = true
             }
+            
+            // Update mapping system (shield online)
+            if (this.state.shieldMapManager) {
+              this.state.shieldMapManager.updateShieldState(shieldConfig.stationId, true)
+            }
+            
             this.createShieldReactivationEffect(shield.x, shield.y, shieldConfig.color)
           }
 
@@ -1308,5 +1400,45 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       particles.destroy()
     })
+  }
+
+  private enforceBarrierForEnemies(): void {
+    if (!this.state.enemies) return
+    this.state.enemies.children.iterate((enemyObj) => {
+      const enemy = enemyObj as Phaser.GameObjects.Sprite
+      if (!enemy) return null
+      this.enforceShieldBarrierForSprite(enemy, CollisionLayer.ENEMY_SHIP)
+      return null
+    })
+  }
+
+  private enforceShieldBarrierForSprite(sprite: Phaser.GameObjects.Sprite, layer: CollisionLayer): void {
+    if (!this.state.shieldMapManager) return
+    const position = new Phaser.Math.Vector2(sprite.x, sprite.y)
+    const blocking = this.state.shieldMapManager.getBlockingCollision(position, layer)
+    if (!blocking || !blocking.zone) return
+
+    // Compute push-out vector from shield center and clamp to just outside barrier radius
+    const shieldConfig = this.state.shieldMapManager.getShieldForStation(blocking.stationId)!.getConfig()
+    const center = shieldConfig.position
+    const toSprite = position.clone().subtract(center)
+    const currentDistance = Math.max(toSprite.length(), 0.0001)
+
+    const minDistance = blocking.zone === 'BARRIER' ? shieldConfig.barrierRadius + 2 :
+                        blocking.zone === 'DOCKING' ? shieldConfig.dockingRadius + 2 :
+                        shieldConfig.detectionRadius + 2
+
+    if (currentDistance < minDistance) {
+      const corrected = toSprite.scale(minDistance / currentDistance)
+      sprite.x = center.x + corrected.x
+      sprite.y = center.y + corrected.y
+
+      const body = sprite.body as Phaser.Physics.Arcade.Body
+      if (body) {
+        // Damp and redirect velocity outward
+        const outward = corrected.clone().normalize().scale(120)
+        body.setVelocity(outward.x, outward.y)
+      }
+    }
   }
 }
