@@ -172,3 +172,11 @@ generateRandomTrees() → TreePosition[]    // Procedural decoration
 ---
 
 *Phase 1 Reflection completed - System ready for next phase development.*
+
+---
+
+## 📌 Postscript: Shield System Debugging Insights (Aug 10, 2025)
+- Fixed a subtle Phaser `Group.children.each` behavior: returning `false` stops iteration; returning `null` (or nothing) processes all children. This was causing only one shield to update each tick.
+- Added lightweight in-scene instrumentation (floating HP labels + periodic JSON snapshots) to visualize state across all stations.
+- Regeneration is only visible after damage and a cooldown; a one-time `-1 HP` to all shields or a debug toggle makes verification immediate.
+- When reviving a destroyed shield via regen, re-enable both visibility and physics bodies to restore interactions.

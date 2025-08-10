@@ -473,35 +473,12 @@ const createShieldTexture = (scene: Phaser.Scene, color: number, state: 'healthy
 }
 
 const getShieldConfigForStation = (station: SpaceStationData): Omit<ShieldConfig, 'health' | 'lastHitTime' | 'lastRegenTime' | 'isActive' | 'stationId'> => {
-  switch (station.sector) {
-    case 'development':
-      return {
-        radius: 90,
-        maxHealth: 4,
-        color: 0x00AAFF, // Blue
-        regenerationRate: 2000 // 2 seconds per health point
-      }
-    case 'infrastructure':
-      return {
-        radius: 100,
-        maxHealth: 5,
-        color: 0xFF8800, // Orange
-        regenerationRate: 1500 // 1.5 seconds per health point
-      }
-    case 'innovation':
-      return {
-        radius: 110,
-        maxHealth: 6,
-        color: 0xAA44FF, // Purple
-        regenerationRate: 1000 // 1 second per health point
-      }
-    default:
-      return {
-        radius: 95,
-        maxHealth: 4,
-        color: 0x00AAFF,
-        regenerationRate: 2000
-      }
+  // Uniform shield behavior for all stations (match frontend station)
+  return {
+    radius: 90,
+    maxHealth: 4,
+    color: 0x00AAFF,
+    regenerationRate: 2000
   }
 }
 
@@ -541,6 +518,17 @@ const createStationShield = (scene: Phaser.Scene, station: SpaceStationData, x: 
   shieldContainer.setData('shieldConfig', shieldConfig)
   shieldContainer.setData('isShield', true)
   shieldContainer.setData('shieldSprite', shieldSprite)
+  
+  // Debug label with health above the shield
+  const debugLabel = scene.add.text(0, -baseConfig.radius - 18, `${station.id}: ${shieldConfig.health}/${shieldConfig.maxHealth}`, {
+    fontSize: '12px',
+    color: '#ecf0f1',
+    backgroundColor: '#2c3e50aa',
+    padding: { x: 6, y: 3 }
+  }).setOrigin(0.5)
+  debugLabel.setDepth(3)
+  shieldContainer.add(debugLabel)
+  shieldContainer.setData('shieldLabel', debugLabel)
   
   // Setup physics body for collision detection
   scene.physics.add.existing(shieldContainer, true) // Static body
@@ -701,6 +689,42 @@ export class SkillSpaceScene extends Phaser.Scene {
     stations.forEach(station => {
       const shield = createStationShield(this, station, station.x, station.y)
       this.state.shields!.add(shield)
+    })
+
+    // Initial debug: damage all shields by 1 so regen is observable
+    this.time.delayedCall(500, () => {
+      if (!this.state.shields) return
+      this.state.shields.children.each((obj: Phaser.GameObjects.GameObject) => {
+        const shield = obj as Phaser.GameObjects.Container
+        const cfg = shield.getData('shieldConfig') as ShieldConfig
+        if (!cfg) return null
+        this.damageShield(shield, 1)
+        return null
+      }, this)
+    })
+
+    // Periodic debug log of shield states
+    this.time.addEvent({
+      delay: 1000,
+      loop: true,
+      callback: () => {
+        if (!this.state.shields) return
+        const snapshot: Array<{ id: string; hp: number; max: number; active: boolean; sinceHitMs: number }> = []
+        const now = this.time.now
+        this.state.shields.children.each((obj: Phaser.GameObjects.GameObject) => {
+          const shield = obj as Phaser.GameObjects.Container
+          const cfg = shield.getData('shieldConfig') as ShieldConfig
+          if (!cfg) return null
+          snapshot.push({ id: cfg.stationId, hp: cfg.health, max: cfg.maxHealth, active: cfg.isActive, sinceHitMs: now - (cfg.lastHitTime || 0) })
+          const label = shield.getData('shieldLabel') as Phaser.GameObjects.Text
+          if (label) {
+            label.setText(`${cfg.stationId}: ${cfg.health}/${cfg.maxHealth}${cfg.isActive ? '' : ' (down)'}`)
+          }
+          return null
+        }, this)
+        // eslint-disable-next-line no-console
+        console.log('[ShieldDebug]', JSON.stringify(snapshot))
+      }
     })
     
     // Setup controls
@@ -958,7 +982,7 @@ export class SkillSpaceScene extends Phaser.Scene {
         if (createdAt && now - createdAt > 2500) {
           laserObj.destroy()
         }
-        return false as unknown as boolean | null
+        return null
       }, this)
     }
 
@@ -970,7 +994,7 @@ export class SkillSpaceScene extends Phaser.Scene {
         if (createdAt && now - createdAt > 2500) {
           laserObj.destroy()
         }
-        return false as unknown as boolean | null
+        return null
       }, this)
     }
 
@@ -1202,6 +1226,12 @@ export class SkillSpaceScene extends Phaser.Scene {
     // Update shield visuals based on health
     this.updateShieldVisuals(shield)
 
+    // Update debug label
+    const label = shield.getData('shieldLabel') as Phaser.GameObjects.Text
+    if (label) {
+      label.setText(`${shieldConfig.stationId}: ${shieldConfig.health}/${shieldConfig.maxHealth}${shieldConfig.isActive ? '' : ' (down)'}`)
+    }
+
     // If shield is destroyed, deactivate it
     if (shieldConfig.health <= 0) {
       shieldConfig.isActive = false
@@ -1251,7 +1281,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       const shield = shieldObj as Phaser.GameObjects.Container
       const shieldConfig = shield.getData('shieldConfig') as ShieldConfig
       
-      if (!shieldConfig) return false as unknown as boolean | null
+      if (!shieldConfig) return null
 
       const timeSinceLastHit = currentTime - (shieldConfig.lastHitTime || 0)
 
@@ -1276,11 +1306,17 @@ export class SkillSpaceScene extends Phaser.Scene {
 
           // Update visuals on each regen tick
           this.updateShieldVisuals(shield)
+
+          // Update debug label
+          const label = shield.getData('shieldLabel') as Phaser.GameObjects.Text
+          if (label) {
+            label.setText(`${shieldConfig.stationId}: ${shieldConfig.health}/${shieldConfig.maxHealth}${shieldConfig.isActive ? '' : ' (down)'}`)
+          }
+
           shield.setData('shieldConfig', shieldConfig)
         }
       }
-
-      return false as unknown as boolean | null
+      return null
     }, this)
   }
 

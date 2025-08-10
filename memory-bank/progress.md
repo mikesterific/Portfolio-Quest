@@ -44,6 +44,13 @@ This enhancement significantly improves the space combat experience:
 - **Visual Spectacle**: Professional-quality energy effects enhance the space exploration theme
 - **Portfolio Value**: Demonstrates sophisticated game system design and implementation skills
 
+### Lessons Learned (Shields, Regeneration, Iteration)
+- **Phaser each() return semantics**: Returning `false` from `Group.children.each` callbacks stops iteration. Returning `null` (or no explicit boolean) ensures all children process. This was the root cause of “only one station regenerates.”
+- **Regen visibility requires damage**: Regeneration only occurs after damage and 3s of no hits. For validation, apply a one-time `-1 HP` to all shields or add a debug toggle.
+- **Instrumentation accelerates debugging**: Floating shield health labels and periodic JSON snapshots provided immediate clarity on system-wide state.
+- **Auto-reactivation details**: When a destroyed shield regens past 0, re-enable visibility and its physics body to restore interactions.
+- **Config strategy**: Unifying shield config aids testing; sector-based configs can be restored for gameplay variety once behavior is verified.
+
 ## Previous Major Achievements
 
 ### Skills Space Scene Transformation ✅ COMPLETE  

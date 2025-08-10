@@ -108,4 +108,13 @@ createPortal(scene, portalData, onActivate) → Container
 - **Caching**: Service worker for offline functionality
 
 ---
+
+### Debugging and Validation Patterns (NEW)
+- **Phaser Group iteration semantics**: Returning `false` from `Group.children.each` stops iteration after the first item. Return `null` (or no boolean) to process all children. Use this to avoid partial updates in per-tick loops.
+- **In-scene instrumentation**: Add lightweight labels and periodic JSON snapshots to verify state across many entities simultaneously. Example: show shield HP above stations and log an array of all shield states once per second.
+- **Visibility of regeneration**: Regeneration logic only manifests after damage and a cooldown. For testing, apply a one-time `-1 HP` across entities or provide a debug toggle to force visibility.
+- **Lifecycle reactivation**: When an entity is “destroyed” (hidden/disabled) and later regens, re-enable both visibility and physics bodies to restore interactions.
+- **Config unification for isolation**: Temporarily unify per-entity configs to remove variables during debugging; restore differentiated configs after validation.
+
+---
 *Part of Memory Bank System*
