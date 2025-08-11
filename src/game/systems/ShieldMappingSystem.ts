@@ -43,6 +43,13 @@ export interface ZoneCollisionResult {
   distance: number
 }
 
+// Simple occluder for LOS (e.g., station body)
+export interface StationOccluder {
+  stationId: string
+  position: Phaser.Math.Vector2
+  radius: number
+}
+
 // Collision rules matrix
 interface CollisionLayerConfig {
   [CollisionLayer.PLAYER_SHIP]: {
@@ -188,10 +195,12 @@ export class ShieldZoneSystem {
 export class ShieldMapManager {
   private shields: Map<string, ShieldZoneSystem>
   private scene: Phaser.Scene
+  private stationOccluders: Map<string, StationOccluder>
 
   constructor(scene: Phaser.Scene) {
     this.shields = new Map()
     this.scene = scene
+    this.stationOccluders = new Map()
   }
 
   // Register a new shield system
@@ -276,6 +285,47 @@ export class ShieldMapManager {
     for (const shield of this.shields.values()) {
       if (shield.getConfig().isActive) {
         return true
+      }
+    }
+    return false
+  }
+
+  // ----- Station occluders (LOS) -----
+  registerStationOccluder(stationId: string, position: Phaser.Math.Vector2, radius: number): void {
+    this.stationOccluders.set(stationId, { stationId, position, radius })
+  }
+
+  updateStationOccluderPosition(stationId: string, newPosition: Phaser.Math.Vector2): void {
+    const occ = this.stationOccluders.get(stationId)
+    if (occ) {
+      occ.position = newPosition
+    }
+  }
+
+  removeStationOccluder(stationId: string): void {
+    this.stationOccluders.delete(stationId)
+  }
+
+  clearStationOccluders(): void {
+    this.stationOccluders.clear()
+  }
+
+  getStationOccluders(): StationOccluder[] {
+    return Array.from(this.stationOccluders.values())
+  }
+
+  // Sampled LOS check against station occluders
+  isLineBlockedByStationsWithSamples(from: Phaser.Math.Vector2, to: Phaser.Math.Vector2, samples: number = 6): boolean {
+    if (this.stationOccluders.size === 0) return false
+    const count = Math.max(3, samples)
+    for (let i = 1; i < count; i++) {
+      const t = i / count
+      const p = from.clone().lerp(to, t)
+      for (const occ of this.stationOccluders.values()) {
+        const d = Phaser.Math.Distance.Between(p.x, p.y, occ.position.x, occ.position.y)
+        if (d <= occ.radius) {
+          return true
+        }
       }
     }
     return false

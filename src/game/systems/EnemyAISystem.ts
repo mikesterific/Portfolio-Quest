@@ -558,9 +558,9 @@ export class EnemyAISystem {
     const needsLOS = time - agent.lastPerceptionCheck >= cfg.perceptionRecheckMs
     if (needsLOS && this.state.shieldManager && agent.perception.inRange && agent.perception.inFOV) {
       agent.lastPerceptionCheck = time
-      agent.perception.hasLOS = !this.isLineBlockedByShieldsWithSamples(
-        enemyPos, playerPos, cfg.losSampleCount
-      )
+      const blockedByShields = this.isLineBlockedByShieldsWithSamples(enemyPos, playerPos, cfg.losSampleCount)
+      const blockedByStations = this.state.shieldManager.isLineBlockedByStationsWithSamples(enemyPos, playerPos, cfg.losSampleCount)
+      agent.perception.hasLOS = !(blockedByShields || blockedByStations)
     }
 
     if (agent.perception.hasLOS) {

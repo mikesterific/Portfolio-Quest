@@ -676,24 +676,31 @@ export class SkillSpaceScene extends Phaser.Scene {
     
     // Initialize Shield Mapping System
     this.state.shieldMapManager = new ShieldMapManager(this)
-    
-    // Create shields for each station
-    this.state.shields = this.add.group()
-    stations.forEach(station => {
-      const shield = createStationShield(this, station, station.x, station.y)
-      this.state.shields!.add(shield)
-      
-      // Register shield with mapping system
-      const shieldConfig: ShieldZoneConfig = {
-        dockingRadius: 50,       // Inner zone - allows ships to dock
-        barrierRadius: 90,       // Middle zone - blocks projectiles (matches visual shield)
-        detectionRadius: 120,    // Outer zone - early detection
-        stationId: station.id,
-        position: new Phaser.Math.Vector2(station.x, station.y),
-        isActive: true
-      }
-      this.state.shieldMapManager!.registerShield(station.id, shieldConfig)
-    })
+ 
+     // Create shields for each station
+     this.state.shields = this.add.group()
+     stations.forEach(station => {
+       const shield = createStationShield(this, station, station.x, station.y)
+       this.state.shields!.add(shield)
+ 
+       // Register shield with mapping system
+       const shieldConfig: ShieldZoneConfig = {
+         dockingRadius: 50,       // Inner zone - allows ships to dock
+         barrierRadius: 90,       // Middle zone - blocks projectiles (matches visual shield)
+         detectionRadius: 120,    // Outer zone - early detection
+         stationId: station.id,
+         position: new Phaser.Math.Vector2(station.x, station.y),
+         isActive: true
+       }
+       this.state.shieldMapManager!.registerShield(station.id, shieldConfig)
+
+      // Register station body as LOS occluder (radius approximates 60px for 120px display size)
+      this.state.shieldMapManager!.registerStationOccluder(
+        station.id,
+        new Phaser.Math.Vector2(station.x, station.y),
+        60
+      )
+     })
 
     // Setup controls
     this.setupControls()
