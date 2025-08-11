@@ -1,5 +1,6 @@
+// EnemyAISystem.ts
 import Phaser from 'phaser'
-import { ShieldMapManager, CollisionLayer, type StationOccluder } from './ShieldMappingSystem'
+import { ShieldMapManager, CollisionLayer } from './ShieldMappingSystem'
 
 /**
  * Enemy AI System - Centralized enemy behavior management for Portfolio Quest
@@ -61,11 +62,6 @@ export interface EnemyAgent {
     direction: 1 | -1
     lastFlipTime: number
   }
-  ingress: {
-    active: boolean
-    path: Phaser.Math.Vector2[]
-    currentIndex: number
-  }
   health: number
   isActive: boolean
 }
@@ -81,26 +77,24 @@ interface EnemyAIState {
   maxEnemies: number
   spawnRadius: number
   enemyLasers: Phaser.GameObjects.Group | null
-  avoidShieldsEnabled: boolean
-  avoidStationsEnabled: boolean
 }
 
-// Default enemy configuration (REBALANCED)
+// Default enemy configuration (rebalanced)
 const DEFAULT_ENEMY_CONFIG: EnemyConfig = {
-  speed: 180,               // was 120
-  acceleration: 600,        // was 60
-  drag: 40,                 // was 200
-  turnRate: Math.PI,        // 180 deg/sec
+  speed: 180,                // was 120
+  acceleration: 600,         // was 60
+  drag: 40,                  // was 200 (linear drag)
+  turnRate: Math.PI,         // 180 deg/sec
   engagementDistance: 400,
   minDistance: 140,
   maxDistance: 520,
-  fireRate: 1200,           // 1.2s
+  fireRate: 1200,            // 1.2s
   health: 1,
   maxHealth: 1,
   patrolRadius: 150,
   avoidanceRadius: 80,
   sensorRange: 700,
-  fovDegrees: 120,
+  fovDegrees: 140,
   orbitRadius: 260,
   strafeSpeed: 100,
   losSampleCount: 6,
@@ -139,7 +133,21 @@ const SteeringHelpers = {
     return desired
   },
 
-  // Wander around current position (bugfix: refer to helper explicitly)
+  // Predictive pursuit (arrive to predicted target)
+  pursuit(
+    position: Phaser.Math.Vector2,
+    targetPos: Phaser.Math.Vector2,
+    targetVel: Phaser.Math.Vector2,
+    maxSpeed: number,
+    leadScale = 0.6
+  ): Phaser.Math.Vector2 {
+    const toTarget = targetPos.clone().subtract(position)
+    const lookAhead = Math.min(0.9, (toTarget.length() / Math.max(maxSpeed, 1)) * leadScale)
+    const predicted = targetPos.clone().add(targetVel.clone().scale(lookAhead))
+    return SteeringHelpers.arrive(position, predicted, maxSpeed, 100)
+  },
+
+  // Wander helper (compute a point on a circle and seek it)
   wander(position: Phaser.Math.Vector2, angle: number, radius: number, maxSpeed: number): Phaser.Math.Vector2 {
     const target = new Phaser.Math.Vector2(
       position.x + Math.cos(angle) * radius,
@@ -156,58 +164,14 @@ const SteeringHelpers = {
     avoidanceRadius: number
   ): Phaser.Math.Vector2 {
     const blocking = shieldManager.getBlockingCollision(position, CollisionLayer.ENEMY_SHIP)
+    if (!blocking || !blocking.zone) return new Phaser.Math.Vector2(0, 0)
 
-    if (!blocking || !blocking.zone) {
-      return new Phaser.Math.Vector2(0, 0)
-    }
-
-    // Get shield config to find center
     const shieldSystem = shieldManager.getShieldForStation(blocking.stationId)
     if (!shieldSystem) return new Phaser.Math.Vector2(0, 0)
 
     const shieldCenter = shieldSystem.getConfig().position
     const awayFromShield = position.clone().subtract(shieldCenter).normalize()
-
-    // Scale avoidance force based on proximity
-    const avoidanceForce = awayFromShield.scale(avoidanceRadius * 2)
-    return avoidanceForce
-  },
-
-  // Smooth avoidance around station occluders (non-colliding)
-  avoidStations(
-    position: Phaser.Math.Vector2,
-    velocity: Phaser.Math.Vector2,
-    occluders: StationOccluder[] | undefined,
-    avoidanceRadius: number
-  ): Phaser.Math.Vector2 {
-    if (!occluders || occluders.length === 0) return new Phaser.Math.Vector2(0, 0)
-
-    const lookAhead = Math.max(80, avoidanceRadius) // how far ahead to predict
-    const forward = velocity.clone().length() > 1 ? velocity.clone().normalize() : new Phaser.Math.Vector2(1, 0)
-    const aheadPoint = position.clone().add(forward.clone().scale(lookAhead))
-
-    let avoidance = new Phaser.Math.Vector2(0, 0)
-    for (const occ of occluders) {
-      const effectiveRadius = occ.radius + avoidanceRadius * 0.6
-      const distNow = Phaser.Math.Distance.Between(position.x, position.y, occ.position.x, occ.position.y)
-      const distAhead = Phaser.Math.Distance.Between(aheadPoint.x, aheadPoint.y, occ.position.x, occ.position.y)
-
-      const isThreat = distNow < effectiveRadius || distAhead < effectiveRadius
-      if (!isThreat) continue
-
-      // Repulsion away from occluder center
-      const away = position.clone().subtract(occ.position)
-      const distance = Math.max(away.length(), 1)
-      const strength = Phaser.Math.Clamp(1 - (distance / effectiveRadius), 0, 1)
-      const repulse = away.normalize().scale(avoidanceRadius * 2 * strength)
-
-      // Add mild tangential component to curve around
-      const tangent = new Phaser.Math.Vector2(-away.y, away.x).normalize().scale(avoidanceRadius * 0.6 * strength)
-
-      avoidance.add(repulse).add(tangent)
-    }
-
-    return avoidance
+    return awayFromShield.scale(avoidanceRadius * 2)
   }
 }
 
@@ -227,9 +191,7 @@ export class EnemyAISystem {
       nextAgentId: 1,
       maxEnemies: 10,
       spawnRadius: 300,
-      enemyLasers: null,
-      avoidShieldsEnabled: false,
-      avoidStationsEnabled: true
+      enemyLasers: null
     }
   }
 
@@ -253,16 +215,6 @@ export class EnemyAISystem {
     this.state.combatEnabled = enabled
   }
 
-  // Enable/disable shield avoidance for enemy ships
-  setAvoidShieldsEnabled(enabled: boolean): void {
-    this.state.avoidShieldsEnabled = enabled
-  }
-
-  // Enable/disable station avoidance for enemy ships
-  setAvoidStationsEnabled(enabled: boolean): void {
-    this.state.avoidStationsEnabled = enabled
-  }
-
   // Create a new enemy agent
   createEnemy(x: number, y: number, config: Partial<EnemyConfig> = {}): EnemyAgent {
     const enemyConfig = { ...DEFAULT_ENEMY_CONFIG, ...config }
@@ -278,7 +230,7 @@ export class EnemyAISystem {
     this.state.scene.physics.add.existing(sprite)
     const body = sprite.body as Phaser.Physics.Arcade.Body
     body.setDrag(enemyConfig.drag)
-    body.setMaxVelocity(enemyConfig.speed, enemyConfig.speed) // keep velocity within expected cap
+    body.setMaxVelocity(enemyConfig.speed, enemyConfig.speed)
 
     // Set collision layer and data
     sprite.setData('collisionLayer', CollisionLayer.ENEMY_SHIP)
@@ -299,7 +251,6 @@ export class EnemyAISystem {
       lastPerceptionCheck: 0,
       perception: { hasLOS: false, inFOV: false, inRange: false, lastSeenAt: null, lastSeenTime: 0 },
       orbit: { direction: Math.random() > 0.5 ? 1 : -1, lastFlipTime: 0 },
-      ingress: { active: false, path: [], currentIndex: 0 },
       health: enemyConfig.health,
       isActive: true
     }
@@ -308,7 +259,62 @@ export class EnemyAISystem {
     return agent
   }
 
-  // Spawn a wave of enemies
+  // ---------- Convenience edge spawners ----------
+  public spawnFromLeft(count: number = 3, padding: number = 50, jitter: number = 20): void {
+    this.spawnFromEdge('left', count, padding, jitter)
+  }
+
+  public spawnFromRight(count: number = 3, padding: number = 50, jitter: number = 20): void {
+    this.spawnFromEdge('right', count, padding, jitter)
+  }
+
+  public spawnFromTop(count: number = 3, padding: number = 50, jitter: number = 20): void {
+    this.spawnFromEdge('top', count, padding, jitter)
+  }
+
+  public spawnFromBottom(count: number = 3, padding: number = 50, jitter: number = 20): void {
+    this.spawnFromEdge('bottom', count, padding, jitter)
+  }
+
+  private spawnFromEdge(
+    edge: 'left' | 'right' | 'top' | 'bottom',
+    count: number,
+    padding: number,
+    jitter: number
+  ): void {
+    const w = this.state.scene.scale.width
+    const h = this.state.scene.scale.height
+    const toSpawn = Math.min(count, Math.max(0, this.state.maxEnemies - this.state.agents.size))
+    if (toSpawn <= 0) return
+
+    const center = new Phaser.Math.Vector2(w / 2, h / 2)
+    const target = this.state.playerTarget
+      ? new Phaser.Math.Vector2(this.state.playerTarget.x, this.state.playerTarget.y)
+      : center
+
+    const rand = (r: number) => Phaser.Math.FloatBetween(-r, r)
+
+    for (let i = 0; i < toSpawn; i++) {
+      let x = 0, y = 0
+
+      if (edge === 'left' || edge === 'right') {
+        const step = (h - padding * 2) / (toSpawn + 1)
+        y = padding + (i + 1) * step + rand(jitter)
+        x = edge === 'left' ? padding : w - padding
+      } else {
+        const step = (w - padding * 2) / (toSpawn + 1)
+        x = padding + (i + 1) * step + rand(jitter)
+        y = edge === 'top' ? padding : h - padding
+      }
+
+      const agent = this.createEnemy(x, y)
+      const ang = Phaser.Math.Angle.Between(x, y, target.x, target.y)
+      agent.sprite.setRotation(ang + Math.PI / 2)
+    }
+  }
+  // ---------- end spawners ----------
+
+  // Spawn a ring-ish wave around screen center
   spawnWave(count: number = 3): void {
     if (!this.state.playerTarget) return
 
@@ -320,40 +326,10 @@ export class EnemyAISystem {
       const spawnX = centerX + Math.cos(angle) * this.state.spawnRadius
       const spawnY = centerY + Math.sin(angle) * this.state.spawnRadius
 
-      // Ensure spawn is within scene bounds
       const clampedX = Phaser.Math.Clamp(spawnX, 50, this.state.scene.scale.width - 50)
       const clampedY = Phaser.Math.Clamp(spawnY, 50, this.state.scene.scale.height - 50)
 
       this.createEnemy(clampedX, clampedY)
-    }
-  }
-
-  // Spawn enemies from beyond the left side with a random path across the scene
-  spawnFromLeft(count: number = 1): void {
-    const { width, height } = this.state.scene.scale
-    for (let i = 0; i < count && this.state.agents.size < this.state.maxEnemies; i++) {
-      const spawnY = Phaser.Math.Between(60, height - 60)
-      const spawnX = -80 // off-screen left
-      const agent = this.createEnemy(spawnX, spawnY)
-
-      // Build a simple zig-zag style path moving to the right
-      const segments = 3
-      const path: Phaser.Math.Vector2[] = []
-      for (let s = 1; s <= segments; s++) {
-        const px = (width / (segments + 1)) * s + Phaser.Math.Between(-30, 30)
-        const py = Phaser.Math.Clamp(
-          spawnY + Phaser.Math.Between(-150, 150),
-          60,
-          height - 60
-        )
-        path.push(new Phaser.Math.Vector2(px, py))
-      }
-      // Final exit point beyond right edge
-      path.push(new Phaser.Math.Vector2(width + 100, Phaser.Math.Between(60, height - 60)))
-
-      agent.ingress.active = true
-      agent.ingress.path = path
-      agent.ingress.currentIndex = 0
     }
   }
 
@@ -368,9 +344,7 @@ export class EnemyAISystem {
 
   // Remove all enemies
   despawnAll(): void {
-    this.state.agents.forEach(agent => {
-      agent.sprite.destroy()
-    })
+    this.state.agents.forEach(agent => agent.sprite.destroy())
     this.state.agents.clear()
   }
 
@@ -397,7 +371,7 @@ export class EnemyAISystem {
     let desiredVelocity = this.updateBehavior(agent, position, time, delta)
 
     // Apply shield avoidance if needed
-    if (this.state.avoidShieldsEnabled && this.state.shieldManager && time - agent.lastAvoidanceTime > 200) {
+    if (this.state.shieldManager && time - agent.lastAvoidanceTime > 200) {
       const currentVelocity = new Phaser.Math.Vector2(body.velocity.x, body.velocity.y)
       const avoidance = SteeringHelpers.avoidShields(
         position,
@@ -407,24 +381,8 @@ export class EnemyAISystem {
       )
 
       if (avoidance.length() > 0) {
-        desiredVelocity = avoidance // keep simple/strong avoidance
+        desiredVelocity = avoidance // strong avoidance overrides
         agent.lastAvoidanceTime = time
-      }
-    }
-
-    // Apply smooth station avoidance (non-colliding)
-    if (this.state.avoidStationsEnabled && this.state.shieldManager) {
-      const currentVelocity = new Phaser.Math.Vector2(body.velocity.x, body.velocity.y)
-      const occluders = this.state.shieldManager.getStationOccluders()
-      const stationAvoid = SteeringHelpers.avoidStations(
-        position,
-        currentVelocity,
-        occluders,
-        agent.config.avoidanceRadius
-      )
-      if (stationAvoid.length() > 0) {
-        // Blend avoidance into desired velocity for smooth curve
-        desiredVelocity = desiredVelocity.add(stationAvoid)
       }
     }
 
@@ -442,7 +400,7 @@ export class EnemyAISystem {
   private updateBehavior(
     agent: EnemyAgent,
     position: Phaser.Math.Vector2,
-    time: number,
+    _time: number,
     delta: number
   ): Phaser.Math.Vector2 {
     if (!this.state.playerTarget) return new Phaser.Math.Vector2(0, 0)
@@ -450,29 +408,13 @@ export class EnemyAISystem {
     const playerPos = new Phaser.Math.Vector2(this.state.playerTarget.x, this.state.playerTarget.y)
     const distanceToPlayer = position.distance(playerPos)
 
-    // If no LOS and ingress is active, follow ingress path
-    if (!agent.perception.hasLOS && agent.ingress.active && agent.ingress.path.length > 0) {
-      const waypoint = agent.ingress.path[Math.min(agent.ingress.currentIndex, agent.ingress.path.length - 1)]
-      const desired = SteeringHelpers.arrive(position, waypoint, agent.config.speed, 80)
-      if (position.distance(waypoint) < 30) {
-        agent.ingress.currentIndex++
-        if (agent.ingress.currentIndex >= agent.ingress.path.length) {
-          agent.ingress.active = false
-        }
-      }
-      return desired
-    }
-
-    // State transitions: only engage when LOS is available
-    if (distanceToPlayer < agent.config.minDistance && agent.perception.hasLOS) {
+    // State transitions
+    if (distanceToPlayer < agent.config.minDistance) {
       agent.behavior = BehaviorState.EVADE
-    } else if (agent.perception.hasLOS && agent.perception.inFOV) {
-      // Engage: strafe in band, seek if far
-      if (distanceToPlayer >= agent.config.minDistance && distanceToPlayer <= agent.config.maxDistance) {
-        agent.behavior = BehaviorState.STRAFE
-      } else {
-        agent.behavior = BehaviorState.SEEK
-      }
+    } else if (agent.perception.hasLOS && distanceToPlayer >= agent.config.minDistance && distanceToPlayer <= agent.config.maxDistance) {
+      agent.behavior = BehaviorState.STRAFE
+    } else if (distanceToPlayer > agent.config.maxDistance) {
+      agent.behavior = BehaviorState.SEEK
     } else {
       agent.behavior = BehaviorState.PATROL
     }
@@ -489,8 +431,14 @@ export class EnemyAISystem {
         return SteeringHelpers.arrive(position, wanderTarget, agent.config.speed * 0.6, 80)
       }
 
-      case BehaviorState.SEEK:
-        return SteeringHelpers.arrive(position, playerPos, agent.config.speed, agent.config.minDistance)
+      case BehaviorState.SEEK: {
+        // Predictive pursuit
+        const pv = new Phaser.Math.Vector2(
+          (this.state.playerTarget?.body as Phaser.Physics.Arcade.Body)?.velocity.x || 0,
+          (this.state.playerTarget?.body as Phaser.Physics.Arcade.Body)?.velocity.y || 0
+        )
+        return SteeringHelpers.pursuit(position, playerPos, pv, agent.config.speed)
+      }
 
       case BehaviorState.STRAFE: {
         return this.computeOrbitVelocity(agent, position, playerPos)
@@ -567,22 +515,17 @@ export class EnemyAISystem {
     this.fireAtTarget(agent, playerPos, time)
   }
 
-  // Check if line of sight is blocked by shields
+  // Check if line of sight is blocked by shields (coarse)
   private isLineBlockedByShields(from: Phaser.Math.Vector2, to: Phaser.Math.Vector2): boolean {
     if (!this.state.shieldManager) return false
 
-    // Sample points along the line
     const samples = 5
     for (let i = 1; i < samples; i++) {
       const t = i / samples
       const samplePoint = from.clone().lerp(to, t)
-
       const collision = this.state.shieldManager.getBlockingCollision(samplePoint, CollisionLayer.ENEMY_LASER)
-      if (collision && collision.zone === 'BARRIER') {
-        return true
-      }
+      if (collision && collision.zone === 'BARRIER') return true
     }
-
     return false
   }
 
@@ -651,6 +594,7 @@ export class EnemyAISystem {
     this.state.maxEnemies = max
   }
 
+  // Perception with LOS fallback (works even without ShieldManager)
   private updatePerception(agent: EnemyAgent, time: number): void {
     if (!this.state.playerTarget) return
     const cfg = agent.config
@@ -670,11 +614,16 @@ export class EnemyAISystem {
 
     // Throttle LOS checks
     const needsLOS = time - agent.lastPerceptionCheck >= cfg.perceptionRecheckMs
-    if (needsLOS && this.state.shieldManager && agent.perception.inRange && agent.perception.inFOV) {
+    if (needsLOS) {
       agent.lastPerceptionCheck = time
-      const blockedByShields = this.isLineBlockedByShieldsWithSamples(enemyPos, playerPos, cfg.losSampleCount)
-      const blockedByStations = this.state.shieldManager.isLineBlockedByStationsWithSamples(enemyPos, playerPos, cfg.losSampleCount)
-      agent.perception.hasLOS = !(blockedByShields || blockedByStations)
+      if (this.state.shieldManager && agent.perception.inRange) {
+        agent.perception.hasLOS = !this.isLineBlockedByShieldsWithSamples(
+          enemyPos, playerPos, cfg.losSampleCount
+        )
+      } else {
+        // No shield system: treat LOS as true when in range
+        agent.perception.hasLOS = agent.perception.inRange
+      }
     }
 
     if (agent.perception.hasLOS) {
