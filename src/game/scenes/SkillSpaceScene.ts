@@ -806,6 +806,17 @@ export class SkillSpaceScene extends Phaser.Scene {
             this.state.isDocked = true
             this.state.dockedStation = station
             
+            // Award XP for successful docking
+            this.xpTotal += 50
+            this.updateXpUI()
+            this.animateXpGain(50)
+            
+            // Also emit event for GameUIScene
+            gameEventBridge.emitGameEvent('game:xp-changed', { 
+              amount: 50, 
+              total: this.xpTotal 
+            })
+            
             if (this.state.interactionPrompt) {
               this.state.interactionPrompt.setText('Docked! Press SPACE to undock')
               this.state.interactionPrompt.setVisible(true)

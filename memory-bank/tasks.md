@@ -455,6 +455,7 @@ Based on codebase analysis, the following collision detection systems are curren
 #### Overview of Changes
 - Add a global XP counter and lightweight UI display in `GameUIScene`.
 - Award +10 XP when a player laser destroys an enemy in `SkillSpaceScene` (single award per enemy).
+- Award +50 XP when the player successfully docks with a space station.
 - Emit an event via `GameEventBridge` (e.g., `game:xp-changed`) so the UI updates without tight coupling.
 - Reset XP on scene start for now; persistence can be a follow-up enhancement.
 
@@ -466,42 +467,58 @@ Based on codebase analysis, the following collision detection systems are curren
   - Listen to `game:xp-changed` and update `currentXp` and the text (e.g., `XP: 30`).
 - `src/game/scenes/SkillSpaceScene.ts`
   - In `handleLaserEnemyOverlap(...)`, after confirming `!enemy.getData('isDead')`, emit `game:xp-changed` with `amount: 10` and a running `total` held locally or passed through.
+  - In `dockWithStation(...)`, after successful docking completion, emit `game:xp-changed` with `amount: 50`.
   - Ensure only a single emit per enemy by leveraging the existing `isDead` guard.
 - `src/game/GameEventBridge.ts`
   - No code change required (event system is generic), but used by both scene and UI.
 
 #### Implementation Steps
-1) Types
+1) Types ✅
    - Update `GameEvents` to include `game:xp-changed`.
-2) UI Overlay
+2) UI Overlay ✅
    - In `GameUIScene`, add `xpText` element and local `currentXp` state; set to 0 on scene boot.
    - Listen to `game:xp-changed` and update `currentXp` and the text (e.g., `XP: 30`).
-3) Award on Kill
+3) Award on Kill ✅
    - In `SkillSpaceScene.handleLaserEnemyOverlap`, when removing the enemy (after the `isDead` flag is set), emit `game:xp-changed` with `amount: 10` and computed `total` (scene can track a local `xpTotal` and also emit).
-4) Duplicate Protection
+4) Award on Docking ✅
+   - In `SkillSpaceScene.dockWithStation`, after successful docking animation completion, emit `game:xp-changed` with `amount: 50`.
+5) In-Scene Display ✅
+   - Add XP text display directly in SkillSpaceScene for immediate visual feedback.
+   - Include scale animation and floating text for both kill and docking rewards.
+6) Duplicate Protection ✅
    - Rely on existing `enemy.setData('isDead', true)` to guard against double-awards when multiple lasers hit the same frame.
-5) Initialization/Reset
-   - Reset XP to 0 when `GameUIScene` starts or when `SkillSpaceScene` starts (choose one; default: `GameUIScene`).
-6) Optional polish
+   - Docking XP awarded only once per successful dock (inherent in docking animation completion).
+7) Initialization/Reset ✅
+   - Reset XP to 0 when `SkillSpaceScene` starts.
+8) Optional polish ✅
    - Small scale/color tween on `xpText` when XP increases.
+   - Floating `+10` or `+50` text with fade animation.
+
+#### XP Rewards
+- **Enemy Kill**: +10 XP per enemy destroyed
+- **Station Docking**: +50 XP per successful dock with a space station
 
 #### Potential Challenges
 - Multiple lasers colliding with the same enemy in a single frame: handled by `isDead` guard and awarding after the flag is set.
-- Cross-scene consistency: start with per-session XP in `GameUIScene`; persistence or per-scene tallies can be a future feature.
+- Multiple docking attempts: handled by existing docking state management (`isDocking` flag).
+- Cross-scene consistency: start with per-session XP in scene; persistence or per-scene tallies can be a future feature.
 
 #### Testing Strategy
 - Kill a single enemy: XP increments by +10; UI reads `XP: 10`.
+- Dock with a station: XP increments by +50; UI updates accordingly.
 - Kill multiple enemies quickly: increments correctly with no duplicate awards.
+- Dock with multiple stations: +50 XP awarded for each successful dock.
 - Toggle Combat OFF: no XP changes while enemies are not being destroyed.
 - Hot reload safety: ensure listeners reattach cleanly without doubling.
 
 #### Success Criteria
 - Clean TypeScript build; no runtime errors.
-- XP visible in UI and reliably increments by 10 per enemy destroyed.
-- No duplicate XP grants for a single enemy.
+- XP visible in UI and reliably increments by 10 per enemy destroyed and 50 per station docked.
+- No duplicate XP grants for single events.
+- Visual feedback animations work for both kill and docking rewards.
 
-**Status**: PLANNING COMPLETE — Ready for Implementation
-**Next Mode**: IMPLEMENT MODE
+**Status**: ✅ IMPLEMENTATION COMPLETE (Both Kill and Docking Rewards)
+**Next Mode**: TESTING & VALIDATION
 
 ### 🛡️ New Feature: Space Station Force Shields ✅ IMPLEMENTATION COMPLETE
 - [x] **CREATIVE PHASE**: Force shield system design and mechanics planning ✅
