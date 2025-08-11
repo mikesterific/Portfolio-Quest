@@ -9,8 +9,9 @@ import { ShieldMapManager, CollisionLayer } from './ShieldMappingSystem'
 // Behavior states for enemy AI
 export enum BehaviorState {
   IDLE = 'IDLE',
-  PATROL = 'PATROL', 
+  PATROL = 'PATROL',
   SEEK = 'SEEK',
+  STRAFE = 'STRAFE',
   EVADE = 'EVADE',
   RETREAT = 'RETREAT'
 }
@@ -29,6 +30,12 @@ export interface EnemyConfig {
   maxHealth: number
   patrolRadius: number
   avoidanceRadius: number
+  sensorRange: number
+  fovDegrees: number
+  orbitRadius: number
+  strafeSpeed: number
+  losSampleCount: number
+  perceptionRecheckMs: number
 }
 
 // Enemy agent state
@@ -42,6 +49,18 @@ export interface EnemyAgent {
   patrolAngle: number
   lastFireTime: number
   lastAvoidanceTime: number
+  lastPerceptionCheck: number
+  perception: {
+    hasLOS: boolean
+    inFOV: boolean
+    inRange: boolean
+    lastSeenAt: Phaser.Math.Vector2 | null
+    lastSeenTime: number
+  }
+  orbit: {
+    direction: 1 | -1
+    lastFlipTime: number
+  }
   health: number
   isActive: boolean
 }
@@ -59,20 +78,26 @@ interface EnemyAIState {
   enemyLasers: Phaser.GameObjects.Group | null
 }
 
-// Default enemy configuration
+// Default enemy configuration (REBALANCED)
 const DEFAULT_ENEMY_CONFIG: EnemyConfig = {
-  speed: 120,
-  acceleration: 60,
-  drag: 200,
-  turnRate: Math.PI, // 180 degrees per second
+  speed: 180,               // was 120
+  acceleration: 600,        // was 60
+  drag: 40,                 // was 200
+  turnRate: Math.PI,        // 180 deg/sec
   engagementDistance: 400,
-  minDistance: 100,
-  maxDistance: 500,
-  fireRate: 1200, // 1.2 seconds between shots
+  minDistance: 140,
+  maxDistance: 520,
+  fireRate: 1200,           // 1.2s
   health: 1,
   maxHealth: 1,
   patrolRadius: 150,
-  avoidanceRadius: 80
+  avoidanceRadius: 80,
+  sensorRange: 700,
+  fovDegrees: 140,
+  orbitRadius: 260,
+  strafeSpeed: 100,
+  losSampleCount: 6,
+  perceptionRecheckMs: 120
 }
 
 /**
@@ -95,36 +120,36 @@ const SteeringHelpers = {
   arrive(position: Phaser.Math.Vector2, target: Phaser.Math.Vector2, maxSpeed: number, slowingRadius: number = 100): Phaser.Math.Vector2 {
     const toTarget = target.clone().subtract(position)
     const distance = toTarget.length()
-    
+
     if (distance < 2) return new Phaser.Math.Vector2(0, 0)
-    
+
     let speed = maxSpeed
     if (distance <= slowingRadius) {
       speed = maxSpeed * (distance / slowingRadius)
     }
-    
+
     const desired = toTarget.normalize().scale(speed)
     return desired
   },
 
-  // Wander around current position
+  // Wander around current position (bugfix: refer to helper explicitly)
   wander(position: Phaser.Math.Vector2, angle: number, radius: number, maxSpeed: number): Phaser.Math.Vector2 {
     const target = new Phaser.Math.Vector2(
       position.x + Math.cos(angle) * radius,
       position.y + Math.sin(angle) * radius
     )
-    return this.seek(position, target, maxSpeed)
+    return SteeringHelpers.seek(position, target, maxSpeed)
   },
 
   // Avoid shield barriers
   avoidShields(
-    position: Phaser.Math.Vector2, 
+    position: Phaser.Math.Vector2,
     velocity: Phaser.Math.Vector2,
     shieldManager: ShieldMapManager,
     avoidanceRadius: number
   ): Phaser.Math.Vector2 {
     const blocking = shieldManager.getBlockingCollision(position, CollisionLayer.ENEMY_SHIP)
-    
+
     if (!blocking || !blocking.zone) {
       return new Phaser.Math.Vector2(0, 0)
     }
@@ -132,10 +157,10 @@ const SteeringHelpers = {
     // Get shield config to find center
     const shieldSystem = shieldManager.getShieldForStation(blocking.stationId)
     if (!shieldSystem) return new Phaser.Math.Vector2(0, 0)
-    
+
     const shieldCenter = shieldSystem.getConfig().position
     const awayFromShield = position.clone().subtract(shieldCenter).normalize()
-    
+
     // Scale avoidance force based on proximity
     const avoidanceForce = awayFromShield.scale(avoidanceRadius * 2)
     return avoidanceForce
@@ -192,12 +217,13 @@ export class EnemyAISystem {
     sprite.setDisplaySize(96, 96)
     sprite.setDepth(5)
     sprite.setRotation(Math.PI / 2) // Face right initially
-    
+
     // Add physics
     this.state.scene.physics.add.existing(sprite)
     const body = sprite.body as Phaser.Physics.Arcade.Body
     body.setDrag(enemyConfig.drag)
-    
+    body.setMaxVelocity(enemyConfig.speed, enemyConfig.speed) // keep velocity within expected cap
+
     // Set collision layer and data
     sprite.setData('collisionLayer', CollisionLayer.ENEMY_SHIP)
     sprite.setData('isEnemy', true)
@@ -214,6 +240,9 @@ export class EnemyAISystem {
       patrolAngle: Math.random() * Math.PI * 2,
       lastFireTime: 0,
       lastAvoidanceTime: 0,
+      lastPerceptionCheck: 0,
+      perception: { hasLOS: false, inFOV: false, inRange: false, lastSeenAt: null, lastSeenTime: 0 },
+      orbit: { direction: Math.random() > 0.5 ? 1 : -1, lastFlipTime: 0 },
       health: enemyConfig.health,
       isActive: true
     }
@@ -233,11 +262,11 @@ export class EnemyAISystem {
       const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5
       const spawnX = centerX + Math.cos(angle) * this.state.spawnRadius
       const spawnY = centerY + Math.sin(angle) * this.state.spawnRadius
-      
+
       // Ensure spawn is within scene bounds
       const clampedX = Phaser.Math.Clamp(spawnX, 50, this.state.scene.scale.width - 50)
       const clampedY = Phaser.Math.Clamp(spawnY, 50, this.state.scene.scale.height - 50)
-      
+
       this.createEnemy(clampedX, clampedY)
     }
   }
@@ -274,22 +303,25 @@ export class EnemyAISystem {
   private updateAgent(agent: EnemyAgent, time: number, delta: number): void {
     const position = new Phaser.Math.Vector2(agent.sprite.x, agent.sprite.y)
     const body = agent.sprite.body as Phaser.Physics.Arcade.Body
-    
+
+    // Refresh perception periodically
+    this.updatePerception(agent, time)
+
     // Update behavior based on current state
-    let desiredVelocity = this.updateBehavior(agent, position, time)
+    let desiredVelocity = this.updateBehavior(agent, position, time, delta)
 
     // Apply shield avoidance if needed
     if (this.state.shieldManager && time - agent.lastAvoidanceTime > 200) {
       const currentVelocity = new Phaser.Math.Vector2(body.velocity.x, body.velocity.y)
       const avoidance = SteeringHelpers.avoidShields(
-        position, 
-        currentVelocity, 
-        this.state.shieldManager, 
+        position,
+        currentVelocity,
+        this.state.shieldManager,
         agent.config.avoidanceRadius
       )
-      
+
       if (avoidance.length() > 0) {
-        desiredVelocity = avoidance
+        desiredVelocity = avoidance // keep simple/strong avoidance
         agent.lastAvoidanceTime = time
       }
     }
@@ -297,15 +329,20 @@ export class EnemyAISystem {
     // Apply steering
     this.applySteering(agent, desiredVelocity, delta)
 
-    // Update rotation to face movement direction
-    this.updateRotation(agent)
+    // Update rotation to face movement direction (time-correct)
+    this.updateRotation(agent, delta)
 
     // Handle firing
     this.updateFiring(agent, time)
   }
 
   // Update agent behavior based on state
-  private updateBehavior(agent: EnemyAgent, position: Phaser.Math.Vector2, time: number): Phaser.Math.Vector2 {
+  private updateBehavior(
+    agent: EnemyAgent,
+    position: Phaser.Math.Vector2,
+    time: number,
+    delta: number
+  ): Phaser.Math.Vector2 {
     if (!this.state.playerTarget) return new Phaser.Math.Vector2(0, 0)
 
     const playerPos = new Phaser.Math.Vector2(this.state.playerTarget.x, this.state.playerTarget.y)
@@ -314,9 +351,9 @@ export class EnemyAISystem {
     // State transitions
     if (distanceToPlayer < agent.config.minDistance) {
       agent.behavior = BehaviorState.EVADE
+    } else if (agent.perception.hasLOS && distanceToPlayer >= agent.config.minDistance && distanceToPlayer <= agent.config.maxDistance) {
+      agent.behavior = BehaviorState.STRAFE
     } else if (distanceToPlayer > agent.config.maxDistance) {
-      agent.behavior = BehaviorState.SEEK
-    } else if (distanceToPlayer < agent.config.engagementDistance) {
       agent.behavior = BehaviorState.SEEK
     } else {
       agent.behavior = BehaviorState.PATROL
@@ -324,18 +361,22 @@ export class EnemyAISystem {
 
     // Execute behavior
     switch (agent.behavior) {
-      case BehaviorState.PATROL:
-        // Advance patrol angle using a fixed timestep factor
-        agent.patrolAngle += 0.5 * (1 / 60)
-        return SteeringHelpers.wander(
-          agent.patrolCenter, 
-          agent.patrolAngle, 
-          agent.config.patrolRadius, 
-          agent.config.speed * 0.6
+      case BehaviorState.PATROL: {
+        // Advance patrol angle using real time
+        agent.patrolAngle += 0.5 * (delta / 1000)
+        const wanderTarget = new Phaser.Math.Vector2(
+          agent.patrolCenter.x + Math.cos(agent.patrolAngle) * agent.config.patrolRadius,
+          agent.patrolCenter.y + Math.sin(agent.patrolAngle) * agent.config.patrolRadius
         )
+        return SteeringHelpers.arrive(position, wanderTarget, agent.config.speed * 0.6, 80)
+      }
 
       case BehaviorState.SEEK:
         return SteeringHelpers.arrive(position, playerPos, agent.config.speed, agent.config.minDistance)
+
+      case BehaviorState.STRAFE: {
+        return this.computeOrbitVelocity(agent, position, playerPos)
+      }
 
       case BehaviorState.EVADE:
         return SteeringHelpers.flee(position, playerPos, agent.config.speed)
@@ -349,17 +390,17 @@ export class EnemyAISystem {
   private applySteering(agent: EnemyAgent, desiredVelocity: Phaser.Math.Vector2, delta: number): void {
     const body = agent.sprite.body as Phaser.Physics.Arcade.Body
     const currentVelocity = new Phaser.Math.Vector2(body.velocity.x, body.velocity.y)
-    
+
     // Calculate steering force
     const steering = desiredVelocity.clone().subtract(currentVelocity)
     const maxForce = agent.config.acceleration * (delta / 1000)
-    
+
     if (steering.length() > maxForce) {
       steering.normalize().scale(maxForce)
     }
 
     const newVelocity = currentVelocity.add(steering)
-    
+
     // Apply velocity limits
     if (newVelocity.length() > agent.config.speed) {
       newVelocity.normalize().scale(agent.config.speed)
@@ -368,24 +409,25 @@ export class EnemyAISystem {
     body.setVelocity(newVelocity.x, newVelocity.y)
   }
 
-  // Update agent rotation to face movement direction
-  private updateRotation(agent: EnemyAgent): void {
+  // Update agent rotation to face movement direction (time-correct)
+  private updateRotation(agent: EnemyAgent, delta: number): void {
     const body = agent.sprite.body as Phaser.Physics.Arcade.Body
     const velocity = new Phaser.Math.Vector2(body.velocity.x, body.velocity.y)
-    
+
     if (velocity.length() > 10) {
       const targetRotation = Phaser.Math.Angle.Between(0, 0, velocity.x, velocity.y) + Math.PI / 2
       const currentRotation = agent.sprite.rotation
-      
+
       let rotationDiff = Phaser.Math.Angle.ShortestBetween(
         Phaser.Math.RadToDeg(currentRotation),
         Phaser.Math.RadToDeg(targetRotation)
       )
 
-      const maxRotation = agent.config.turnRate * (1/60) // Per frame at 60 FPS
-      rotationDiff = Phaser.Math.Clamp(rotationDiff, -maxRotation * 180/Math.PI, maxRotation * 180/Math.PI)
-      
-      agent.sprite.rotation += rotationDiff * Math.PI / 180
+      const maxRotation = agent.config.turnRate * (delta / 1000) // radians this frame
+      const maxRotationDeg = Phaser.Math.RadToDeg(maxRotation)
+      rotationDiff = Phaser.Math.Clamp(rotationDiff, -maxRotationDeg, maxRotationDeg)
+
+      agent.sprite.rotation += Phaser.Math.DegToRad(rotationDiff)
     }
   }
 
@@ -401,10 +443,8 @@ export class EnemyAISystem {
     // Only fire if within engagement range
     if (distance > agent.config.engagementDistance) return
 
-    // Simple line-of-sight check against shields
-    if (this.state.shieldManager && this.isLineBlockedByShields(position, playerPos)) {
-      return
-    }
+    // Require LOS from perception
+    if (!agent.perception.hasLOS) return
 
     this.fireAtTarget(agent, playerPos, time)
   }
@@ -418,13 +458,13 @@ export class EnemyAISystem {
     for (let i = 1; i < samples; i++) {
       const t = i / samples
       const samplePoint = from.clone().lerp(to, t)
-      
+
       const collision = this.state.shieldManager.getBlockingCollision(samplePoint, CollisionLayer.ENEMY_LASER)
       if (collision && collision.zone === 'BARRIER') {
         return true
       }
     }
-    
+
     return false
   }
 
@@ -434,7 +474,7 @@ export class EnemyAISystem {
 
     const position = new Phaser.Math.Vector2(agent.sprite.x, agent.sprite.y)
     const rotation = agent.sprite.rotation
-    
+
     // Calculate forward vector and spawn position
     const forward = new Phaser.Math.Vector2(Math.sin(rotation), -Math.cos(rotation)).normalize()
     const noseOffset = (agent.sprite.displayHeight / 2) - 6
@@ -450,10 +490,19 @@ export class EnemyAISystem {
     laser.setData('isEnemyLaser', true)
     laser.setData('collisionLayer', CollisionLayer.ENEMY_LASER)
 
-    // Aim at player (direct aim, no lead prediction for simplicity)
-    const aimDirection = targetPos.clone().subtract(position).normalize()
+    // Lead prediction (single-step)
+    const playerVel = new Phaser.Math.Vector2(
+      (this.state.playerTarget?.body as Phaser.Physics.Arcade.Body)?.velocity.x || 0,
+      (this.state.playerTarget?.body as Phaser.Physics.Arcade.Body)?.velocity.y || 0
+    )
+    const projectileSpeed = 700
+    const toTarget = targetPos.clone().subtract(position)
+    const travelTime = toTarget.length() / projectileSpeed
+    const leadPos = targetPos.clone().add(playerVel.clone().scale(travelTime))
+
+    const aimDirection = leadPos.clone().subtract(position).normalize()
     const body = laser.body as Phaser.Physics.Arcade.Body
-    const speed = 700
+    const speed = projectileSpeed
     body.setVelocity(aimDirection.x * speed, aimDirection.y * speed)
 
     // Orient laser
@@ -471,7 +520,7 @@ export class EnemyAISystem {
   // Get agent by sprite
   getAgentBySprite(sprite: Phaser.GameObjects.Sprite): EnemyAgent | null {
     const enemyId = sprite.getData('enemyId')
-    return enemyId ? this.state.agents.get(enemyId) || null : null
+    return enemyId ? (this.state.agents.get(enemyId) || null) : null
   }
 
   // Get enemy count
@@ -482,5 +531,76 @@ export class EnemyAISystem {
   // Set max enemy limit
   setMaxEnemies(max: number): void {
     this.state.maxEnemies = max
+  }
+
+  private updatePerception(agent: EnemyAgent, time: number): void {
+    if (!this.state.playerTarget) return
+    const cfg = agent.config
+    const playerPos = new Phaser.Math.Vector2(this.state.playerTarget.x, this.state.playerTarget.y)
+    const enemyPos = new Phaser.Math.Vector2(agent.sprite.x, agent.sprite.y)
+
+    // Range
+    const distance = enemyPos.distance(playerPos)
+    agent.perception.inRange = distance <= cfg.sensorRange
+
+    // FOV
+    const toPlayer = playerPos.clone().subtract(enemyPos)
+    const facing = new Phaser.Math.Vector2(Math.sin(agent.sprite.rotation), -Math.cos(agent.sprite.rotation))
+    const cosAngle = Phaser.Math.Clamp(facing.dot(toPlayer.clone().normalize()), -1, 1)
+    const angleDeg = Phaser.Math.RadToDeg(Math.acos(cosAngle))
+    agent.perception.inFOV = angleDeg <= cfg.fovDegrees * 0.5
+
+    // Throttle LOS checks
+    const needsLOS = time - agent.lastPerceptionCheck >= cfg.perceptionRecheckMs
+    if (needsLOS && this.state.shieldManager && agent.perception.inRange && agent.perception.inFOV) {
+      agent.lastPerceptionCheck = time
+      agent.perception.hasLOS = !this.isLineBlockedByShieldsWithSamples(
+        enemyPos, playerPos, cfg.losSampleCount
+      )
+    }
+
+    if (agent.perception.hasLOS) {
+      agent.perception.lastSeenAt = playerPos
+      agent.perception.lastSeenTime = time
+    }
+  }
+
+  private isLineBlockedByShieldsWithSamples(from: Phaser.Math.Vector2, to: Phaser.Math.Vector2, samples: number): boolean {
+    if (!this.state.shieldManager) return false
+    const count = Math.max(3, samples)
+    for (let i = 1; i < count; i++) {
+      const t = i / count
+      const p = from.clone().lerp(to, t)
+      const collision = this.state.shieldManager.getBlockingCollision(p, CollisionLayer.ENEMY_LASER)
+      if (collision && collision.zone === 'BARRIER') return true
+    }
+    return false
+  }
+
+  private computeOrbitVelocity(agent: EnemyAgent, position: Phaser.Math.Vector2, playerPos: Phaser.Math.Vector2): Phaser.Math.Vector2 {
+    const cfg = agent.config
+    const toPlayer = playerPos.clone().subtract(position)
+    const distance = toPlayer.length()
+    if (distance < 1) return new Phaser.Math.Vector2(0, 0)
+
+    // Tangential (orbit) direction
+    const radial = toPlayer.clone().normalize()
+    const tangent = new Phaser.Math.Vector2(-radial.y, radial.x).scale(agent.orbit.direction)
+
+    // Blend: keep on ring (arrive to orbit radius) + strafe around
+    const ringTarget = radial.scale(Math.max(cfg.orbitRadius, 1)).add(playerPos)
+    const arrive = SteeringHelpers.arrive(position, ringTarget, cfg.speed, cfg.minDistance)
+    const strafe = tangent.clone().scale(cfg.strafeSpeed)
+
+    // Occasionally flip orbit direction to avoid predictability
+    if (this.state.playerTarget) {
+      const now = this.state.scene.time.now
+      if (now - agent.orbit.lastFlipTime > 2500 && Math.random() < 0.05) {
+        agent.orbit.direction = agent.orbit.direction === 1 ? -1 : 1
+        agent.orbit.lastFlipTime = now
+      }
+    }
+
+    return arrive.add(strafe)
   }
 }
