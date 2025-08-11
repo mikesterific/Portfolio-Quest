@@ -357,6 +357,97 @@ Based on codebase analysis, the following collision detection systems are curren
 - [ ] Toggle to enable/disable combat in UI
 - [ ] Minimal SFX with global sound toggle support
 
+### 🚀 LEVEL 3 TASK: Enemy AI for Space Combat — PLANNING
+
+**Complexity**: Level 3 (Intermediate Feature)
+
+## Requirements
+- [ ] Enemy ships move purposefully using simple, readable behaviors (patrol, seek, evade)
+- [ ] Enemies respect station shield zones using `ShieldMapManager` (avoid barrier/docking zones)
+- [ ] Targeting aims at the player with basic lead or direct aim and configurable fire cadence
+- [ ] Support multiple enemies with a lightweight wave/spawn manager
+- [ ] Performance-friendly (≤ 10 enemies; steady 60 FPS on HDMI displays)
+- [ ] Clean integration with existing combat toggle and UI (non-destructive when disabled)
+
+## Components Affected
+- `src/game/scenes/SkillSpaceScene.ts` (spawn hooks, update loop, collisions, toggles)
+- `src/game/systems/ShieldMappingSystem.ts` (read-only use for avoidance queries)
+- `src/game/GameEventBridge.ts` (combat enable/disable events)
+- `src/game/scenes/GameUIScene.ts` (optional: add Combat ON/OFF control)
+- New: `src/game/systems/EnemyAISystem.ts` (core AI behaviors and management)
+
+## Architecture Considerations
+- Introduce `EnemyAISystem` mirroring `PlayerSystem` style: pure functions + thin state container
+- Behavior-state model: `Idle | Patrol | Seek | Evade | Retreat` with small, composable steering rules
+- Shield-aware steering: query `shieldMapManager.getBlockingCollision(position, CollisionLayer.ENEMY_SHIP)` and redirect before barrier penetration
+- Scene-agnostic API so future scenes can reuse AI (SkillSpace first target)
+
+## Implementation Strategy ✅ COMPLETE
+1) System Scaffold ✅
+- [x] Create `EnemyAISystem.ts` with:
+  - [x] Interfaces: `EnemyAgent`, `EnemyConfig`, `EnemyState`, `BehaviorState`
+  - [x] Defaults: speed, acceleration/drag, turn rate, engagement distances, fire cooldown
+  - [x] API: `createEnemy`, `updateEnemy`, `updateAll`, `setTarget`, `setCombatEnabled`, `spawnWave`, `despawnAll`
+  - [x] Utilities: steering helpers (seek, flee, arrive), shield-avoidance redirect
+- [x] Move existing enemy spawn and enemy firing into the system
+
+2) Scene Integration (SkillSpaceScene) ✅
+- [x] Instantiate `EnemyAISystem` in `initializeScene`
+- [x] Replace manual enemy group usage with system-managed agents
+- [x] In `update()`, call `enemyAi.updateAll(time, delta, player)`
+- [x] Wire existing overlaps (player/enemy lasers) to system-spawned sprites
+
+3) Behaviors & Navigation ✅
+- [x] Patrol: slow orbit/loop around a patrol point; small noise for variety
+- [x] Seek: accelerate toward player with capped turn rate; arrive within min distance
+- [x] Evade: if close to player lasers or near shield barrier, steer away and re-path
+- [x] Retreat: on low enemy health (if added), disengage briefly before re-entry
+- [x] Shield avoidance: pre-emptive redirect on `getBlockingCollision(..., ENEMY_SHIP)`
+
+4) Targeting & Firing ✅
+- [x] Aim vector = direct to player; optional simple lead using player velocity
+- [x] Fire only if line is not immediately blocked by active shield barrier between enemy and player (coarse step check)
+- [x] Stagger fire timers across enemies; burst patterns via jitter around base cooldown
+
+5) Spawning, Difficulty, and Toggles ✅
+- [x] Simple wave config: count, spawn radius away from stations, max concurrent cap
+- [x] Add combat toggle pipeline:
+  - [x] `GameUIScene`: optional "Combat: ON/OFF" control emitting `ui:setting-changed { key: 'combatEnabled' }`
+  - [x] `SkillSpaceScene`: listen and call `enemyAi.setCombatEnabled(flag)`; pause firing and AI when off
+
+## Testing Strategy
+- [x] Build compiles with zero TypeScript errors ✅
+- [ ] Manual test: 1, 3, 6, 10 enemies; verify shield avoidance and stable FPS
+- [ ] Verify docking remains blocked only by shields; AI never enters docking radius
+- [ ] Verify enemy firing pauses when combat disabled; resumes when enabled
+- [ ] Regression: player lasers vs enemy, enemy lasers vs player still function
+
+## Dependencies
+- Phaser 3 Arcade Physics (existing)
+- `ShieldMappingSystem` (existing)
+- `GameEventBridge` (existing)
+
+## Challenges & Mitigations
+- Shield avoidance causing jitter: add small cooldown before re-evaluating avoidance vector
+- LOS without raycaster: use coarse stepped samples toward player; fall back to fire if uncertain
+- Performance with many agents: cap count, reuse sprites, avoid per-frame allocations
+- Professional tone: keep effects subtle; default combat OFF for presentations
+
+## Creative Phases Required
+- [ ] 🎨 UI/UX Design (not required; optional Combat toggle styling)
+- [ ] 🏗️ Architecture Design (covered by this plan)
+- [ ] ⚙️ Algorithm Design (minor tuning only; no separate phase required)
+
+## Checkpoints
+- [ ] Requirements verified
+- [ ] Components listed
+- [ ] Implementation steps documented
+- [ ] Testing strategy defined
+- [ ] Plan integrated in `tasks.md`
+
+**Status**: ✅ IMPLEMENTATION COMPLETE
+**Next Mode**: TESTING & VALIDATION
+
 ### 🛡️ New Feature: Space Station Force Shields ✅ IMPLEMENTATION COMPLETE
 - [x] **CREATIVE PHASE**: Force shield system design and mechanics planning ✅
 - **Goal**: Add defensive shields to space stations that block lasers but allow ship docking

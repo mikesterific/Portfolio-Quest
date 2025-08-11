@@ -9,6 +9,7 @@ export class GameUIScene extends Phaser.Scene {
   private soundButton!: Phaser.GameObjects.Text
   private skipButton!: Phaser.GameObjects.Text
   private currentSceneText!: Phaser.GameObjects.Text
+  private combatButton!: Phaser.GameObjects.Text
 
   constructor() {
     super({ key: 'GameUIScene', active: true })
@@ -58,6 +59,18 @@ export class GameUIScene extends Phaser.Scene {
     .on('pointerover', () => this.soundButton.setScale(1.1))
     .on('pointerout', () => this.soundButton.setScale(1))
 
+    // Combat toggle button (top-left, below sound)
+    this.combatButton = this.add.text(20, 70, '⚔️ Combat: ON', {
+      fontSize: '16px',
+      color: '#ffffff',
+      backgroundColor: '#e74c3c',
+      padding: { x: 10, y: 5 }
+    })
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => this.toggleCombat())
+    .on('pointerover', () => this.combatButton.setScale(1.1))
+    .on('pointerout', () => this.combatButton.setScale(1))
+
     // Current scene indicator (bottom-center)
     this.currentSceneText = this.add.text(width / 2, height - 30, 'Loading...', {
       fontSize: '18px',
@@ -70,6 +83,7 @@ export class GameUIScene extends Phaser.Scene {
     // Make UI elements stay in fixed positions
     this.skipButton.setScrollFactor(0)
     this.soundButton.setScrollFactor(0)
+    this.combatButton.setScrollFactor(0)
     this.currentSceneText.setScrollFactor(0)
   }
 
@@ -95,6 +109,8 @@ export class GameUIScene extends Phaser.Scene {
     gameEventBridge.onGameEvent('ui:setting-changed', (data) => {
       if (data.key === 'soundEnabled') {
         this.updateSoundButton(data.value)
+      } else if (data.key === 'combatEnabled') {
+        this.updateCombatButton(data.value)
       }
     })
   }
@@ -131,6 +147,42 @@ export class GameUIScene extends Phaser.Scene {
       this.soundButton.setText(soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF')
     } catch (error) {
       console.warn('[GameUIScene] Error updating sound button:', error)
+    }
+  }
+
+  private toggleCombat(): void {
+    // Safety check to prevent errors during hot reload
+    if (!this.combatButton || !this.combatButton.scene || !this.combatButton.active) {
+      console.warn('[GameUIScene] Combat button is not available, skipping toggle')
+      return
+    }
+
+    try {
+      const currentCombatState = this.combatButton.text.includes('ON')
+      const newCombatState = !currentCombatState
+      
+      this.updateCombatButton(newCombatState)
+      gameEventBridge.emitGameEvent('ui:setting-changed', { 
+        key: 'combatEnabled', 
+        value: newCombatState 
+      })
+    } catch (error) {
+      console.warn('[GameUIScene] Error toggling combat:', error)
+    }
+  }
+
+  private updateCombatButton(combatEnabled: boolean): void {
+    // Safety check to prevent errors during hot reload
+    if (!this.combatButton || !this.combatButton.scene || !this.combatButton.active) {
+      console.warn('[GameUIScene] Combat button is not available, skipping update')
+      return
+    }
+
+    try {
+      this.combatButton.setText(combatEnabled ? '⚔️ Combat: ON' : '🛡️ Combat: OFF')
+      this.combatButton.setStyle({ backgroundColor: combatEnabled ? '#e74c3c' : '#95a5a6' })
+    } catch (error) {
+      console.warn('[GameUIScene] Error updating combat button:', error)
     }
   }
 

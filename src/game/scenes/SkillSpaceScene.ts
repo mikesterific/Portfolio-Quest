@@ -9,6 +9,7 @@ import {
   CollisionLayerHelper
 } from '../systems/ShieldMappingSystem'
 import type { ShieldZoneConfig } from '../systems/ShieldMappingSystem'
+import { EnemyAISystem } from '../systems/EnemyAISystem'
 
 // Types for scene state
 interface SceneState {
@@ -24,16 +25,15 @@ interface SceneState {
   isDocked: boolean
   dockedStation: Phaser.GameObjects.GameObject | null
   isModalOpen: boolean
-  enemies: Phaser.GameObjects.Group | null
   lasers: Phaser.GameObjects.Group | null
   laserTimer: Phaser.Time.TimerEvent | null
   enemyLasers: Phaser.GameObjects.Group | null
-  enemyLaserTimer: Phaser.Time.TimerEvent | null
   playerHealth: number
   maxPlayerHealth: number
   isPlayerInvulnerable: boolean
   shields: Phaser.GameObjects.Group | null
   shieldMapManager: ShieldMapManager | null
+  enemyAI: EnemyAISystem | null
 }
 
 interface SpaceStationData {
@@ -555,16 +555,15 @@ export class SkillSpaceScene extends Phaser.Scene {
     isDocked: false,
     dockedStation: null,
     isModalOpen: false,
-    enemies: null,
     lasers: null,
     laserTimer: null,
     enemyLasers: null,
-    enemyLaserTimer: null,
     playerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
     maxPlayerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
     isPlayerInvulnerable: false,
     shields: null,
-    shieldMapManager: null
+    shieldMapManager: null,
+    enemyAI: null
   }
 
   constructor() {
@@ -655,23 +654,13 @@ export class SkillSpaceScene extends Phaser.Scene {
     ensureEnemyLaserTexture(this)
     this.state.enemyLasers = this.add.group()
 
-    // Create enemies group and a starter enemy
-    this.state.enemies = this.add.group()
-    const enemyOffset = 250
-    const enemyX = Math.max(100, (this.state.player as Phaser.GameObjects.Sprite).x - enemyOffset)
-    const enemyY = (this.state.player as Phaser.GameObjects.Sprite).y
-    const enemy = this.add.sprite(enemyX, enemyY, 'enemy-ship')
-    enemy.setDisplaySize(96, 96)
-    this.physics.add.existing(enemy)
-    enemy.setDepth(5)
-    enemy.setRotation(Math.PI / 2) // face right, toward the hero who faces left
-    enemy.setData('isEnemy', true)
-    this.state.enemies.add(enemy)
-    // Set collision layer for enemy ship
-    CollisionLayerHelper.setCollisionLayer(enemy, CollisionLayer.ENEMY_SHIP)
-
-    // Enemy periodic firing
-    this.state.enemyLaserTimer = this.time.addEvent({ delay: 800, loop: true, callback: () => this.fireEnemyLaserAtPlayer() })
+    // Initialize Enemy AI System
+    this.state.enemyAI = new EnemyAISystem(this, this.state.shieldMapManager)
+    this.state.enemyAI.initialize(this.state.enemyLasers)
+    this.state.enemyAI.setPlayerTarget(this.state.player)
+    
+    // Spawn initial enemies
+    this.state.enemyAI.spawnWave(2) // Start with 2 enemies
     
     // Lasers are fired manually when SPACE is held
     
@@ -720,16 +709,8 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.state.portals!.add(portal)
     })
 
-    // Laser vs Enemy collision detection
-    if (this.state.lasers && this.state.enemies) {
-      this.physics.add.overlap(
-        this.state.lasers,
-        this.state.enemies,
-        this.handleLaserEnemyOverlap as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
-        undefined,
-        this
-      )
-    }
+    // Setup collision detection after AI system creates enemies
+    this.setupEnemyCollisions()
 
     // Enemy laser vs Player collision detection
     if (this.state.enemyLasers && this.state.player) {
@@ -767,29 +748,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       }
     }
 
-    // Optional: Block enemy ships from entering docking zones
-    if (this.state.enemies && this.state.shieldMapManager) {
-      // Simple periodic check for enemy vs shield barrier
-      this.time.addEvent({
-        delay: 200,
-        loop: true,
-        callback: () => {
-          const enemySprite = (this.state.enemies!.children.entries[0] as Phaser.GameObjects.Sprite) || null
-          if (!enemySprite) return
-          const enemyPos = new Phaser.Math.Vector2(enemySprite.x, enemySprite.y)
-          const result = this.state.shieldMapManager!.getBlockingCollision(enemyPos, CollisionLayer.ENEMY_SHIP)
-          if (result && result.zone) {
-            // Push enemy slightly away from barrier center
-            const fromCenter = enemyPos.clone().subtract(new Phaser.Math.Vector2(result.distance, result.distance))
-            // Simple bounce back by reversing velocity (if has body)
-            const body = enemySprite.body as Phaser.Physics.Arcade.Body
-            if (body) {
-              body.setVelocity(-body.velocity.x * 0.6, -body.velocity.y * 0.6)
-            }
-          }
-        }
-      })
-    }
+    // Enemy shield avoidance is now handled by the AI system
   }
 
   // Handler methods for interactions
@@ -932,6 +891,13 @@ export class SkillSpaceScene extends Phaser.Scene {
     gameEventBridge.onGameEvent('ui:modal-closed', () => {
       this.state.isModalOpen = false
     })
+
+    // Listen for combat toggle
+    gameEventBridge.onGameEvent('ui:setting-changed', (data) => {
+      if (data.key === 'combatEnabled' && this.state.enemyAI) {
+        this.state.enemyAI.setCombatEnabled(data.value)
+      }
+    })
   }
 
   private setupUI(): void {
@@ -989,8 +955,10 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.updateStationProximity()
     }
 
-    // Also enforce barrier for enemies
-    this.enforceBarrierForEnemies()
+    // Update enemy AI system
+    if (this.state.enemyAI) {
+      this.state.enemyAI.updateAll(this.time.now, this.game.loop.delta)
+    }
 
     // Cleanup lasers after lifetime
     if (this.state.lasers) {
@@ -1123,7 +1091,14 @@ export class SkillSpaceScene extends Phaser.Scene {
 
     this.spawnExplosionAt(enemy.x, enemy.y)
 
-    enemy.destroy()
+    // Remove enemy from AI system
+    if (this.state.enemyAI) {
+      const agent = this.state.enemyAI.getAgentBySprite(enemy)
+      if (agent) {
+        this.state.enemyAI.removeEnemy(agent.id)
+      }
+    }
+
     laser.destroy()
   }
 
@@ -1161,36 +1136,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     })
   }
 
-  private fireEnemyLaserAtPlayer = (): void => {
-    if (!this.state.player || !this.state.enemies || !this.state.enemyLasers) return
-    const enemySprite = (this.state.enemies.children.entries[0] as Phaser.GameObjects.Sprite) || null
-    if (!enemySprite) return
-
-    // Spawn from the enemy's nose and fire straight ahead (enemy currently faces right)
-    const rotation = enemySprite.rotation
-    const forward = new Phaser.Math.Vector2(Math.sin(rotation), -Math.cos(rotation)).normalize()
-    const noseOffset = (enemySprite.displayHeight / 2) - 6
-    const spawnX = enemySprite.x + forward.x * noseOffset
-    const spawnY = enemySprite.y + forward.y * noseOffset
-
-    const laser = this.add.sprite(spawnX, spawnY, 'enemy-laser')
-    laser.setBlendMode(Phaser.BlendModes.ADD)
-    laser.setDepth(9)
-    this.physics.add.existing(laser)
-    laser.setData('createdAt', this.time.now)
-    laser.setData('isEnemyLaser', true)
-    CollisionLayerHelper.setCollisionLayer(laser, CollisionLayer.ENEMY_LASER)
-
-    // Velocity straight ahead in the enemy's facing direction
-    const body = laser.body as Phaser.Physics.Arcade.Body
-    const speed = 700
-    body.setVelocity(forward.x * speed, forward.y * speed)
-
-    // Orient laser to match enemy's facing
-    laser.rotation = rotation
-
-    this.state.enemyLasers.add(laser)
-  }
+  // Enemy firing is now handled by the AI system
 
   private handleEnemyLaserHitPlayer = (
     enemyLaserObj: Phaser.GameObjects.GameObject,
@@ -1402,14 +1348,42 @@ export class SkillSpaceScene extends Phaser.Scene {
     })
   }
 
-  private enforceBarrierForEnemies(): void {
-    if (!this.state.enemies) return
-    this.state.enemies.children.iterate((enemyObj) => {
-      const enemy = enemyObj as Phaser.GameObjects.Sprite
-      if (!enemy) return null
-      this.enforceShieldBarrierForSprite(enemy, CollisionLayer.ENEMY_SHIP)
-      return null
-    })
+  // Enemy barrier enforcement is now handled by the AI system
+
+  private setupEnemyCollisions(): void {
+    // Setup collision detection between player lasers and enemy sprites
+    if (this.state.lasers && this.state.enemyAI) {
+      // We need to manually check collisions each frame since enemies are not in a group
+      this.time.addEvent({
+        delay: 16, // Check every frame (roughly 60 FPS)
+        loop: true,
+        callback: () => {
+          if (!this.state.lasers || !this.state.enemyAI) return
+          
+          const activeEnemies = this.state.enemyAI.getActiveAgents()
+          this.state.lasers.children.each((laserObj: Phaser.GameObjects.GameObject) => {
+            const laser = laserObj as Phaser.GameObjects.Sprite
+            if (!laser || !laser.active) return null
+            
+            for (const enemy of activeEnemies) {
+              if (!enemy.sprite || !enemy.sprite.active) continue
+              
+              // Check if laser and enemy overlap
+              const distance = Phaser.Math.Distance.Between(
+                laser.x, laser.y, 
+                enemy.sprite.x, enemy.sprite.y
+              )
+              
+              if (distance < 50) { // Collision threshold
+                this.handleLaserEnemyOverlap(laser, enemy.sprite)
+                break // Stop checking after first collision
+              }
+            }
+            return null
+          }, this)
+        }
+      })
+    }
   }
 
   private enforceShieldBarrierForSprite(sprite: Phaser.GameObjects.Sprite, layer: CollisionLayer): void {
