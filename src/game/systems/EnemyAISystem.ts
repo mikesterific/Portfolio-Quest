@@ -386,6 +386,14 @@ export class EnemyAISystem {
       }
     }
 
+    // Blend station avoidance regardless of shield state (keeps enemies from cutting through stations)
+    if (this.state.shieldManager) {
+      const stationAvoid = this.computeStationAvoidance(position, agent.config.avoidanceRadius)
+      if (stationAvoid.length() > 0) {
+        desiredVelocity = desiredVelocity.add(stationAvoid)
+      }
+    }
+
     // Apply steering
     this.applySteering(agent, desiredVelocity, delta)
 
@@ -513,20 +521,6 @@ export class EnemyAISystem {
     if (!agent.perception.hasLOS) return
 
     this.fireAtTarget(agent, playerPos, time)
-  }
-
-  // Check if line of sight is blocked by shields (coarse)
-  private isLineBlockedByShields(from: Phaser.Math.Vector2, to: Phaser.Math.Vector2): boolean {
-    if (!this.state.shieldManager) return false
-
-    const samples = 5
-    for (let i = 1; i < samples; i++) {
-      const t = i / samples
-      const samplePoint = from.clone().lerp(to, t)
-      const collision = this.state.shieldManager.getBlockingCollision(samplePoint, CollisionLayer.ENEMY_LASER)
-      if (collision && collision.zone === 'BARRIER') return true
-    }
-    return false
   }
 
   // Fire laser at target
@@ -670,4 +664,25 @@ export class EnemyAISystem {
 
     return arrive.add(strafe)
   }
+
+  // Compute repulsive steering away from registered station occluders (LOS proxies)
+  private computeStationAvoidance(position: Phaser.Math.Vector2, baseRadius: number): Phaser.Math.Vector2 {
+    if (!this.state.shieldManager) return new Phaser.Math.Vector2(0, 0)
+    const occluders = this.state.shieldManager.getStationOccluders()
+    if (!occluders || occluders.length === 0) return new Phaser.Math.Vector2(0, 0)
+
+    const avoidance = new Phaser.Math.Vector2(0, 0)
+    for (const occ of occluders) {
+      const away = position.clone().subtract(occ.position)
+      const distance = away.length()
+      const avoidRadius = occ.radius + baseRadius
+      if (distance <= avoidRadius && distance > 0.0001) {
+        const strength = Phaser.Math.Clamp((avoidRadius - distance) / avoidRadius, 0, 1)
+        avoidance.add(away.normalize().scale(strength * baseRadius * 2))
+      }
+    }
+    return avoidance
+  }
+
+
 }
