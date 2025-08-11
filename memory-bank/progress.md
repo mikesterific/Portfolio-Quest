@@ -166,3 +166,19 @@ Successfully transformed the skills display from village theme to professional s
 
 ---
 *Last Updated: January 2, 2025 - Force Shield System Implementation Complete*
+
+## Enemy AI Hunt & Edge Spawns — Lessons Learned
+
+- **Predictive pursuit**: Using arrive-to-predicted target (velocity lead) yields smoother, more reliable chasing than raw seek. Tuning `leadScale` balances responsiveness vs overshoot.
+- **Edge spawners**: `spawnFromLeft/Right/Top/Bottom` provide controlled ingress and initial facing toward the hero, eliminating mid-map pop-ins and improving encounter framing.
+- **LOS robustness**: LOS now samples shield barriers when a `ShieldMapManager` is present; without it, LOS falls back to in-range checks so AI still functions in scenes lacking shields.
+- **Engagement simplification**: EVADE when too close; STRAFE within the engagement band when LOS is present; SEEK otherwise. A wider `fovDegrees` (140°) improves reacquisition.
+- **Shield avoidance override**: Periodic, strong outward avoidance (200ms cadence) prevents jitter on barrier edges and keeps agents from getting stuck.
+- **Firing model**: Lead-predicted shots retained for consistency while hunting; forward firing cones can be reintroduced if stricter arcs are desired.
+- **Time correctness**: Steering force and rotation remain delta-scaled with capped max velocity for stability across frame rates.
+
+Tuning tips:
+- **leadScale**: pursuit prediction aggressiveness
+- **fovDegrees / sensorRange**: perception envelope
+- **orbitRadius / strafeSpeed**: engagement shape
+- **turnRate / acceleration / drag**: handling feel
