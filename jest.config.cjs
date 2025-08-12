@@ -1,24 +1,15 @@
 module.exports = {
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/tests'],
-  moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleFileExtensions: ['ts', 'js', 'json', 'vue'],
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', { 
-      tsconfig: {
-        target: 'ES2020',
-        module: 'commonjs',
-        moduleResolution: 'node',
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-        verbatimModuleSyntax: false,
-        baseUrl: '.',
-        paths: { '@/*': ['src/*'] }
-      }
-    }],
+    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.app.json' }],
+    '^.+\\.vue$': '<rootDir>/tests/jest/vue3-sfc-transformer.cjs',
   },
   transformIgnorePatterns: ['/node_modules/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@$': '<rootDir>/src',
     '^phaser$': '<rootDir>/tests/__mocks__/phaser.ts',
   },
   collectCoverageFrom: [

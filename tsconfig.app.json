@@ -7,6 +7,8 @@
 
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "verbatimModuleSyntax": false,
+    "types": ["jest", "node"]
   }
 }

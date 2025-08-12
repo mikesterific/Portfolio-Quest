@@ -24,7 +24,7 @@
         <div class="telemetry">
           <div class="telemetry-box">
             <span class="label">VECTOR</span>
-            <span class="value">{{ vector.toFixed(1) }} m/s</span>
+            <span class="value">{{ (vector ?? 0).toFixed(1) }} m/s</span>
           </div>
           <div class="telemetry-box">
             <span class="label">STATION HEALTH</span>
@@ -81,123 +81,124 @@
   
 </template>
 
-<script setup lang="ts">
-import { ref, computed } from 'vue'
+<script lang="ts">
+import { defineComponent, ref, computed } from 'vue'
 import type { SkillData, ProjectData } from '@/types/game'
 import { portfolioData } from '@/data/portfolio'
 import gameEventBridge from '@/game/GameEventBridge'
 
-interface Props {
-  skill: SkillData | null
-}
+export default defineComponent({
+  name: 'SkillModal',
+  props: {
+    skill: { type: Object as () => SkillData | null, default: null },
+  },
+  emits: ['close'],
+  setup(props) {
+    // HUD telemetry (purely visual)
+    const vector = ref(0.2)
+    const stationHealth = ref(92)
 
-const props = defineProps<Props>()
-defineEmits<{
-  close: []
-}>()
+    function getTechnologiesForSkill(skillId?: string): string[] {
+      if (!skillId) return []
+      const techMap: Record<string, string[]> = {
+        frontend: ['Vue.js', 'Vue 3', 'React.js', 'Angular', 'TypeScript', 'JavaScript', 'HTML5', 'CSS3', 'SCSS', 'TailwindCSS'],
+        testing: ['Cypress', 'Jest', 'Mocha', 'Chai', 'Vitest', 'Testing Library', 'E2E Testing', 'Unit Testing'],
+        architecture: ['Vuex', 'Redux', 'Supabase', 'Socket.IO', 'API Integration', 'Component Libraries', 'Scalable Architecture'],
+        tooling: ['Vite', 'Webpack', 'npm', 'yarn', 'Babel', 'ESLint', 'TypeScript', 'Mono Repos'],
+        ai: ['RAG Systems', 'LLM Integration', 'Similarity Search', 'OpenAI API', 'AI Workflows', 'Machine Learning'],
+        devops: ['Git', 'GitHub Actions', 'CIDR', 'VLANs', 'Networking', 'Version Control', 'Merge Automation'],
+        security: ['Linux Foundation LFD121', 'Secure Development', 'Accessibility', 'WCAG', 'Security by Design'],
+        leadership: ['Technical Writing', 'Public Speaking', 'Google Tech Talks', 'Book Authoring', 'Mentoring'],
+      }
+      return techMap[skillId] || []
+    }
 
-// HUD telemetry (purely visual)
-const vector = ref(0.2)
-const stationHealth = ref(92)
+    // Radar blips derived from technologies for the skill
+    const radarBlips = computed(() => {
+      const techs = props.skill ? getTechnologiesForSkill(props.skill.id) : []
+      const maxBlips = Math.min(techs.length, 6)
+      const blips: { x: number; y: number; key: string }[] = []
+      if (maxBlips === 0) return blips
+      for (let i = 0; i < maxBlips; i++) {
+        const angle = (i / maxBlips) * Math.PI * 2 + 0.3 * i
+        const radius = 90 + (i % 2) * 30
+        const x = Math.cos(angle) * radius
+        const y = Math.sin(angle) * radius
+        blips.push({ x, y, key: techs[i] })
+      }
+      return blips
+    })
 
-// Radar blips derived from technologies for the skill
-const radarBlips = computed(() => {
-  const techs = props.skill ? getTechnologiesForSkill(props.skill.id) : []
-  const maxBlips = Math.min(techs.length, 6)
-  const blips: { x: number; y: number; key: string }[] = []
-  if (maxBlips === 0) return blips
-  for (let i = 0; i < maxBlips; i++) {
-    const angle = (i / maxBlips) * Math.PI * 2 + 0.3 * i
-    const radius = 90 + (i % 2) * 30
-    const x = Math.cos(angle) * radius
-    const y = Math.sin(angle) * radius
-    blips.push({ x, y, key: techs[i] })
-  }
-  return blips
+    function formatCategory(category?: string): string {
+      if (!category) return ''
+      const categoryMap: Record<string, string> = {
+        frontend: 'Front-End Development',
+        testing: 'Testing & Quality Assurance',
+        architecture: 'Architecture & State Management',
+        tooling: 'Build Tools & Development',
+        ai: 'AI & Machine Learning',
+        devops: 'DevOps & Networking',
+        security: 'Security & Accessibility',
+        leadership: 'Thought Leadership',
+      }
+      return categoryMap[category] || category
+    }
+
+    function getLevelText(level?: number): string {
+      if (!level) return 'Beginner'
+      const levelMap: Record<number, string> = {
+        1: 'Beginner',
+        2: 'Novice',
+        3: 'Intermediate',
+        4: 'Advanced',
+        5: 'Expert',
+      }
+      return levelMap[level] || 'Beginner'
+    }
+
+    function getRelatedProjects(category?: string): ProjectData[] {
+      if (!category) return []
+      const categoryProjectMap: Record<string, string[]> = {
+        frontend: ['portfolio-quest', 'data-viz', 'ecommerce-app', 'component-library'],
+        testing: ['portfolio-quest', 'component-library', 'ecommerce-app'],
+        architecture: ['ecommerce-app', 'data-viz', 'portfolio-quest'],
+        tooling: ['component-library', 'portfolio-quest', 'data-viz'],
+        ai: ['data-viz'],
+        devops: ['ecommerce-app', 'data-viz', 'portfolio-quest'],
+        security: ['ecommerce-app', 'portfolio-quest'],
+        leadership: ['portfolio-quest'],
+      }
+      const projectIds = categoryProjectMap[category] || []
+      return portfolioData.projects.filter((p) => projectIds.includes(p.id))
+    }
+
+    function formatProjectType(type: string): string {
+      const typeMap: Record<string, string> = {
+        web: 'Web App',
+        mobile: 'Mobile App',
+        game: 'Game',
+        library: 'Library',
+      }
+      return typeMap[type] || type
+    }
+
+    function openProject(projectId: string): void {
+      gameEventBridge.emitGameEvent('game:project-selected', { projectId })
+    }
+
+    return {
+      vector,
+      stationHealth,
+      radarBlips,
+      formatCategory,
+      getLevelText,
+      getTechnologiesForSkill,
+      getRelatedProjects,
+      formatProjectType,
+      openProject,
+    }
+  },
 })
-
-function formatCategory(category: string | undefined): string {
-  if (!category) return ''
-  
-  const categoryMap: Record<string, string> = {
-    'frontend': 'Front-End Development',
-    'testing': 'Testing & Quality Assurance',
-    'architecture': 'Architecture & State Management',
-    'tooling': 'Build Tools & Development',
-    'ai': 'AI & Machine Learning',
-    'devops': 'DevOps & Networking',
-    'security': 'Security & Accessibility',
-    'leadership': 'Thought Leadership'
-  }
-  
-  return categoryMap[category] || category
-}
-
-function getLevelText(level: number | undefined): string {
-  if (!level) return 'Beginner'
-  
-  const levelMap: Record<number, string> = {
-    1: 'Beginner',
-    2: 'Novice', 
-    3: 'Intermediate',
-    4: 'Advanced',
-    5: 'Expert'
-  }
-  
-  return levelMap[level] || 'Beginner'
-}
-
-function getTechnologiesForSkill(skillId: string | undefined): string[] {
-  if (!skillId) return []
-  
-  const techMap: Record<string, string[]> = {
-    'frontend': ['Vue.js', 'Vue 3', 'React.js', 'Angular', 'TypeScript', 'JavaScript', 'HTML5', 'CSS3', 'SCSS', 'TailwindCSS'],
-    'testing': ['Cypress', 'Jest', 'Mocha', 'Chai', 'Vitest', 'Testing Library', 'E2E Testing', 'Unit Testing'],
-    'architecture': ['Vuex', 'Redux', 'Supabase', 'Socket.IO', 'API Integration', 'Component Libraries', 'Scalable Architecture'],
-    'tooling': ['Vite', 'Webpack', 'npm', 'yarn', 'Babel', 'ESLint', 'TypeScript', 'Mono Repos'],
-    'ai': ['RAG Systems', 'LLM Integration', 'Similarity Search', 'OpenAI API', 'AI Workflows', 'Machine Learning'],
-    'devops': ['Git', 'GitHub Actions', 'CIDR', 'VLANs', 'Networking', 'Version Control', 'Merge Automation'],
-    'security': ['Linux Foundation LFD121', 'Secure Development', 'Accessibility', 'WCAG', 'Security by Design'],
-    'leadership': ['Technical Writing', 'Public Speaking', 'Google Tech Talks', 'Book Authoring', 'Mentoring']
-  }
-  
-  return techMap[skillId] || []
-}
-
-function getRelatedProjects(category: string | undefined): ProjectData[] {
-  if (!category) return []
-  
-  // Map skills to relevant projects
-  const categoryProjectMap: Record<string, string[]> = {
-    'frontend': ['portfolio-quest', 'data-viz', 'ecommerce-app', 'component-library'],
-    'testing': ['portfolio-quest', 'component-library', 'ecommerce-app'],
-    'architecture': ['ecommerce-app', 'data-viz', 'portfolio-quest'],
-    'tooling': ['component-library', 'portfolio-quest', 'data-viz'],
-    'ai': ['data-viz'], // Could add AI-related projects here
-    'devops': ['ecommerce-app', 'data-viz', 'portfolio-quest'],
-    'security': ['ecommerce-app', 'portfolio-quest'],
-    'leadership': ['portfolio-quest'] // Showcase projects demonstrating leadership
-  }
-  
-  const projectIds = categoryProjectMap[category] || []
-  return portfolioData.projects.filter(p => projectIds.includes(p.id))
-}
-
-function formatProjectType(type: string): string {
-  const typeMap: Record<string, string> = {
-    'web': 'Web App',
-    'mobile': 'Mobile App',
-    'game': 'Game',
-    'library': 'Library'
-  }
-  
-  return typeMap[type] || type
-}
-
-function openProject(projectId: string): void {
-  // Close this modal and open project modal
-  gameEventBridge.emitGameEvent('game:project-selected', { projectId })
-}
 </script>
 
 <style scoped>
