@@ -485,10 +485,10 @@ const createShieldTexture = (scene: Phaser.Scene, color: number, state: 'healthy
 const getShieldConfigForStation = (station: SpaceStationData): Omit<ShieldConfig, 'health' | 'lastHitTime' | 'lastRegenTime' | 'isActive' | 'stationId'> => {
   // Uniform shield behavior for all stations (match frontend station)
   return {
-    radius: 90,
-    maxHealth: 4,
+    radius: SkillSpaceScene.SHIELD_RADIUS,
+    maxHealth: SkillSpaceScene.SHIELD_MAX_HEALTH,
     color: 0x00AAFF,
-    regenerationRate: 2000
+    regenerationRate: SkillSpaceScene.SHIELD_REGEN_TICK_MS_DEFAULT
   }
 }
 
@@ -544,6 +544,21 @@ const createStationShield = (scene: Phaser.Scene, station: SpaceStationData, x: 
 export class SkillSpaceScene extends Phaser.Scene {
   private static readonly PLAYER_MAX_HEALTH = 3
   private static readonly PLAYER_INVULNERABILITY_MS = 800
+  
+  // Timing and configuration constants
+  private static readonly SHIELD_REGEN_START_DELAY_MS = 10000
+  public static readonly SHIELD_REGEN_TICK_MS_DEFAULT = 2000
+  private static readonly LASER_LIFETIME_MS = 2500
+  private static readonly LASER_FIRE_REPEAT_MS = 140
+  private static readonly LASER_SPEED_PX_PER_S = 800
+  private static readonly ENEMY_COLLISION_CHECK_INTERVAL_MS = 16
+
+  // Shield geometry constants
+  public static readonly SHIELD_RADIUS = 90
+  public static readonly SHIELD_MAX_HEALTH = 4
+  private static readonly SHIELD_DOCKING_RADIUS = 50
+  private static readonly SHIELD_BARRIER_RADIUS = 90
+  private static readonly SHIELD_DETECTION_RADIUS = 120
 
   private state: SceneState = {
     player: null,
@@ -698,9 +713,9 @@ export class SkillSpaceScene extends Phaser.Scene {
  
        // Register shield with mapping system
        const shieldConfig: ShieldZoneConfig = {
-         dockingRadius: 50,       // Inner zone - allows ships to dock
-         barrierRadius: 90,       // Middle zone - blocks projectiles (matches visual shield)
-         detectionRadius: 120,    // Outer zone - early detection
+         dockingRadius: SkillSpaceScene.SHIELD_DOCKING_RADIUS,       // Inner zone - allows ships to dock
+         barrierRadius: SkillSpaceScene.SHIELD_BARRIER_RADIUS,       // Middle zone - blocks projectiles (matches visual shield)
+         detectionRadius: SkillSpaceScene.SHIELD_DETECTION_RADIUS,    // Outer zone - early detection
          stationId: station.id,
          position: new Phaser.Math.Vector2(station.x, station.y),
          isActive: true
@@ -908,7 +923,7 @@ export class SkillSpaceScene extends Phaser.Scene {
         this.state.laserTimer = null
       }
       this.fireLasersAtEnemy()
-      this.state.laserTimer = this.time.addEvent({ delay: 140, loop: true, callback: () => this.fireLasersAtEnemy() })
+      this.state.laserTimer = this.time.addEvent({ delay: SkillSpaceScene.LASER_FIRE_REPEAT_MS, loop: true, callback: () => this.fireLasersAtEnemy() })
     })
 
     keySpace.on('up', () => {
@@ -1050,7 +1065,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       const now = this.time.now
       this.state.lasers.children.each((laserObj: Phaser.GameObjects.GameObject) => {
         const createdAt = laserObj.getData('createdAt') as number | undefined
-        if (createdAt && now - createdAt > 2500) {
+        if (createdAt && now - createdAt > SkillSpaceScene.LASER_LIFETIME_MS) {
           laserObj.destroy()
         }
         return null
@@ -1062,7 +1077,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       const now = this.time.now
       this.state.enemyLasers.children.each((laserObj: Phaser.GameObjects.GameObject) => {
         const createdAt = laserObj.getData('createdAt') as number | undefined
-        if (createdAt && now - createdAt > 2500) {
+        if (createdAt && now - createdAt > SkillSpaceScene.LASER_LIFETIME_MS) {
           laserObj.destroy()
         }
         return null
@@ -1154,7 +1169,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       const body = laser.body as Phaser.Physics.Arcade.Body
       body.setAllowRotation(true)
 
-      const speed = 800
+      const speed = SkillSpaceScene.LASER_SPEED_PX_PER_S
       body.setVelocity(forward.x * speed, forward.y * speed)
 
       // Align laser orientation with player's facing
@@ -1400,8 +1415,8 @@ export class SkillSpaceScene extends Phaser.Scene {
 
       const timeSinceLastHit = currentTime - (shieldConfig.lastHitTime || 0)
 
-      // Start regenerating 10s after last hit
-      if (shieldConfig.health < shieldConfig.maxHealth && timeSinceLastHit >= 10000) {
+      // Start regenerating after configured delay
+      if (shieldConfig.health < shieldConfig.maxHealth && timeSinceLastHit >= SkillSpaceScene.SHIELD_REGEN_START_DELAY_MS) {
         const timeSinceLastRegen = currentTime - (shieldConfig.lastRegenTime || 0)
         if (timeSinceLastRegen >= shieldConfig.regenerationRate) {
           const wasInactive = !shieldConfig.isActive
@@ -1491,7 +1506,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (this.state.lasers && this.state.enemyAI) {
       // We need to manually check collisions each frame since enemies are not in a group
       this.time.addEvent({
-        delay: 16, // Check every frame (roughly 60 FPS)
+        delay: SkillSpaceScene.ENEMY_COLLISION_CHECK_INTERVAL_MS, // Check every frame (roughly 60 FPS)
         loop: true,
         callback: () => {
           if (!this.state.lasers || !this.state.enemyAI) return
