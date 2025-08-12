@@ -150,8 +150,8 @@ describe('SkillSpaceScene', () => {
     const updateShieldStateSpy = jest.spyOn(sm, 'updateShieldState')
     scene['state'].shieldMapManager = sm
     jest.spyOn(scene, 'createShieldReactivationEffect')
-    // advance time to allow regen
-    scene.time.now = 4000
+    // advance time to allow regen after 10s delay
+    scene.time.now = 11000
     scene['regenerateShields']()
     const updated = shield.getData('shieldConfig')
     expect(updated.health).toBe(1)
@@ -636,15 +636,15 @@ describe('SkillSpaceScene', () => {
     expect(setTextureSpy).toHaveBeenCalled()
   })
 
-  test('regenerateShields does not heal before 3s after last hit and before regen interval', () => {
+  test('regenerateShields does not heal before 10s after last hit and before regen interval', () => {
     scene.create()
     const shield = scene.add.container(0,0)
-    shield.setData('shieldConfig', { health: 1, maxHealth: 3, isActive: true, color: 0x00ffff, lastHitTime: 2500, lastRegenTime: 0, stationId: 's1', regenerationRate: 2000 })
+    shield.setData('shieldConfig', { health: 1, maxHealth: 3, isActive: true, color: 0x00ffff, lastHitTime: 9500, lastRegenTime: 0, stationId: 's1', regenerationRate: 2000 })
     scene['state'].shields = scene.add.group().add(shield)
-    scene.time.now = 2600 // less than 3s since last hit
+    scene.time.now = 9600 // less than 10s since last hit
     scene['regenerateShields']()
     expect(shield.getData('shieldConfig').health).toBe(1)
-    // Now after 3s but before regenerationRate
+    // Now after 10s but before regenerationRate
     shield.setData('shieldConfig', { ...shield.getData('shieldConfig'), lastHitTime: 0, lastRegenTime: 1000 })
     scene.time.now = 2500 // timeSinceLastRegen=1500 < 2000
     scene['regenerateShields']()

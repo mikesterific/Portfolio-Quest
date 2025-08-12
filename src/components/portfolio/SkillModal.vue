@@ -94,23 +94,31 @@ export default defineComponent({
   },
   emits: ['close'],
   setup(props) {
-    // HUD telemetry (purely visual)
+    // Radar telemetry (purely visual)
     const vector = ref(0.2)
     const stationHealth = ref(92)
 
-    function getTechnologiesForSkill(skillId?: string): string[] {
-      if (!skillId) return []
-      const techMap: Record<string, string[]> = {
-        frontend: ['Vue.js', 'Vue 3', 'React.js', 'Angular', 'TypeScript', 'JavaScript', 'HTML5', 'CSS3', 'SCSS', 'TailwindCSS'],
-        testing: ['Cypress', 'Jest', 'Mocha', 'Chai', 'Vitest', 'Testing Library', 'E2E Testing', 'Unit Testing'],
-        architecture: ['Vuex', 'Redux', 'Supabase', 'Socket.IO', 'API Integration', 'Component Libraries', 'Scalable Architecture'],
-        tooling: ['Vite', 'Webpack', 'npm', 'yarn', 'Babel', 'ESLint', 'TypeScript', 'Mono Repos'],
-        ai: ['RAG Systems', 'LLM Integration', 'Similarity Search', 'OpenAI API', 'AI Workflows', 'Machine Learning'],
-        devops: ['Git', 'GitHub Actions', 'CIDR', 'VLANs', 'Networking', 'Version Control', 'Merge Automation'],
-        security: ['Linux Foundation LFD121', 'Secure Development', 'Accessibility', 'WCAG', 'Security by Design'],
-        leadership: ['Technical Writing', 'Public Speaking', 'Google Tech Talks', 'Book Authoring', 'Mentoring'],
+    function getRelatedProjects(category?: string): ProjectData[] {
+      if (!category) return []
+      const categoryProjectMap: Record<string, string[]> = {
+        frontend: ['portfolio-quest', 'dell-xps-poc', 'dell-xps-landing', 'dell-home-poc', 'dell-home-live', 'ea-support-site'],
+        testing: ['portfolio-quest'],
+        architecture: ['dell-home-live', 'ea-support-site', 'portfolio-quest'],
+        tooling: ['portfolio-quest'],
+        ai: [],
+        devops: [],
+        security: [],
+        leadership: ['dell-home-live', 'ea-support-site'],
       }
-      return techMap[skillId] || []
+      const projectIds = categoryProjectMap[category] || []
+      return portfolioData.projects.filter((p) => projectIds.includes(p.id))
+    }
+
+    function getTechnologiesForSkill(skillId?: string): string[] {
+      if (!skillId || !props.skill) return []
+      const related = getRelatedProjects(props.skill.category)
+      const techs = related.flatMap(p => p.technologies)
+      return Array.from(new Set(techs)).slice(0, 10)
     }
 
     // Radar blips derived from technologies for the skill
@@ -154,22 +162,6 @@ export default defineComponent({
         5: 'Expert',
       }
       return levelMap[level] || 'Beginner'
-    }
-
-    function getRelatedProjects(category?: string): ProjectData[] {
-      if (!category) return []
-      const categoryProjectMap: Record<string, string[]> = {
-        frontend: ['portfolio-quest', 'data-viz', 'ecommerce-app', 'component-library'],
-        testing: ['portfolio-quest', 'component-library', 'ecommerce-app'],
-        architecture: ['ecommerce-app', 'data-viz', 'portfolio-quest'],
-        tooling: ['component-library', 'portfolio-quest', 'data-viz'],
-        ai: ['data-viz'],
-        devops: ['ecommerce-app', 'data-viz', 'portfolio-quest'],
-        security: ['ecommerce-app', 'portfolio-quest'],
-        leadership: ['portfolio-quest'],
-      }
-      const projectIds = categoryProjectMap[category] || []
-      return portfolioData.projects.filter((p) => projectIds.includes(p.id))
     }
 
     function formatProjectType(type: string): string {

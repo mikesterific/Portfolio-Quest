@@ -1400,8 +1400,8 @@ export class SkillSpaceScene extends Phaser.Scene {
 
       const timeSinceLastHit = currentTime - (shieldConfig.lastHitTime || 0)
 
-      // Start regenerating 3s after last hit
-      if (shieldConfig.health < shieldConfig.maxHealth && timeSinceLastHit >= 3000) {
+      // Start regenerating 10s after last hit
+      if (shieldConfig.health < shieldConfig.maxHealth && timeSinceLastHit >= 10000) {
         const timeSinceLastRegen = currentTime - (shieldConfig.lastRegenTime || 0)
         if (timeSinceLastRegen >= shieldConfig.regenerationRate) {
           const wasInactive = !shieldConfig.isActive

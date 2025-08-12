@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import gameEventBridge from '../GameEventBridge'
 import { createPlayer, updatePlayerVelocity, preloadPlayerAssets, findNearestObject } from '../systems/PlayerSystem'
+import { portfolioData } from '@/data/portfolio'
 
 // Types for scene state
 interface SceneState {
@@ -32,48 +33,26 @@ interface PortalData {
 }
 
 // Pure functions for scene logic
-const createProjectsData = (): ProjectData[] => [
-  { 
-    id: 'portfolio-quest', 
-    title: 'Portfolio Quest', 
-    type: 'game',
-    x: 250, 
-    y: 300,
-    description: 'Interactive portfolio game built with Vue 3 and Phaser.js'
-  },
-  { 
-    id: 'ecommerce-app', 
-    title: 'E-commerce Platform', 
-    type: 'web',
-    x: 500, 
-    y: 250,
-    description: 'Full-stack e-commerce solution with React and Node.js'
-  },
-  { 
-    id: 'mobile-fitness', 
-    title: 'Fitness Tracker', 
-    type: 'mobile',
-    x: 750, 
-    y: 300,
-    description: 'React Native app for fitness tracking and social features'
-  },
-  { 
-    id: 'data-viz', 
-    title: 'Data Visualization Tool', 
-    type: 'web',
-    x: 400, 
-    y: 450,
-    description: 'Interactive dashboards built with D3.js and Vue'
-  },
-  { 
-    id: 'component-library', 
-    title: 'Component Library', 
-    type: 'library',
-    x: 650, 
-    y: 500,
-    description: 'Reusable Vue 3 component library with Storybook'
-  }
-]
+const createProjectsData = (): ProjectData[] => {
+  // Lay out projects in a grid based on portfolioData.projects
+  const baseX = 250
+  const baseY = 250
+  const xStep = 250
+  const yStep = 180
+  const cols = 3
+  return portfolioData.projects.map((p, index) => {
+    const col = index % cols
+    const row = Math.floor(index / cols)
+    return {
+      id: p.id,
+      title: p.title,
+      type: p.type,
+      x: baseX + col * xStep,
+      y: baseY + row * yStep,
+      description: p.description,
+    }
+  })
+}
 
 const createPortalsData = (width: number, height: number): PortalData[] => [
   {
