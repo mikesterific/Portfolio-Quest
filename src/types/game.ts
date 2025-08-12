@@ -78,6 +78,8 @@ export interface GameEvents {
   'game:resume-opened': void
   'game:contact-opened': void
   'game:xp-changed': { amount: number; total: number }
+  'game:station-unlocked': { stationId: string; skillId?: string; totalUnlocked: number; totalStations: number }
+  'game:progress-complete': { totalStations: number }
   
   // From Vue to Game
   'ui:modal-opened': { type: string }

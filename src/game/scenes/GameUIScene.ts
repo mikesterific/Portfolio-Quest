@@ -132,6 +132,29 @@ export class GameUIScene extends Phaser.Scene {
     gameEventBridge.onGameEvent('game:xp-changed', (data) => {
       this.handleXpChange(data.amount, data.total)
     })
+
+    // Show a subtle toast when all stations are unlocked
+    gameEventBridge.onGameEvent('game:progress-complete', (data) => {
+      try {
+        const toast = this.add.text(this.scale.width / 2, 80, `All stations unlocked!`, {
+          fontSize: '20px',
+          color: '#2ecc71',
+          backgroundColor: '#2c3e50aa',
+          padding: { x: 14, y: 8 }
+        }).setOrigin(0.5)
+
+        this.tweens.add({
+          targets: toast,
+          y: toast.y - 30,
+          alpha: { from: 1, to: 0 },
+          duration: 1400,
+          ease: 'Power2.easeOut',
+          onComplete: () => toast.destroy()
+        })
+      } catch (error) {
+        console.warn('[GameUIScene] Error showing completion toast:', error)
+      }
+    })
   }
 
   private toggleSound(): void {

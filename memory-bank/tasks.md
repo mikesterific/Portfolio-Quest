@@ -822,3 +822,94 @@ All planning criteria have been met:
 ---
 *This is the SINGLE SOURCE OF TRUTH for all task tracking*
 *Last Updated: Comprehensive roadmap completed - Ready for Implementation*
+
+### 🚀 LEVEL 3 TASK: Game Beginning Loop — Shields, Dock, Undock Spawns, Unlock-All — PLANNING
+
+**Complexity**: Level 3 (Intermediate Feature)
+
+## Requirements
+- [ ] Player can progress by repeating a clear loop:
+  - [ ] Defeat or avoid enemies to approach a target station
+  - [ ] Take down the station’s shield by firing at it
+  - [ ] Dock with the station once shields are down
+  - [ ] Undocking spawns +3 additional enemies (per newly unlocked station)
+- [ ] Track unlocked stations; consider a station “unlocked” after the first successful dock
+- [ ] Repeat loop until all stations are unlocked; emit completion event and show UI message
+- [ ] Maintain steady performance (≤ 10 enemies concurrent; 60 FPS)
+
+## Components Affected
+- `src/game/scenes/SkillSpaceScene.ts`
+  - Add progression state, unlock tracking, and undock-triggered spawns
+  - Add completion detection and light UI feedback
+- `src/game/systems/EnemyAISystem.ts`
+  - Use existing `spawnWave`/edge spawners; enforce max-enemy cap
+- `src/game/systems/ShieldMappingSystem.ts`
+  - Read-only: continues to gate docking until shields are down
+- `src/game/scenes/GameUIScene.ts`
+  - Optional: surface “All stations unlocked” toast and/or subtle guidance
+- `src/game/GameEventBridge.ts`
+  - New events: `game:station-unlocked`, `game:progress-complete`
+
+## Architecture Considerations
+- Progress state lives in-scene (session scope):
+  - `unlockedStations: Set<string>`
+  - `undockSpawnedForStation: Set<string>` (prevents repeated spawn exploits)
+  - `totalStationCount: number`
+- Define victory when `unlockedStations.size === totalStationCount`
+- Use `EnemyAISystem.setMaxEnemies(...)` to cap concurrent enemies before spawning
+- Spawns on undock should be incremental but bounded; prefer `spawnWave(3)` and/or edge spawners for variety
+
+## Implementation Strategy
+1) Progression State
+   - [ ] Add `unlockedStations` and `undockSpawnedForStation` to `SkillSpaceScene` state
+   - [ ] Compute and store `totalStationCount` at scene initialization
+2) Unlock on Dock
+   - [ ] At end of `dockWithStation(...)`, mark the station as unlocked and emit `game:station-unlocked`
+   - [ ] Optional: brief UI feedback in-scene (e.g., “Unlocked: Frontend Station”)
+3) Spawn on Undock
+   - [ ] In `undockFromStation(...)`, if last docked station exists and was not previously spawn-triggered, call `enemyAI.spawnWave(3)`
+   - [ ] Record the station in `undockSpawnedForStation` to avoid repeated spawning from the same station
+   - [ ] Before spawning, check and respect max enemy cap
+4) Rinse and Repeat
+   - [ ] The loop continues naturally as player targets new stations
+5) Completion
+   - [ ] After each unlock, if `unlockedStations.size === totalStationCount`, emit `game:progress-complete` and show a subtle UI message via `GameUIScene`
+   - [ ] Optionally pause further undock spawns once complete
+
+## Testing Strategy
+- Unit-ish scene tests (extend `SkillSpaceScene.spec.js`):
+  - [ ] Unlock: simulate docking flow; verify station id added to `unlockedStations` and event emitted
+  - [ ] Undock spawn: verify `spawnWave(3)` called once per newly unlocked station (guarded by set)
+  - [ ] Max enemy cap respected when spawning (no overshoot beyond cap)
+  - [ ] Completion: when all stations are unlocked, `game:progress-complete` emitted and UI text updated via `GameUIScene`
+  - [ ] Non-regression: docking remains blocked while shields active; allowed when down
+- AI system: no changes required; reuse existing tests
+
+## Dependencies
+- Phaser 3 (existing)
+- `EnemyAISystem` (existing)
+- `ShieldMappingSystem` (existing)
+- `GameEventBridge` (existing; add two event types)
+
+## Challenges & Mitigations
+- Enemy pile-up after repeated undocks
+  - Mitigate via `setMaxEnemies` and pre-spawn count checks
+- Re-docking exploit to farm spawns
+  - Track `undockSpawnedForStation` and only spawn once per station
+- Player clarity on goals
+  - Light, non-intrusive prompt when no stations unlocked yet; brief toast on first unlock and on completion
+
+## Creative Phases Required
+- [ ] 🎨 UI/UX Design (optional toasts/hints only; can proceed without a creative phase)
+- [ ] 🏗️ Architecture Design (covered by this plan)
+- [ ] ⚙️ Algorithm Design (N/A)
+
+## Checkpoints
+- [ ] Requirements verified
+- [ ] Components listed
+- [ ] Implementation steps documented
+- [ ] Tests identified
+- [ ] Events defined and integrated
+
+**Status**: PLANNING COMPLETE — Ready for Implementation
+**Next Mode**: IMPLEMENT MODE

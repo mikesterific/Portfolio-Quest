@@ -34,6 +34,9 @@ interface SceneState {
   shields: Phaser.GameObjects.Group | null
   shieldMapManager: ShieldMapManager | null
   enemyAI: EnemyAISystem | null
+  unlockedStations?: Set<string>
+  undockSpawnedForStation?: Set<string>
+  totalStationCount?: number
 }
 
 interface SpaceStationData {
@@ -679,6 +682,10 @@ export class SkillSpaceScene extends Phaser.Scene {
       stationObject.setDepth(1)
       this.state.spaceStations!.add(stationObject)
     })
+    // Progression tracking
+    this.state.unlockedStations = new Set<string>()
+    this.state.undockSpawnedForStation = new Set<string>()
+    this.state.totalStationCount = stations.length
     
     // Initialize Shield Mapping System
     this.state.shieldMapManager = new ShieldMapManager(this)
@@ -817,6 +824,26 @@ export class SkillSpaceScene extends Phaser.Scene {
               total: this.xpTotal 
             })
             
+            // Mark station unlocked and emit event
+            const stationData = station.getData('stationData')
+            const stationId = stationData?.id as string | undefined
+            if (stationId) {
+              this.state.unlockedStations?.add(stationId)
+              const totalUnlocked = this.state.unlockedStations?.size || 0
+              const totalStations = this.state.totalStationCount || 0
+              gameEventBridge.emitGameEvent('game:station-unlocked', { 
+                stationId, 
+                skillId, 
+                totalUnlocked, 
+                totalStations 
+              })
+
+              // Check completion
+              if (totalStations > 0 && totalUnlocked >= totalStations) {
+                gameEventBridge.emitGameEvent('game:progress-complete', { totalStations })
+              }
+            }
+
             if (this.state.interactionPrompt) {
               this.state.interactionPrompt.setText('Docked! Press SPACE to undock')
               this.state.interactionPrompt.setVisible(true)
@@ -833,11 +860,25 @@ export class SkillSpaceScene extends Phaser.Scene {
   private undockFromStation = (): void => {
     if (!this.state.player || !this.state.isDocked) return
     
+    // Capture last station for spawn logic before clearing
+    const lastStation = this.state.dockedStation
     this.state.isDocked = false
     this.state.dockedStation = null
-    
+
     if (this.state.interactionPrompt) {
       this.state.interactionPrompt.setVisible(false)
+    }
+
+    // Spawn +3 enemies once per unlocked station upon first undock
+    if (lastStation && this.state.enemyAI) {
+      const stationData = lastStation.getData('stationData')
+      const stationId = stationData?.id as string | undefined
+      const alreadySpawned = stationId && this.state.undockSpawnedForStation?.has(stationId)
+      if (stationId && !alreadySpawned) {
+        // Respect maxEnemies cap - EnemyAISystem enforces internally, but we can still call spawnWave
+        this.state.enemyAI.spawnWave(3)
+        this.state.undockSpawnedForStation?.add(stationId)
+      }
     }
   }
 

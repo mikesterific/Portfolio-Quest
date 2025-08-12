@@ -16,7 +16,7 @@ jest.mock('@/game/systems/PlayerSystem', () => ({
 
 const mockEnemyAI = {
   initialize: jest.fn(), setPlayerTarget: jest.fn(), setShieldManager: jest.fn(),
-  spawnFromLeft: jest.fn(), updateAll: jest.fn(), getActiveAgents: jest.fn(()=>[]), removeEnemy: jest.fn(), setCombatEnabled: jest.fn(), getAgentBySprite: jest.fn(() => ({ id: 'e1' }))
+  spawnFromLeft: jest.fn(), spawnWave: jest.fn(), updateAll: jest.fn(), getActiveAgents: jest.fn(()=>[]), removeEnemy: jest.fn(), setCombatEnabled: jest.fn(), getAgentBySprite: jest.fn(() => ({ id: 'e1' }))
 }
 jest.mock('@/game/systems/EnemyAISystem', () => ({ EnemyAISystem: jest.fn(() => ({ ...mockEnemyAI })) }))
 
@@ -773,5 +773,52 @@ describe('SkillSpaceScene', () => {
     expect(() => scene['damagePlayer'](0)).not.toThrow()
     expect(heroExplodeSpy).toHaveBeenCalled()
     delayedSpy.mockRestore()
+  })
+
+  test('docking unlocks station and emits station-unlocked and completion when all unlocked', () => {
+    const emitSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
+    scene.create()
+    // Simulate docking with a known station
+    const station = scene.add.container(200, 220)
+    station.setData('stationData', { id: 's-frontend', name: 'Frontend Station' })
+    // totalStationCount is set at init based on created stations; ensure unlocked set starts empty
+    scene['state'].unlockedStations = new Set()
+    scene['state'].totalStationCount = 1
+    scene['state'].player = { x: 0, y: 0 }
+    scene['state'].isDocking = false
+
+    scene['dockWithStation'](station, 'frontend')
+
+    // The docking tween completes synchronously in test harness; verify unlock events
+    const calls = emitSpy.mock.calls
+    const stationUnlockedCall = calls.find(c => c[0] === 'game:station-unlocked')
+    expect(stationUnlockedCall).toBeTruthy()
+    expect(scene['state'].unlockedStations?.has('s-frontend')).toBe(true)
+
+    const completionCall = calls.find(c => c[0] === 'game:progress-complete')
+    expect(completionCall).toBeTruthy()
+  })
+
+  test('undocking spawns a wave only once per unlocked station', () => {
+    scene.create()
+    // Prepare state: docked at a station
+    const station = scene.add.container(300, 320)
+    station.setData('stationData', { id: 's-testing', name: 'Testing Station' })
+    scene['state'].dockedStation = station
+    scene['state'].isDocked = true
+    scene['state'].enemyAI = require('@/game/systems/EnemyAISystem').EnemyAISystem()
+
+    const spawnSpy = jest.spyOn(scene['state'].enemyAI, 'spawnWave')
+
+    // First undock -> should spawn
+    scene['undockFromStation']()
+    expect(spawnSpy).toHaveBeenCalledWith(3)
+
+    // Redock simulation (set dockedStation again) and undock again -> should NOT spawn
+    scene['state'].dockedStation = station
+    scene['state'].isDocked = true
+    spawnSpy.mockClear()
+    scene['undockFromStation']()
+    expect(spawnSpy).not.toHaveBeenCalled()
   })
 })
