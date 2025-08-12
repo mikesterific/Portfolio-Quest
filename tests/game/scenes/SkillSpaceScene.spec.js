@@ -16,7 +16,7 @@ jest.mock('@/game/systems/PlayerSystem', () => ({
 
 const mockEnemyAI = {
   initialize: jest.fn(), setPlayerTarget: jest.fn(), setShieldManager: jest.fn(),
-  spawnFromLeft: jest.fn(), spawnWave: jest.fn(), updateAll: jest.fn(), getActiveAgents: jest.fn(()=>[]), removeEnemy: jest.fn(), setCombatEnabled: jest.fn(), getAgentBySprite: jest.fn(() => ({ id: 'e1' }))
+  spawnFromLeft: jest.fn(), spawnFromOutsideRandom: jest.fn(), spawnWave: jest.fn(), updateAll: jest.fn(), getActiveAgents: jest.fn(()=>[]), removeEnemy: jest.fn(), setCombatEnabled: jest.fn(), getAgentBySprite: jest.fn(() => ({ id: 'e1' }))
 }
 jest.mock('@/game/systems/EnemyAISystem', () => ({ EnemyAISystem: jest.fn(() => ({ ...mockEnemyAI })) }))
 
@@ -808,7 +808,7 @@ describe('SkillSpaceScene', () => {
     scene['state'].isDocked = true
     scene['state'].enemyAI = require('@/game/systems/EnemyAISystem').EnemyAISystem()
 
-    const spawnSpy = jest.spyOn(scene['state'].enemyAI, 'spawnWave')
+    const spawnSpy = jest.spyOn(scene['state'].enemyAI, 'spawnFromOutsideRandom')
 
     // First undock -> should spawn
     scene['undockFromStation']()

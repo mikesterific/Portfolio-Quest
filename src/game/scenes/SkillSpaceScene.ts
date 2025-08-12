@@ -668,8 +668,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.enemyAI.initialize(this.state.enemyLasers)
     this.state.enemyAI.setPlayerTarget(this.state.player)
     
-    // Spawn initial enemies
-    this.state.enemyAI.spawnFromLeft(2) // Start with 2 enemies entering from left
+    // Spawn initial enemies offscreen from the left side
+    this.state.enemyAI.spawnFromLeft(2)
     
     // Lasers are fired manually when SPACE is held
     
@@ -875,8 +875,12 @@ export class SkillSpaceScene extends Phaser.Scene {
       const stationId = stationData?.id as string | undefined
       const alreadySpawned = stationId && this.state.undockSpawnedForStation?.has(stationId)
       if (stationId && !alreadySpawned) {
-        // Respect maxEnemies cap - EnemyAISystem enforces internally, but we can still call spawnWave
-        this.state.enemyAI.spawnWave(3)
+        // Prefer outside random spawns so ships fly in from offscreen
+        if (typeof this.state.enemyAI.spawnFromOutsideRandom === 'function') {
+          this.state.enemyAI.spawnFromOutsideRandom(3)
+        } else {
+          this.state.enemyAI.spawnWave(3)
+        }
         this.state.undockSpawnedForStation?.add(stationId)
       }
     }

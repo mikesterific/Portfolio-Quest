@@ -300,11 +300,13 @@ export class EnemyAISystem {
       if (edge === 'left' || edge === 'right') {
         const step = (h - padding * 2) / (toSpawn + 1)
         y = padding + (i + 1) * step + rand(jitter)
-        x = edge === 'left' ? padding : w - padding
+        // Spawn just outside the horizontal bounds
+        x = edge === 'left' ? -padding : w + padding
       } else {
         const step = (w - padding * 2) / (toSpawn + 1)
         x = padding + (i + 1) * step + rand(jitter)
-        y = edge === 'top' ? padding : h - padding
+        // Spawn just outside the vertical bounds
+        y = edge === 'top' ? -padding : h + padding
       }
 
       const agent = this.createEnemy(x, y)
@@ -313,6 +315,15 @@ export class EnemyAISystem {
     }
   }
   // ---------- end spawners ----------
+
+  // Spawn a set of enemies from random outside edges
+  public spawnFromOutsideRandom(count: number = 3, padding: number = 50, jitter: number = 20): void {
+    const edges: Array<'left' | 'right' | 'top' | 'bottom'> = ['left', 'right', 'top', 'bottom']
+    for (let i = 0; i < count; i++) {
+      const edge = edges[Math.floor(Math.random() * edges.length)]
+      this.spawnFromEdge(edge, 1, padding, jitter)
+    }
+  }
 
   // Spawn a ring-ish wave around screen center
   spawnWave(count: number = 3): void {
