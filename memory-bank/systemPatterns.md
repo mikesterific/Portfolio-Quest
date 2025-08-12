@@ -127,4 +127,42 @@ createPortal(scene, portalData, onActivate) → Container
 
 ---
 
+### Canvas Positioning Architecture (NEW)
+The Phaser canvas positioning follows a precise hierarchy for full-viewport game experience with overlay modals:
+
+#### DOM Structure & Flow
+```text
+#app (fills viewport)
+└─ .game-container (fills viewport; relative; overflow:hidden; background)
+   ├─ #game-container.game-canvas (fills .game-container; Phaser parent)
+   │  └─ <canvas> (injected by Phaser; scaled+centered via FIT + CENTER_BOTH)
+   └─ [Vue modals] (fixed; z-index:1000; overlay above canvas)
+```
+
+#### Phaser Canvas Injection
+- **Parent Target**: Phaser mounts canvas into `parent: 'game-container'` (GameConfig.ts)
+- **Base Dimensions**: `width: 1920, height: 1080` for HDMI optimization
+- **Scale Mode**: `Phaser.Scale.FIT` maintains aspect ratio while fitting parent
+- **Centering**: `autoCenter: Phaser.Scale.CENTER_BOTH` centers canvas within parent
+- **Size Constraints**: `min: 800×600, max: 3840×2160` for responsive bounds
+
+#### Container Hierarchy
+- **`.game-container`**: Outer wrapper (100vw×100vh, relative positioning, overflow:hidden)
+- **`#game-container.game-canvas`**: Phaser parent div (100% of wrapper, direct child)
+- **Canvas Element**: Injected by Phaser, scaled/centered within parent div
+- **Global CSS**: `html,body` at 100% height, `overflow:hidden` prevents scrollbars
+
+#### Visual Positioning Results
+- Canvas scales to fit viewport while preserving 16:9 aspect ratio
+- Letterboxing space (if any) remains inside `.game-container`
+- Vue modals overlay with `position:fixed` and `z-index:1000`
+- Touch interaction prevented on canvas via `touch-action:none`
+
+#### Common Adjustments
+- **Remove letterboxing**: Change to `Phaser.Scale.RESIZE` (stretches aspect)
+- **Top-left anchor**: Set `autoCenter: Phaser.Scale.NO_CENTER`
+- **Limit max scaling**: Adjust `scale.max` for pixel density control
+
+---
+
 *Part of Memory Bank System*
