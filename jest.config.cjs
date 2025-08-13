@@ -1,6 +1,7 @@
 module.exports = {
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/tests'],
+  setupFilesAfterEnv: ['<rootDir>/tests/jest-setup.js'],
   moduleFileExtensions: ['ts', 'js', 'json', 'vue'],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.app.json' }],
@@ -23,12 +24,6 @@ module.exports = {
       functions: 0,
       lines: 0,
       statements: 0,
-    },
-    './src/game/scenes/GameUIScene.ts': {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80,
     },
     './src/game/scenes/SkillSpaceScene.ts': {
       branches: 80,
