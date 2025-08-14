@@ -97,7 +97,7 @@ export const portfolioData = {
       category: 'frontend' as const,
       level: 5,
       icon: '👨‍💻',
-      description: 'Deep mastery of Vue.js (including Vue 3, Options API, and Composition API), React.js, and Angular. Fluent in CSS3, HTML5, SASS/LESS, and TailwindCSS. Performance optimization expert - wrote Pro HTML5 Performance book and drove 30% performance boost at Dell.'
+      description: 'Proven leader in front-end architecture and performance optimization, with deep mastery of Vue.js, React.js, and Angular. Expert in CSS3, HTML5, and SASS/LESS, with a history of delivering scalable, high-performance UIs for enterprise applications.'
     },
     {
       id: 'testing',
