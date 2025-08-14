@@ -5,7 +5,7 @@
 
       <div class="hud-container">
         <!-- Radar -->
-        <RadarScreen :RadarBlip="radarBlips" />
+        <RadarScreen :blips="radarBlips" />
 
         <!-- Telemetry -->
         <div class="telemetry">
@@ -70,16 +70,10 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import type { SkillData, ProjectData } from '@/types/game'
+import type { SkillData, ProjectData, EnemyRadarData, RadarBlip } from '@/types/game'
 import gameEventBridge from '@/game/GameEventBridge'
 import { portfolioData } from '@/data/portfolio'
 import RadarScreen from '@/components/portfolio/RadarScreen.vue'
-
-interface RadarBlip {
-  x: number;
-  y: number;
-  key: string;
-}
 
 // Category to project mapping for related projects lookup
 const CATEGORY_PROJECT_MAP: Record<string, string[]> = {
@@ -104,16 +98,43 @@ export default defineComponent({
       radarTelemetry: {
         vector: 0.2,
         stationHealth: 92,
-      }
+      },
+      enemyData: null as EnemyRadarData | null
     }
   },
   computed: {
-    radarBlips() {
+    radarBlips(): RadarBlip[] {
+      // Use real enemy data if available, otherwise fall back to test data
+      if (this.enemyData && this.enemyData.enemies.length > 0) {
+        return this.enemyData.enemies.map(enemy => ({
+          x: enemy.x,
+          y: enemy.y,
+          key: enemy.id
+        }))
+      }
       
-      
+      // Fallback test data when no enemies present
+      return [
+        { x: -45, y: 30, key: 'test-enemy-1' },
+        { x: 60, y: -80, key: 'test-enemy-2' },
+        { x: -20, y: 70, key: 'test-enemy-3' }
+      ]
     }
   },
+  mounted() {
+    // Listen for enemy position updates
+    gameEventBridge.onGameEvent('game:enemy-positions-updated', this.handleEnemyUpdate)
+  },
+  unmounted() {
+    // Clean up event listeners to prevent memory leaks
+    gameEventBridge.offGameEvent('game:enemy-positions-updated', this.handleEnemyUpdate)
+  },
   methods: {
+    handleEnemyUpdate(data: EnemyRadarData) {
+      // Update enemy data which will trigger radarBlips computed property
+      this.enemyData = data
+    },
+
     getRelatedProjects(category?: string): ProjectData[] {
       if (!category) return []
       const projectIds = CATEGORY_PROJECT_MAP[category] || []

@@ -10,6 +10,29 @@ import {
 } from '../systems/ShieldMappingSystem'
 import type { ShieldZoneConfig } from '../systems/ShieldMappingSystem'
 import { EnemyAISystem } from '../systems/EnemyAISystem'
+import type { EnemyRadarData } from '@/types/game'
+
+// Coordinate transformation function for radar display
+const transformToRadarCoordinates = (
+  enemyWorldPos: { x: number, y: number },
+  playerWorldPos: { x: number, y: number },
+  radarRadius: number = 130
+): { x: number, y: number } => {
+  // Calculate relative position to player
+  const relativeX = enemyWorldPos.x - playerWorldPos.x
+  const relativeY = enemyWorldPos.y - playerWorldPos.y
+  
+  // Scale to radar display bounds - increased range to match canvas height
+  const gameWorldRadius = 450 // Full canvas height coverage (900px diameter)
+  const scaleX = (relativeX / gameWorldRadius) * radarRadius
+  const scaleY = (relativeY / gameWorldRadius) * radarRadius
+  
+  // Clamp to radar bounds
+  return {
+    x: Math.max(-radarRadius, Math.min(radarRadius, scaleX)),
+    y: Math.max(-radarRadius, Math.min(radarRadius, scaleY))
+  }
+}
 
 // Types for scene state
 interface SceneState {
@@ -38,6 +61,7 @@ interface SceneState {
   unlockedStations?: Set<string>
   undockSpawnedForStation?: Set<string>
   totalStationCount?: number
+  enemyPositionTimer: Phaser.Time.TimerEvent | null
 }
 
 interface SpaceStationData {
@@ -546,7 +570,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     shields: null,
     shieldMapManager: null,
     enemyAI: null,
-    combatEnabled: false
+    combatEnabled: false,
+    enemyPositionTimer: null
   }
 
   private xpTotal: number = 0
@@ -643,6 +668,12 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (this.state.combatEnabled) {
       this.state.enemyAI.spawnFromLeft(2)
     }
+    
+    // Setup enemy position timer for radar system
+    this.setupEnemyPositionTimer()
+    
+    // Setup cleanup when scene is destroyed
+    this.events.once('destroy', this.cleanup, this)
     
     // Lasers are fired manually when SPACE is held
     
@@ -964,6 +995,97 @@ export class SkillSpaceScene extends Phaser.Scene {
         }
       }
     })
+  }
+
+  private setupEnemyPositionTimer(): void {
+    // Create timer to emit enemy positions every 500ms for radar system
+    this.state.enemyPositionTimer = this.time.addEvent({
+      delay: 500, // 500ms = 2Hz update rate
+      loop: true,
+      callback: () => this.emitEnemyPositions()
+    })
+  }
+
+  private emitEnemyPositions(): void {
+    // Only emit if we have enemies and player exists
+    if (!this.state.enemyAI || !this.state.player) return
+
+    const activeEnemies = this.state.enemyAI.getActiveAgents()
+    
+    // Debug: Log how many enemies we have
+    console.log(`🎯 Radar Debug: Found ${activeEnemies.length} active enemies`)
+    
+    // Performance optimization: skip emission if no enemies
+    if (activeEnemies.length === 0) return
+
+    // Determine radar center: use station position when docked, otherwise player position
+    let radarCenterPos: { x: number, y: number }
+    if (this.state.isDocked && this.state.dockedStation) {
+      // Use station position as radar center when docked
+      radarCenterPos = { 
+        x: (this.state.dockedStation as any).x, 
+        y: (this.state.dockedStation as any).y 
+      }
+      console.log(`🎯 Radar Debug: Using station center at (${radarCenterPos.x}, ${radarCenterPos.y})`)
+    } else {
+      // Use player position as radar center when flying around
+      radarCenterPos = { x: this.state.player.x, y: this.state.player.y }
+      console.log(`🎯 Radar Debug: Using player center at (${radarCenterPos.x}, ${radarCenterPos.y})`)
+    }
+
+    // Transform enemy positions to radar coordinates with range culling
+    const radarEnemies = activeEnemies
+      .filter(enemy => {
+        if (!enemy.sprite || !enemy.sprite.active) return false
+        
+        // Range culling: only include enemies within tactical radar range from radar center
+        const distance = Phaser.Math.Distance.Between(
+          enemy.sprite.x, enemy.sprite.y,
+          radarCenterPos.x, radarCenterPos.y
+        )
+        const inRange = distance <= 500
+        console.log(`🎯 Radar Debug: Enemy ${enemy.id} at distance ${distance.toFixed(1)} - ${inRange ? 'IN RANGE' : 'OUT OF RANGE'}`)
+        return inRange // Slightly larger than gameWorldRadius (450) for smooth transitions
+      })
+      .map(enemy => {
+        const worldPos = { x: enemy.sprite!.x, y: enemy.sprite!.y }
+        const radarPos = transformToRadarCoordinates(worldPos, radarCenterPos)
+        
+        console.log(`🎯 Radar Debug: Enemy ${enemy.id} world(${worldPos.x}, ${worldPos.y}) → radar(${radarPos.x}, ${radarPos.y})`)
+        
+        return {
+          id: enemy.id,
+          x: radarPos.x,
+          y: radarPos.y,
+          type: 'enemy-ship' as const
+        }
+      })
+
+    console.log(`🎯 Radar Debug: Emitting ${radarEnemies.length} enemies to radar`)
+
+    // Create the radar data payload with the radar center position
+    const radarData: EnemyRadarData = {
+      enemies: radarEnemies,
+      playerPosition: radarCenterPos, // This is now the radar center (station when docked, player when flying)
+      timestamp: this.time.now
+    }
+
+    // Emit the event for radar display
+    gameEventBridge.emitGameEvent('game:enemy-positions-updated', radarData)
+  }
+
+  private cleanup(): void {
+    // Clean up enemy position timer
+    if (this.state.enemyPositionTimer) {
+      this.state.enemyPositionTimer.remove(false)
+      this.state.enemyPositionTimer = null
+    }
+    
+    // Clean up other timers
+    if (this.state.laserTimer) {
+      this.state.laserTimer.remove(false)
+      this.state.laserTimer = null
+    }
   }
 
   private setupUI(): void {

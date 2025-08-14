@@ -51,6 +51,27 @@ export interface EducationItem {
   gpa?: string
 }
 
+// Radar system types
+export interface RadarBlip {
+  x: number;           // Radar coordinate (-130 to +130)
+  y: number;           // Radar coordinate (-130 to +130)
+  key: string;         // Unique identifier
+}
+
+export interface EnemyRadarData {
+  enemies: Array<{
+    id: string;           // Unique enemy identifier
+    x: number;           // Radar coordinate (-130 to +130)
+    y: number;           // Radar coordinate (-130 to +130)
+    type?: 'enemy-ship'; // Optional enemy type for future styling
+  }>;
+  playerPosition: {      // Radar center position (station when docked, player when flying)
+    x: number;
+    y: number;
+  };
+  timestamp: number;     // For debugging and latency tracking
+}
+
 // Game state and events
 export interface GameState {
   currentScene: string
@@ -80,6 +101,7 @@ export interface GameEvents {
   'game:xp-changed': { amount: number; total: number }
   'game:station-unlocked': { stationId: string; skillId?: string; totalUnlocked: number; totalStations: number }
   'game:progress-complete': { totalStations: number }
+  'game:enemy-positions-updated': EnemyRadarData
   
   // From Vue to Game
   'ui:modal-opened': { type: string }
