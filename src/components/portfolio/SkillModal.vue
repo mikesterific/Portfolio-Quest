@@ -22,14 +22,14 @@
 
         <!-- Telemetry -->
         <div class="telemetry">
-          <div class="telemetry-box">
-            <span class="label">VECTOR</span>
-            <span class="value">{{ (vector ?? 0).toFixed(1) }} m/s</span>
-          </div>
-          <div class="telemetry-box">
-            <span class="label">STATION HEALTH</span>
-            <span class="value">{{ stationHealth }}%</span>
-          </div>
+                  <div class="telemetry-box">
+          <span class="label">VECTOR</span>
+          <span class="value">{{ (radarTelemetry.vector ?? 0).toFixed(1) }} m/s</span>
+        </div>
+        <div class="telemetry-box">
+          <span class="label">STATION HEALTH</span>
+          <span class="value">{{ radarTelemetry.stationHealth }}%</span>
+        </div>
         </div>
 
         <!-- Station/Skill Info -->
@@ -55,8 +55,8 @@
             <div class="progress-fill" :style="{ width: `${(skill?.level || 0) * 20}%` }"></div>
           </div>
 
-          <div class="tags" v-if="getTechnologiesForSkill(skill?.id).length">
-            <span v-for="tag in getTechnologiesForSkill(skill?.id)" :key="tag" class="tag">{{ tag }}</span>
+          <div class="tags" v-if="getTechnologiesForSkill(skill).length">
+            <span v-for="tag in getTechnologiesForSkill(skill)" :key="tag" class="tag">{{ tag }}</span>
           </div>
 
           <div class="projects" v-if="getRelatedProjects(skill?.category).length">
@@ -82,10 +82,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue'
-import type { SkillData, ProjectData } from '@/types/game'
-import { portfolioData } from '@/data/portfolio'
+import { defineComponent } from 'vue'
+import type { SkillData } from '@/types/game'
 import gameEventBridge from '@/game/GameEventBridge'
+import { useRadarSystem } from '@/composables/useRadarSystem'
 
 export default defineComponent({
   name: 'SkillModal',
@@ -94,47 +94,16 @@ export default defineComponent({
   },
   emits: ['close'],
   setup(props) {
-    // Radar telemetry (purely visual)
-    const vector = ref(0.2)
-    const stationHealth = ref(92)
+    // Use the radar system composable
+    const {
+      radarTelemetry,
+      getSkillProjects,
+      getSkillTechnologies,
+      generateRadarBlips,
+    } = useRadarSystem()
 
-    function getRelatedProjects(category?: string): ProjectData[] {
-      if (!category) return []
-      const categoryProjectMap: Record<string, string[]> = {
-        frontend: ['portfolio-quest', 'dell-xps-poc', 'dell-xps-landing', 'dell-home-poc', 'dell-home-live', 'ea-support-site'],
-        testing: ['portfolio-quest'],
-        architecture: ['dell-home-live', 'ea-support-site', 'portfolio-quest'],
-        tooling: ['portfolio-quest'],
-        ai: [],
-        security: [],
-        leadership: ['dell-home-live', 'ea-support-site'],
-      }
-      const projectIds = categoryProjectMap[category] || []
-      return portfolioData.projects.filter((p) => projectIds.includes(p.id))
-    }
-
-    function getTechnologiesForSkill(skillId?: string): string[] {
-      if (!skillId || !props.skill) return []
-      const related = getRelatedProjects(props.skill.category)
-      const techs = related.flatMap(p => p.technologies)
-      return Array.from(new Set(techs)).slice(0, 10)
-    }
-
-    // Radar blips derived from technologies for the skill
-    const radarBlips = computed(() => {
-      const techs = props.skill ? getTechnologiesForSkill(props.skill.id) : []
-      const maxBlips = Math.min(techs.length, 6)
-      const blips: { x: number; y: number; key: string }[] = []
-      if (maxBlips === 0) return blips
-      for (let i = 0; i < maxBlips; i++) {
-        const angle = (i / maxBlips) * Math.PI * 2 + 0.3 * i
-        const radius = 90 + (i % 2) * 30
-        const x = Math.cos(angle) * radius
-        const y = Math.sin(angle) * radius
-        blips.push({ x, y, key: techs[i] })
-      }
-      return blips
-    })
+    // Generate radar blips for the current skill
+    const radarBlips = generateRadarBlips(props.skill)
 
     function formatCategory(category?: string): string {
       if (!category) return ''
@@ -177,13 +146,12 @@ export default defineComponent({
     }
 
     return {
-      vector,
-      stationHealth,
+      radarTelemetry,
       radarBlips,
       formatCategory,
       getLevelText,
-      getTechnologiesForSkill,
-      getRelatedProjects,
+      getTechnologiesForSkill: getSkillTechnologies,
+      getRelatedProjects: getSkillProjects,
       formatProjectType,
       openProject,
     }

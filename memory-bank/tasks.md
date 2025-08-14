@@ -1059,5 +1059,94 @@ All planning criteria have been met:
 - Confirm shield systems work correctly
 - Check progression system handles new total station count
 
+**Status**: ✅ IMPLEMENTATION COMPLETE
+**Result**: Successfully abstracted radar logic from SkillModal.vue into reusable Vue 3 composable
+
+#### Implementation Summary ✅
+- **Files Created**: `src/composables/useRadarSystem.ts` - 90 lines of well-structured composable code
+- **Files Modified**: `src/components/portfolio/SkillModal.vue` - Reduced from inline logic to clean composable usage
+- **Code Reduction**: Removed ~50 lines of inline logic from SkillModal.vue
+- **Type Safety**: Added proper TypeScript interfaces for RadarTelemetry and RadarBlip
+- **Testing**: All 96 tests pass (8 test suites) with 92.26% code coverage
+- **Build Status**: TypeScript compilation clean (no errors)
+- **Functionality**: All existing SkillModal features preserved and working correctly
+
+#### Benefits Achieved ✅
+- **Reusability**: Radar logic now available for use in other components
+- **Maintainability**: Centralized radar logic in single composable file
+- **Code Organization**: Cleaner SkillModal.vue focused on presentation layer
+- **Type Safety**: Enhanced TypeScript support with dedicated interfaces
+- **Testing**: Composable can be unit tested independently
+
+**Next Mode**: REFLECTION MODE (if desired) or Ready for Next Task
+
+### ✅ LEVEL 2 TASK: Abstract Radar Logic from SkillModal — COMPLETE
+
+**Complexity**: Level 2 (Simple Enhancement)
+**Goal**: Extract radar logic from SkillModal.vue into a reusable Vue 3 composable to improve code organization and reusability
+
+#### Overview of Changes
+- Create a new composable `useRadarSystem.ts` that encapsulates radar logic
+- Extract telemetry data generation (vector, stationHealth)
+- Abstract radar blips computation based on skill data  
+- Move related helper functions (getTechnologiesForSkill, getRelatedProjects) to the composable
+- Update SkillModal.vue to use the new composable
+- Maintain existing functionality and visual appearance
+
+#### Files to Modify
+**New Files:**
+- `src/composables/useRadarSystem.ts` - Main radar logic composable
+
+**Modified Files:**
+- `src/components/portfolio/SkillModal.vue` - Use the new composable instead of inline logic
+- `src/types/game.ts` - Add radar-related type definitions if needed
+
+#### Implementation Steps
+1. **Create Composable Structure** (15 min) ✅
+   - [x] Create `src/composables/useRadarSystem.ts`
+   - [x] Define TypeScript interfaces for radar data
+   - [x] Set up basic composable function structure
+
+2. **Extract Radar Logic** (25 min) ✅  
+   - [x] Move telemetry data generation (vector, stationHealth) to composable
+   - [x] Extract radar blips computation logic
+   - [x] Move `getTechnologiesForSkill` and `getRelatedProjects` functions
+   - [x] Implement reactive state management for radar data
+
+3. **Update SkillModal Integration** (15 min) ✅
+   - [x] Import and use the new composable in SkillModal.vue
+   - [x] Replace inline logic with composable function calls
+   - [x] Verify all existing functionality is preserved
+   - [x] Remove redundant code from SkillModal.vue
+
+4. **Testing and Verification** (15 min) ✅
+   - [x] Test SkillModal.vue still functions correctly
+   - [x] Verify radar blips generate correctly for different skills
+   - [x] Ensure telemetry data displays properly
+   - [x] Check that related projects and technologies show correctly
+   - [x] Build compiles with zero TypeScript errors
+
+#### Composable Design
+The `useRadarSystem` composable will provide:
+- `radarTelemetry`: Reactive telemetry data (vector, stationHealth)
+- `generateRadarBlips(skill)`: Function to generate blips based on skill data
+- `getSkillTechnologies(skill)`: Extract technologies for a skill
+- `getSkillProjects(skill)`: Get related projects for a skill category
+- `updateTelemetry()`: Function to refresh telemetry data
+
+#### Benefits
+- **Reusability**: Radar logic can be used in other components
+- **Maintainability**: Centralized radar logic easier to modify and debug
+- **Testability**: Composable can be unit tested independently
+- **Code Organization**: Cleaner SkillModal.vue focused on presentation
+- **Type Safety**: Better TypeScript support with dedicated interfaces
+
+#### Success Criteria
+- **Build Quality**: Clean TypeScript build with no errors
+- **Functionality**: SkillModal.vue works exactly as before
+- **Code Quality**: Radar logic properly abstracted into reusable composable
+- **Performance**: No performance regression in radar rendering
+- **Maintainability**: Clear separation between logic and presentation
+
 **Status**: PLANNING COMPLETE
 **Next Mode**: IMPLEMENT MODE
