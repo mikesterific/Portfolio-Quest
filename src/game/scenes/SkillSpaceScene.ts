@@ -219,11 +219,9 @@ const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onIn
   // Get the appropriate starbase image for this station
   const starbaseKey = getStarbaseImage(station.skillId)
   
-  console.log(`🔍 Creating station ${station.skillId} using ${starbaseKey}`)
   
   // Use individual starbase images
   if (scene.textures.exists(starbaseKey)) {
-    console.log(`✅ Using ${starbaseKey} for ${station.skillId} station`)
     
     // Create sprite from individual starbase image
     stationBody = scene.add.image(0, 0, starbaseKey)
@@ -233,7 +231,7 @@ const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onIn
     const colorTint = getColorTint(station.colorVariant)
     stationBody.setTint(colorTint)
     
-    console.log(`✅ Created starbase station: ${station.skillId} using ${starbaseKey} with tint: ${colorTint.toString(16)}`)
+    
   } else {
     // Fallback to geometric shape  
     console.warn(`Starbase image ${starbaseKey} not found for station ${station.skillId}, using fallback`)
@@ -562,7 +560,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     preloadPlayerAssets(this)
     
     // Load individual starbase images
-    console.log('🔄 Preloading individual starbase images...')
+    
     
     for (let i = 1; i <= 11; i++) {
       this.load.image(`starbase${i}`, `starbase${i}.png`)
@@ -578,26 +576,13 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.load.image('hero-explosion', 'src/assets/images/HeroShipExplodes.png')
     
     // Add load event listeners for debugging
-    this.load.on('filecomplete', (key: string) => {
-      if (key.startsWith('starbase')) {
-        console.log(`✅ ${key} loaded successfully!`)
-      }
-      if (key === 'enemy-ship') {
-        console.log('✅ enemy-ship loaded successfully!')
-      }
-      if (key === 'enemy-explosion') {
-        console.log('✅ enemy-explosion loaded successfully!')
-      }
-      if (key === 'hero-explosion') {
-        console.log('✅ hero-explosion loaded successfully!')
-      }
-    })
+      // Intentionally silent
     
     this.load.on('loaderror', (file: any) => {
       console.error('❌ Failed to load:', file.key, file.src)
     })
     
-    console.log('🔄 Starbase image loading setup complete')
+    
   }
 
   create(): void {

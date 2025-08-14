@@ -12,32 +12,24 @@ export class GameUIScene extends Phaser.Scene {
   private combatButton!: Phaser.GameObjects.Text
   private combatToggleButton!: Phaser.GameObjects.Text
   private combatEnabled: boolean = false
+  private radarMarker?: Phaser.GameObjects.Arc
 
   constructor() {
     super({ key: 'GameUIScene', active: true })
-    console.log('🏗️ GameUIScene constructor called')
   }
 
   create(): void {
-    console.log('🚀 GameUIScene.create() called - starting UI scene initialization')
-    console.log('🚀 Scene key:', this.scene.key)
-    console.log('🚀 Scene active:', this.scene.isActive())
-    console.log('🚀 Scene visible:', this.scene.isVisible())
     
     // Initialize combat setting from localStorage
     this.initializeCombatSetting()
-    console.log('⚙️ Combat setting initialized:', this.combatEnabled)
     
     // Initialize UI overlay
     this.setupUI()
-    console.log('🎨 UI setup completed')
     
     this.setupEventListeners()
-    console.log('👂 Event listeners setup completed')
     
     // Broadcast initial combat setting before starting scenes
     this.broadcastCombatSetting()
-    console.log('📡 Combat setting broadcasted')
     
     // Start Skills Command Center in parallel so this UI scene stays active
     this.scene.launch('SkillSpaceScene')
@@ -45,16 +37,13 @@ export class GameUIScene extends Phaser.Scene {
     try {
       this.scene.moveAbove('GameUIScene', 'SkillSpaceScene')
       this.scene.bringToTop()
-      console.log('⬆️ Brought GameUIScene to top of render list')
     } catch (err) {
       console.warn('Could not adjust scene order:', err)
     }
     this.updateCurrentSceneDisplay('SkillSpaceScene')
-    console.log('🎮 SkillSpaceScene started')
     
     // Emit game event for initial scene
     gameEventBridge.emitGameEvent('game:scene-changed', { sceneName: 'SkillSpaceScene' })
-    console.log('✅ GameUIScene initialization complete')
   }
 
   private initializeCombatSetting(): void {
@@ -73,7 +62,6 @@ export class GameUIScene extends Phaser.Scene {
 
   private setupUI(): void {
     const { width, height } = this.scale
-    console.log('🎨 setupUI called with dimensions:', width, 'x', height)
 
     // Skip Game button (top-right)
     this.skipButton = this.add.text(width - 20, 20, 'Skip Game', {
@@ -102,16 +90,12 @@ export class GameUIScene extends Phaser.Scene {
       .setDepth(10000) // Set high depth immediately
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', () => {
-        console.log('🎮 Combat toggle button clicked!')
         this.toggleCombatSetting()
       })
       .on('pointerover', () => {
-        console.log('🎮 Hovering over combat toggle button')
         this.combatToggleButton.setScale(1)
       })
       .on('pointerout', () => this.combatToggleButton.setScale(1))
-      
-      console.log('✅ Combat toggle button created successfully')
       
     } catch (error) {
       console.error('❌ Error creating combat toggle button:', error)
