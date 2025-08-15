@@ -56,9 +56,13 @@ class Time { now = 0; addEvent(cfg:any){ (this as any)._lastEvent = cfg; return 
 class Tweens { add(cfg?: any){ if (cfg && typeof cfg.onComplete === 'function') { cfg.onComplete(); } return {} } }
 class Load { image(){ return this } on(){ return this } }
 class Textures { exists(){ return true } }
+class Events { 
+  once = jest.fn(); on = jest.fn(); emit = jest.fn(); off = jest.fn(); removeListener = jest.fn()
+  constructor() { this.once.mockReturnThis(); this.on.mockReturnThis(); this.emit.mockReturnThis(); this.off.mockReturnThis(); this.removeListener.mockReturnThis() }
+}
 
-export class SceneBase { sys:any; scale:any; add:any; tweens:any; textures:any; physics:any; input:any; time:any; scene:any; game:any; load:any
-  constructor(config:any){ this.sys={settings:config}; this.scale={width:1200, height:900}; this.add={ container:(x:number,y:number)=>new Container(x,y), image:()=>new Image(), rectangle:()=>new GameObject(), circle:()=>new GameObject(), polygon:()=>new GameObject(), text:(x:number,y:number,t:string,s?:any)=>new Text(x,y,t,s), graphics:()=>new Graphics(), sprite:(x:number,y:number,_key?:string)=>{ const img=new Image(); img.x=x; img.y=y; return img }, particles:()=>new GameObject(), group:()=>new Group() }; this.tweens=new Tweens(); this.textures=new Textures(); this.physics=new Physics(); this.input={ keyboard: new Keyboard(), on: jest.fn() }; this.time=new Time(); this.scene={ setActive: jest.fn(), start: jest.fn(), isActive: jest.fn(() => true), isVisible: jest.fn(() => true), key: 'test-scene' }; this.game={ loop:{ delta:16 } }; this.load=new Load(); }
+export class SceneBase { sys:any; scale:any; add:any; tweens:any; textures:any; physics:any; input:any; time:any; scene:any; game:any; load:any; events:any
+  constructor(config:any){ this.sys={settings:config}; this.scale={width:1200, height:900}; this.add={ container:(x:number,y:number)=>new Container(x,y), image:()=>new Image(), rectangle:()=>new GameObject(), circle:()=>new GameObject(), polygon:()=>new GameObject(), text:(x:number,y:number,t:string,s?:any)=>new Text(x,y,t,s), graphics:()=>new Graphics(), sprite:(x:number,y:number,_key?:string)=>{ const img=new Image(); img.x=x; img.y=y; return img }, particles:()=>new GameObject(), group:()=>new Group() }; this.tweens=new Tweens(); this.textures=new Textures(); this.physics=new Physics(); this.input={ keyboard: new Keyboard(), on: jest.fn() }; this.time=new Time(); this.scene={ setActive: jest.fn(), start: jest.fn(), isActive: jest.fn(() => true), isVisible: jest.fn(() => true), key: 'test-scene' }; this.game={ loop:{ delta:16 } }; this.load=new Load(); this.events=new Events(); }
 }
 
 class Game {

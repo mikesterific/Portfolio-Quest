@@ -111,11 +111,11 @@ describe('SkillSpaceScene', () => {
     const cfg = { health: 2, maxHealth: 3, isActive: true, color: 0x00ffff, lastHitTime: 0, lastRegenTime: 0, stationId: 's1' }
     shield.setData('shieldConfig', cfg)
     jest.spyOn(scene, 'damageShield')
-    jest.spyOn(scene, 'createShieldHitEffect')
+    jest.spyOn(scene['effectsManager'], 'createShieldHitEffect')
     scene['handleLaserShieldHit'](laser, shield)
     expect(laser.destroy).toHaveBeenCalled()
     expect(scene['damageShield']).toHaveBeenCalled()
-    expect(scene['createShieldHitEffect']).toHaveBeenCalled()
+    expect(scene['effectsManager']['createShieldHitEffect']).toHaveBeenCalled()
   })
 
   test('damageShield deactivates at zero health and updates mapping', () => {
@@ -129,13 +129,13 @@ describe('SkillSpaceScene', () => {
     const sm = new (require('@/game/systems/ShieldMappingSystem').ShieldMapManager)()
     const updateShieldStateSpy = jest.spyOn(sm, 'updateShieldState')
     scene['state'].shieldMapManager = sm
-    jest.spyOn(scene, 'createShieldDestructionEffect')
+    jest.spyOn(scene['effectsManager'], 'createShieldDestructionEffect')
     scene['damageShield'](shield, 1)
     const updated = shield.getData('shieldConfig')
     expect(updated.isActive).toBe(false)
     expect(shield.body.enable).toBe(false)
     expect(updateShieldStateSpy).toHaveBeenCalledWith('s1', false)
-    expect(scene['createShieldDestructionEffect']).toHaveBeenCalled()
+    expect(scene['effectsManager']['createShieldDestructionEffect']).toHaveBeenCalled()
   })
 
   test('regenerateShields reactivates and heals over time', () => {
@@ -149,7 +149,7 @@ describe('SkillSpaceScene', () => {
     const sm = new (require('@/game/systems/ShieldMappingSystem').ShieldMapManager)()
     const updateShieldStateSpy = jest.spyOn(sm, 'updateShieldState')
     scene['state'].shieldMapManager = sm
-    jest.spyOn(scene, 'createShieldReactivationEffect')
+    jest.spyOn(scene['effectsManager'], 'createShieldReactivationEffect')
     // advance time to allow regen after 10s delay
     scene.time.now = 11000
     scene['regenerateShields']()
@@ -158,7 +158,7 @@ describe('SkillSpaceScene', () => {
     expect(updated.isActive).toBe(true)
     expect(shield.body.enable).toBe(true)
     expect(updateShieldStateSpy).toHaveBeenCalledWith('s1', true)
-    expect(scene['createShieldReactivationEffect']).toHaveBeenCalled()
+    expect(scene['effectsManager']['createShieldReactivationEffect']).toHaveBeenCalled()
   })
 
   test('enforceShieldBarrierForSprite pushes sprite out of barrier', () => {
@@ -195,13 +195,13 @@ describe('SkillSpaceScene', () => {
     const laser = { destroy: jest.fn() }
     const removeSpy = jest.spyOn(scene['state'].enemyAI, 'removeEnemy')
     // already provided by mockEnemyAI
-    jest.spyOn(scene, 'spawnExplosionAt')
+    jest.spyOn(scene['effectsManager'], 'spawnExplosionAt')
     const emitSpy = jest.spyOn(require('@/game/GameEventBridge').default, 'emitGameEvent')
-    const before = scene['xpTotal']
+    const before = scene['uiManager'].getXpTotal()
     scene['handleLaserEnemyOverlap'](laser, enemy)
-    expect(scene['spawnExplosionAt']).toHaveBeenCalled()
-    expect(scene['xpTotal']).toBe(before + 10)
-    expect(emitSpy).toHaveBeenCalledWith('game:xp-changed', { amount: 10, total: scene['xpTotal'] })
+    expect(scene['effectsManager']['spawnExplosionAt']).toHaveBeenCalled()
+    expect(scene['uiManager'].getXpTotal()).toBe(before + 10)
+    expect(emitSpy).toHaveBeenCalledWith('game:xp-changed', { amount: 10, total: scene['uiManager'].getXpTotal() })
     expect(removeSpy).toHaveBeenCalledWith('e1')
     expect(laser.destroy).toHaveBeenCalled()
   })
@@ -370,9 +370,9 @@ describe('SkillSpaceScene', () => {
     const particleObj = { destroy: jest.fn() }
     const particlesSpy = jest.spyOn(scene.add, 'particles').mockReturnValue(particleObj)
     const delayedSpy = jest.spyOn(scene.time, 'delayedCall').mockImplementation((ms, cb) => { cb(); return {} })
-    scene['createShieldHitEffect'](10, 20, 0x00aaff)
-    scene['createShieldDestructionEffect'](10, 20, 0x00aaff)
-    scene['createShieldReactivationEffect'](10, 20, 0x00aaff)
+    scene['effectsManager']['createShieldHitEffect'](10, 20, 0x00aaff)
+    scene['effectsManager']['createShieldDestructionEffect'](10, 20, 0x00aaff)
+    scene['effectsManager']['createShieldReactivationEffect'](10, 20, 0x00aaff)
     expect(particlesSpy).toHaveBeenCalled()
     expect(particleObj.destroy).toHaveBeenCalled()
     delayedSpy.mockRestore()
@@ -611,7 +611,7 @@ describe('SkillSpaceScene', () => {
     scene['dockWithStation'](station, 'frontend')
     // onComplete runs synchronously in mock tweens
     expect(scene['state'].isDocked).toBe(true)
-    expect(scene['xpTotal']).toBe(50)
+    expect(scene['uiManager'].getXpTotal()).toBe(50)
     expect(emitSpy).toHaveBeenCalledWith('game:xp-changed', { amount: 50, total: 50 })
     expect(emitSpy).toHaveBeenCalledWith('game:skill-selected', { skillId: 'frontend' })
   })
@@ -620,7 +620,7 @@ describe('SkillSpaceScene', () => {
     scene.create()
     scene['state'].player = { x: 50, y: 60 }
     scene['state'].playerHealth = 3
-    const spawnHeroSpy = jest.spyOn(scene, 'spawnHeroExplosionAt')
+    const spawnHeroSpy = jest.spyOn(scene['effectsManager'], 'spawnHeroExplosionAt')
     const delayedSpy = jest.spyOn(scene.time, 'delayedCall')
     scene['damagePlayer'](1)
     expect(scene['state'].playerHealth).toBe(2)
@@ -638,7 +638,7 @@ describe('SkillSpaceScene', () => {
     // expect(setTextSpy).toHaveBeenCalledWith('XP: 42')
     
     const tweenSpy = jest.spyOn(scene.tweens, 'add')
-    scene['animateXpGain'](5)
+    scene['effectsManager']['animateXpGain'](5, scene['xpText'])
     expect(tweenSpy).toHaveBeenCalled()
     // Remove addTextSpy test as animateXpGain doesn't add text, just animates existing
   })
@@ -760,13 +760,13 @@ describe('SkillSpaceScene', () => {
     // Should not throw and should take early-return branches
     expect(() => scene['updateHealthUI']()).not.toThrow()
     // Skip updateXpUI test since it's commented out in source
-    expect(() => scene['animateXpGain'](5)).not.toThrow()
+    expect(() => scene['effectsManager']['animateXpGain'](5, null)).not.toThrow()
   })
 
   test('damagePlayer returns early when no player present', () => {
     scene.create()
     const initialHealth = scene['state'].playerHealth
-    const heroExplodeSpy = jest.spyOn(scene, 'spawnHeroExplosionAt')
+    const heroExplodeSpy = jest.spyOn(scene['effectsManager'], 'spawnHeroExplosionAt')
     scene['state'].player = null
     scene['damagePlayer'](1)
     expect(scene['state'].playerHealth).toBe(initialHealth)
@@ -778,7 +778,7 @@ describe('SkillSpaceScene', () => {
     scene['state'].player = { x: 10, y: 20 }
     scene['state'].playerHealth = 3
     scene['state'].isPlayerInvulnerable = true
-    const heroExplodeSpy = jest.spyOn(scene, 'spawnHeroExplosionAt')
+    const heroExplodeSpy = jest.spyOn(scene['effectsManager'], 'spawnHeroExplosionAt')
     const delayedSpy = jest.spyOn(scene.time, 'delayedCall')
     scene['damagePlayer'](1)
     expect(scene['state'].playerHealth).toBe(3)
@@ -791,7 +791,7 @@ describe('SkillSpaceScene', () => {
     scene['state'].player = { x: 0, y: 0 }
     scene['state'].playerHealth = 0
     scene['state'].isPlayerInvulnerable = false
-    const heroExplodeSpy = jest.spyOn(scene, 'spawnHeroExplosionAt')
+    const heroExplodeSpy = jest.spyOn(scene['effectsManager'], 'spawnHeroExplosionAt')
     const delayedSpy = jest.spyOn(scene.time, 'delayedCall').mockImplementation((ms, cb) => { cb(); return {} })
     // Use zero damage so health stays at 0 and enters the branch
     expect(() => scene['damagePlayer'](0)).not.toThrow()

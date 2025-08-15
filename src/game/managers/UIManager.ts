@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { UI_CONFIG } from '../config'
 
 export class UIManager {
   private scene: Phaser.Scene
@@ -138,13 +139,13 @@ export class UIManager {
   private setupInteractionPrompt(): void {
     this.interactionPrompt = this.scene.add.text(
       this.scene.scale.width / 2, 
-      this.scene.scale.height - 80, 
+      this.scene.scale.height - UI_CONFIG.positioning.interactionPrompt.yOffset, 
       '', 
       {
-        fontSize: '18px',
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+        fontSize: UI_CONFIG.fonts.promptSize,
+        fontFamily: UI_CONFIG.fonts.primary,
         fontStyle: 'bold',
-        color: '#FFFFFF',
+        color: UI_CONFIG.colors.prompt,
         stroke: '#000000',
         strokeThickness: 2,
         backgroundColor: '#2C3E50ee',
@@ -155,18 +156,18 @@ export class UIManager {
   }
 
   private setupNavigationHints(): void {
-    this.scene.add.text(20, this.scene.scale.height - 60, 'WASD/Arrows: Navigate | SPACE: Fire lasers | D: Dock/Undock/Interact', {
-      fontSize: '16px',
-      color: '#95A5A6'
+    this.scene.add.text(20, this.scene.scale.height - UI_CONFIG.positioning.navigationHints.yOffset, 'WASD/Arrows: Navigate | SPACE: Fire lasers | D: Dock/Undock/Interact', {
+      fontSize: UI_CONFIG.fonts.hintsSize,
+      color: UI_CONFIG.colors.hints
     })
   }
 
   private setupHealthDisplay(playerHealth: number, maxPlayerHealth: number): void {
-    this.healthText = this.scene.add.text(24, 24, '', {
-      fontSize: '22px',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+    this.healthText = this.scene.add.text(UI_CONFIG.positioning.healthDisplay.x, UI_CONFIG.positioning.healthDisplay.y, '', {
+      fontSize: UI_CONFIG.fonts.healthSize,
+      fontFamily: UI_CONFIG.fonts.primary,
       fontStyle: 'bold',
-      color: '#FF6B6B',
+      color: UI_CONFIG.colors.health,
       stroke: '#000000',
       strokeThickness: 3
     }).setDepth(100)
@@ -175,11 +176,11 @@ export class UIManager {
   }
 
   private setupXpDisplay(): void {
-    this.xpText = this.scene.add.text(24, 60, 'XP: 0', {
-      fontSize: '20px',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+    this.xpText = this.scene.add.text(UI_CONFIG.positioning.xpDisplay.x, UI_CONFIG.positioning.xpDisplay.y, 'XP: 0', {
+      fontSize: UI_CONFIG.fonts.xpSize,
+      fontFamily: UI_CONFIG.fonts.primary,
       fontStyle: 'bold',
-      color: '#F1C40F',
+      color: UI_CONFIG.colors.xp,
       stroke: '#000000',
       strokeThickness: 3
     }).setDepth(100)

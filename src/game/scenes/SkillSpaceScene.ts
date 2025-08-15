@@ -13,19 +13,27 @@ import { SpaceStationManager, type SpaceStationData } from '../managers/SpaceSta
 import { EffectsManager } from '../managers/EffectsManager'
 import { UIManager } from '../managers/UIManager'
 import { SceneConfigManager } from '../managers/SceneConfigManager'
+import { 
+  PLAYER_CONFIG, 
+  COMBAT_CONFIG, 
+  SHIELD_CONFIG, 
+  UI_CONFIG,
+  validateGameConfig,
+  GAME_CONFIG
+} from '../config'
 
 // Coordinate transformation function for radar display
 const transformToRadarCoordinates = (
   enemyWorldPos: { x: number, y: number },
   playerWorldPos: { x: number, y: number },
-  radarRadius: number = 130
+  radarRadius: number = UI_CONFIG.radar.radius
 ): { x: number, y: number } => {
   // Calculate relative position to player
   const relativeX = enemyWorldPos.x - playerWorldPos.x
   const relativeY = enemyWorldPos.y - playerWorldPos.y
   
   // Scale to radar display bounds - increased range to match canvas height
-  const gameWorldRadius = 450 // Full canvas height coverage (900px diameter)
+  const gameWorldRadius = UI_CONFIG.radar.gameWorldRadius // Full canvas height coverage (900px diameter)
   const scaleX = (relativeX / gameWorldRadius) * radarRadius
   const scaleY = (relativeY / gameWorldRadius) * radarRadius
   
@@ -144,10 +152,10 @@ const createShieldTexture = (scene: Phaser.Scene, color: number, state: 'healthy
 const getShieldConfigForStation = (station: SpaceStationData): Omit<ShieldConfig, 'health' | 'lastHitTime' | 'lastRegenTime' | 'isActive' | 'stationId'> => {
   // Uniform shield behavior for all stations (match frontend station)
   return {
-    radius: SkillSpaceScene.SHIELD_RADIUS,
-    maxHealth: SkillSpaceScene.SHIELD_MAX_HEALTH,
-    color: 0x00AAFF,
-    regenerationRate: SkillSpaceScene.SHIELD_REGEN_TICK_MS_DEFAULT
+    radius: SHIELD_CONFIG.geometry.radius,
+    maxHealth: SHIELD_CONFIG.health.max,
+    color: SHIELD_CONFIG.visual.baseColor,
+    regenerationRate: SHIELD_CONFIG.health.regenerationRate
   }
 }
 
@@ -201,24 +209,6 @@ const createStationShield = (scene: Phaser.Scene, station: SpaceStationData, x: 
  * Space stations represent different skill categories in organized sectors
  */
 export class SkillSpaceScene extends Phaser.Scene {
-  private static readonly PLAYER_MAX_HEALTH = 3
-  private static readonly PLAYER_INVULNERABILITY_MS = 800
-  
-  // Timing and configuration constants
-  private static readonly SHIELD_REGEN_START_DELAY_MS = 10000
-  public static readonly SHIELD_REGEN_TICK_MS_DEFAULT = 2000
-  private static readonly LASER_LIFETIME_MS = 2500
-  private static readonly LASER_FIRE_REPEAT_MS = 140
-  private static readonly LASER_SPEED_PX_PER_S = 800
-  private static readonly ENEMY_COLLISION_CHECK_INTERVAL_MS = 16
-
-  // Shield geometry constants
-  public static readonly SHIELD_RADIUS = 90
-  public static readonly SHIELD_MAX_HEALTH = 4
-  private static readonly SHIELD_DOCKING_RADIUS = 50
-  private static readonly SHIELD_BARRIER_RADIUS = 90
-  private static readonly SHIELD_DETECTION_RADIUS = 120
-
   // Manager instances
   private stationManager: SpaceStationManager
   private effectsManager: EffectsManager
@@ -241,8 +231,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     lasers: null,
     laserTimer: null,
     enemyLasers: null,
-    playerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
-    maxPlayerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
+    playerHealth: PLAYER_CONFIG.health.max,
+    maxPlayerHealth: PLAYER_CONFIG.health.max,
     isPlayerInvulnerable: false,
     shields: null,
     shieldMapManager: null,
@@ -259,6 +249,9 @@ export class SkillSpaceScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'SkillSpaceScene' })
+    
+    // Validate configuration on scene creation
+    validateGameConfig(GAME_CONFIG)
     
     // Initialize managers
     this.stationManager = new SpaceStationManager(this)
@@ -376,15 +369,15 @@ export class SkillSpaceScene extends Phaser.Scene {
        const shield = createStationShield(this, station, station.x, station.y)
        this.state.shields!.add(shield)
 
-       // Register shield with mapping system
-       const shieldConfig: ShieldZoneConfig = {
-         dockingRadius: SkillSpaceScene.SHIELD_DOCKING_RADIUS,       // Inner zone - allows ships to dock
-         barrierRadius: SkillSpaceScene.SHIELD_BARRIER_RADIUS,       // Middle zone - blocks projectiles (matches visual shield)
-         detectionRadius: SkillSpaceScene.SHIELD_DETECTION_RADIUS,    // Outer zone - early detection
-         stationId: station.id,
-         position: new Phaser.Math.Vector2(station.x, station.y),
-         isActive: true
-       }
+             // Register shield with mapping system
+      const shieldConfig: ShieldZoneConfig = {
+        dockingRadius: SHIELD_CONFIG.geometry.dockingRadius,       // Inner zone - allows ships to dock
+        barrierRadius: SHIELD_CONFIG.geometry.barrierRadius,       // Middle zone - blocks projectiles (matches visual shield)
+        detectionRadius: SHIELD_CONFIG.geometry.detectionRadius,    // Outer zone - early detection
+        stationId: station.id,
+        position: new Phaser.Math.Vector2(station.x, station.y),
+        isActive: true
+      }
        this.state.shieldMapManager!.registerShield(station.id, shieldConfig)
 
       // Register station body as LOS occluder (radius approximates 60px for 120px display size)
@@ -495,12 +488,12 @@ export class SkillSpaceScene extends Phaser.Scene {
             this.state.dockedStation = station
             
             // Award XP for successful docking
-            this.uiManager.addXp(50)
-            this.effectsManager.animateXpGain(50, this.xpText!)
+            this.uiManager.addXp(COMBAT_CONFIG.xp.stationDockReward)
+            this.effectsManager.animateXpGain(COMBAT_CONFIG.xp.stationDockReward, this.xpText!)
             
             // Also emit event for GameUIScene
             gameEventBridge.emitGameEvent('game:xp-changed', { 
-              amount: 50, 
+              amount: COMBAT_CONFIG.xp.stationDockReward, 
               total: this.uiManager.getXpTotal() 
             })
             
@@ -588,7 +581,7 @@ export class SkillSpaceScene extends Phaser.Scene {
         this.state.laserTimer = null
       }
       this.fireLasersAtEnemy()
-      this.state.laserTimer = this.time.addEvent({ delay: SkillSpaceScene.LASER_FIRE_REPEAT_MS, loop: true, callback: () => this.fireLasersAtEnemy() })
+      this.state.laserTimer = this.time.addEvent({ delay: COMBAT_CONFIG.laser.fireRepeatMs, loop: true, callback: () => this.fireLasersAtEnemy() })
     })
 
     keySpace.on('up', () => {
@@ -674,9 +667,9 @@ export class SkillSpaceScene extends Phaser.Scene {
   }
 
   private setupEnemyPositionTimer(): void {
-    // Create timer to emit enemy positions every 500ms for radar system
+    // Create timer to emit enemy positions for radar system
     this.state.enemyPositionTimer = this.time.addEvent({
-      delay: 500, // 500ms = 2Hz update rate
+      delay: UI_CONFIG.radar.updateIntervalMs, // Configurable update rate
       loop: true,
       callback: () => this.emitEnemyPositions()
     })
@@ -794,7 +787,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       const now = this.time.now
       this.state.lasers.children.each((laserObj: Phaser.GameObjects.GameObject) => {
         const createdAt = laserObj.getData('createdAt') as number | undefined
-        if (createdAt && now - createdAt > SkillSpaceScene.LASER_LIFETIME_MS) {
+        if (createdAt && now - createdAt > COMBAT_CONFIG.laser.lifetimeMs) {
           laserObj.destroy()
         }
         return null
@@ -806,7 +799,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       const now = this.time.now
       this.state.enemyLasers.children.each((laserObj: Phaser.GameObjects.GameObject) => {
         const createdAt = laserObj.getData('createdAt') as number | undefined
-        if (createdAt && now - createdAt > SkillSpaceScene.LASER_LIFETIME_MS) {
+        if (createdAt && now - createdAt > COMBAT_CONFIG.laser.lifetimeMs) {
           laserObj.destroy()
         }
         return null
@@ -821,7 +814,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (!this.state.portals || !this.state.player || !this.state.interactionPrompt) return
 
     const portals = this.state.portals.children.entries as Phaser.GameObjects.GameObject[]
-    const nearestPortal = findNearestObject(this.state.player, portals, 100)
+    const nearestPortal = findNearestObject(this.state.player, portals, UI_CONFIG.proximity.portalDetectionDistance)
 
     if (nearestPortal !== this.state.nearestPortal) {
       this.state.nearestPortal = nearestPortal
@@ -840,7 +833,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (!this.state.spaceStations || !this.state.player || !this.state.interactionPrompt || this.state.nearestPortal) return
 
     const stations = this.state.spaceStations.children.entries as Phaser.GameObjects.GameObject[]
-    const nearestStation = findNearestObject(this.state.player, stations, 80)
+    const nearestStation = findNearestObject(this.state.player, stations, UI_CONFIG.proximity.stationDetectionDistance)
 
     // If any shield is active for the nearest station, prevent docking prompt
     if (nearestStation && this.state.shieldMapManager) {
@@ -898,7 +891,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       const body = laser.body as Phaser.Physics.Arcade.Body
       body.setAllowRotation(true)
 
-      const speed = SkillSpaceScene.LASER_SPEED_PX_PER_S
+      const speed = COMBAT_CONFIG.laser.speedPxPerSecond
       body.setVelocity(forward.x * speed, forward.y * speed)
 
       // Align laser orientation with player's facing
@@ -921,12 +914,12 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.effectsManager.spawnExplosionAt(enemy.x, enemy.y)
 
     // Award XP for enemy kill
-    this.uiManager.addXp(10)
-    this.effectsManager.animateXpGain(10, this.xpText!)
+    this.uiManager.addXp(COMBAT_CONFIG.xp.enemyKillReward)
+    this.effectsManager.animateXpGain(COMBAT_CONFIG.xp.enemyKillReward, this.xpText!)
     
     // Also emit event for GameUIScene (if it's working)
     gameEventBridge.emitGameEvent('game:xp-changed', { 
-      amount: 10, 
+      amount: COMBAT_CONFIG.xp.enemyKillReward, 
       total: this.uiManager.getXpTotal() 
     })
 
@@ -978,7 +971,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     // Feedback: explosion and invulnerability window (no flash)
     this.effectsManager.spawnHeroExplosionAt(this.state.player.x, this.state.player.y)
     this.state.isPlayerInvulnerable = true
-    this.time.delayedCall(SkillSpaceScene.PLAYER_INVULNERABILITY_MS, () => {
+    this.time.delayedCall(PLAYER_CONFIG.health.invulnerabilityDurationMs, () => {
       this.state.isPlayerInvulnerable = false
     })
 
@@ -1079,7 +1072,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       const timeSinceLastHit = currentTime - (shieldConfig.lastHitTime || 0)
 
       // Start regenerating after configured delay
-      if (shieldConfig.health < shieldConfig.maxHealth && timeSinceLastHit >= SkillSpaceScene.SHIELD_REGEN_START_DELAY_MS) {
+      if (shieldConfig.health < shieldConfig.maxHealth && timeSinceLastHit >= SHIELD_CONFIG.health.regenerationDelayMs) {
         const timeSinceLastRegen = currentTime - (shieldConfig.lastRegenTime || 0)
         if (timeSinceLastRegen >= shieldConfig.regenerationRate) {
           const wasInactive = !shieldConfig.isActive
@@ -1122,7 +1115,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (this.state.lasers && this.state.enemyAI) {
       // We need to manually check collisions each frame since enemies are not in a group
       this.time.addEvent({
-        delay: SkillSpaceScene.ENEMY_COLLISION_CHECK_INTERVAL_MS, // Check every frame (roughly 60 FPS)
+        delay: COMBAT_CONFIG.collision.checkIntervalMs, // Check every frame (roughly 60 FPS)
         loop: true,
         callback: () => {
           // Skip collision detection when combat is disabled
@@ -1142,7 +1135,7 @@ export class SkillSpaceScene extends Phaser.Scene {
                 enemy.sprite.x, enemy.sprite.y
               )
               
-              if (distance < 50) { // Collision threshold
+              if (distance < COMBAT_CONFIG.collision.threshold) { // Collision threshold
                 this.handleLaserEnemyOverlap(laser, enemy.sprite)
                 break // Stop checking after first collision
               }
