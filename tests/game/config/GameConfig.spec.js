@@ -24,7 +24,7 @@ describe('Game Configuration System', () => {
       expect(COMBAT_CONFIG).toEqual({
         laser: {
           lifetimeMs: 2500,
-          fireRepeatMs: 140,
+          fireRepeatMs: 340,
           speedPxPerSecond: 800
         },
         xp: {

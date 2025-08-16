@@ -99,11 +99,17 @@ export default defineComponent({
         vector: 0.2,
         stationHealth: 92,
       },
-      enemyData: null as EnemyRadarData | null
+      enemyData: null as EnemyRadarData | null,
+      combatEnabled: false // Track combat/enemy setting
     }
   },
   computed: {
     radarBlips(): RadarBlip[] {
+      // If combat/enemies are disabled, show no blips
+      if (!this.combatEnabled) {
+        return []
+      }
+
       // Use real enemy data if available, otherwise fall back to test data
       if (this.enemyData && this.enemyData.enemies.length > 0) {
         return this.enemyData.enemies.map(enemy => ({
@@ -113,7 +119,7 @@ export default defineComponent({
         }))
       }
       
-      // Fallback test data when no enemies present
+      // Fallback test data when no enemies present but combat is enabled
       return [
         { x: -45, y: 30, key: 'test-enemy-1' },
         { x: 60, y: -80, key: 'test-enemy-2' },
@@ -124,15 +130,35 @@ export default defineComponent({
   mounted() {
     // Listen for enemy position updates
     gameEventBridge.onGameEvent('game:enemy-positions-updated', this.handleEnemyUpdate)
+    
+    // Listen for combat setting changes
+    gameEventBridge.onGameEvent('ui:setting-changed', this.handleSettingChange)
+    
+    // Initialize combat setting from localStorage
+    this.initializeCombatSetting()
   },
   unmounted() {
     // Clean up event listeners to prevent memory leaks
     gameEventBridge.offGameEvent('game:enemy-positions-updated', this.handleEnemyUpdate)
+    gameEventBridge.offGameEvent('ui:setting-changed', this.handleSettingChange)
   },
   methods: {
+    initializeCombatSetting() {
+      // Read combat setting from localStorage, matching GameUIScene logic
+      const stored = localStorage.getItem('portfolioQuest_combatEnabled')
+      this.combatEnabled = stored ? JSON.parse(stored) : false
+    },
+
     handleEnemyUpdate(data: EnemyRadarData) {
       // Update enemy data which will trigger radarBlips computed property
       this.enemyData = data
+    },
+
+    handleSettingChange(data: { key: string; value: any }) {
+      // Update combat setting when it changes
+      if (data.key === 'combatEnabled') {
+        this.combatEnabled = data.value
+      }
     },
 
     getRelatedProjects(category?: string): ProjectData[] {

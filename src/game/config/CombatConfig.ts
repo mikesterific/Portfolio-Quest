@@ -29,7 +29,7 @@ export interface CombatConfigInterface {
 export const COMBAT_CONFIG: CombatConfigInterface = {
   laser: {
     lifetimeMs: 2500,
-    fireRepeatMs: 140,
+    fireRepeatMs: 340,
     speedPxPerSecond: 800
   },
   xp: {
