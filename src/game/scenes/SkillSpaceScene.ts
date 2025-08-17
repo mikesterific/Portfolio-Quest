@@ -69,7 +69,7 @@ interface SceneState {
   enemyAI: EnemyAISystem | null
   combatEnabled: boolean
   unlockedStations?: Set<string>
-  undockSpawnedForStation?: Set<string>
+  dockSpawnedForStation?: Set<string>
   totalStationCount?: number
   enemyPositionTimer: Phaser.Time.TimerEvent | null
 }
@@ -239,7 +239,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     enemyAI: null,
     combatEnabled: false,
     unlockedStations: new Set<string>(),
-    undockSpawnedForStation: new Set<string>(),
+    dockSpawnedForStation: new Set<string>(),
     totalStationCount: 0,
     enemyPositionTimer: null
   }
@@ -535,6 +535,22 @@ export class SkillSpaceScene extends Phaser.Scene {
               skillId,
               stationData: stationDataForRadar
             })
+            
+            // Spawn enemies on dock (instead of undock) so they appear on radar while docked
+            // Spawn +3 enemies once per unlocked station upon docking (only if combat enabled)
+            if (this.state.enemyAI && this.state.combatEnabled) {
+              const alreadySpawned = stationId && this.state.dockSpawnedForStation?.has(stationId)
+              if (stationId && !alreadySpawned) {
+                // Prefer outside random spawns so ships fly in from offscreen
+                console.log(`🚀 Spawning 3 enemies for station ${stationId} on dock`)
+                if (typeof this.state.enemyAI.spawnFromOutsideRandom === 'function') {
+                  this.state.enemyAI.spawnFromOutsideRandom(3)
+                } else {
+                  this.state.enemyAI.spawnWave(3)
+                }
+                this.state.dockSpawnedForStation?.add(stationId)
+              }
+            }
           }
         })
       }
@@ -544,8 +560,6 @@ export class SkillSpaceScene extends Phaser.Scene {
   private undockFromStation = (): void => {
     if (!this.state.player || !this.state.isDocked) return
     
-    // Capture last station for spawn logic before clearing
-    const lastStation = this.state.dockedStation
     this.state.isDocked = false
     this.state.dockedStation = null
 
@@ -553,21 +567,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.state.interactionPrompt.setVisible(false)
     }
 
-    // Spawn +3 enemies once per unlocked station upon first undock (only if combat enabled)
-    if (lastStation && this.state.enemyAI && this.state.combatEnabled) {
-      const stationData = lastStation.getData('stationData')
-      const stationId = stationData?.id as string | undefined
-      const alreadySpawned = stationId && this.state.undockSpawnedForStation?.has(stationId)
-      if (stationId && !alreadySpawned) {
-        // Prefer outside random spawns so ships fly in from offscreen
-        if (typeof this.state.enemyAI.spawnFromOutsideRandom === 'function') {
-          this.state.enemyAI.spawnFromOutsideRandom(3)
-        } else {
-          this.state.enemyAI.spawnWave(3)
-        }
-        this.state.undockSpawnedForStation?.add(stationId)
-      }
-    }
+    // Enemy spawning now happens on dock (not undock) so they appear on radar while docked
   }
 
   private handleStationInteraction = (skillId: string, stationData: any): void => {

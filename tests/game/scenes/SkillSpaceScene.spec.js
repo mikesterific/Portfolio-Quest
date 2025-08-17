@@ -832,32 +832,43 @@ describe('SkillSpaceScene', () => {
     expect(completionCall).toBeTruthy()
   })
 
-  test('undocking spawns a wave only once per unlocked station', () => {
+  test('docking spawns a wave only once per unlocked station', () => {
     scene.create()
     // Enable combat for spawning to work
     scene['state'].combatEnabled = true
     
-    // Prepare state: docked at a station
-    const station = scene.add.container(300, 320)
-    station.setData('stationData', { id: 's-testing', name: 'Testing Station' })
-    scene['state'].dockedStation = station
-    scene['state'].isDocked = true
+    // Setup enemy AI system
     scene['state'].enemyAI = require('@/game/systems/EnemyAISystem').EnemyAISystem()
 
     // Initialize the spawn tracking set
-    scene['state'].undockSpawnedForStation = new Set()
+    scene['state'].dockSpawnedForStation = new Set()
 
     const spawnSpy = jest.spyOn(scene['state'].enemyAI, 'spawnFromOutsideRandom')
 
-    // First undock -> should spawn
-    scene['undockFromStation']()
+    // Prepare state: not docked, player ready to dock
+    scene['state'].player = { x: 300, y: 320 }
+    scene['state'].isDocked = false
+    scene['state'].isDocking = false
+    
+    // Create a station to dock with
+    const station = scene.add.container(300, 320)
+    station.setData('stationData', { id: 's-testing', name: 'Testing Station', skillId: 'testing' })
+
+    // First dock -> should spawn (enemies spawn on dock now, not undock)
+    scene['dockWithStation'](station, 'testing')
+    
+    // Wait for the docking animation to complete (which triggers the spawn)
+    // In the test environment, tweens complete synchronously
     expect(spawnSpy).toHaveBeenCalledWith(3)
 
-    // Redock simulation (set dockedStation again) and undock again -> should NOT spawn
-    scene['state'].dockedStation = station
-    scene['state'].isDocked = true
+    // Reset for second dock attempt
     spawnSpy.mockClear()
-    scene['undockFromStation']()
+    scene['state'].isDocked = false
+    scene['state'].isDocking = false
+    scene['state'].dockedStation = null
+    
+    // Second dock at same station -> should NOT spawn again
+    scene['dockWithStation'](station, 'testing')
     expect(spawnSpy).not.toHaveBeenCalled() // Should not spawn again for same station
   })
 })
