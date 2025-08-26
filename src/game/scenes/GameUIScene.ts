@@ -13,12 +13,25 @@ export class GameUIScene extends Phaser.Scene {
   private combatToggleButton!: Phaser.GameObjects.Text
   private combatEnabled: boolean = false
   private radarMarker?: Phaser.GameObjects.Arc
+  private backgroundMusic?: Phaser.Sound.BaseSound
+  private soundEnabled: boolean = true
 
   constructor() {
     super({ key: 'GameUIScene', active: true })
   }
 
+  preload(): void {
+    // Load background music
+    this.load.audio('backgroundMusic', 'src/assets/sound/I like this one.mp3')
+  }
+
   create(): void {
+    
+    // Initialize sound setting from localStorage
+    this.initializeSoundSetting()
+    
+    // Initialize background music
+    this.initializeBackgroundMusic()
     
     // Initialize combat setting from localStorage
     this.initializeCombatSetting()
@@ -50,6 +63,29 @@ export class GameUIScene extends Phaser.Scene {
     // Read combat setting from localStorage, default to false for professional presentations
     const stored = localStorage.getItem('portfolioQuest_combatEnabled')
     this.combatEnabled = stored ? JSON.parse(stored) : false
+  }
+
+  private initializeSoundSetting(): void {
+    // Read sound setting from localStorage, default to true for good UX
+    const stored = localStorage.getItem('portfolioQuest_soundEnabled')
+    this.soundEnabled = stored ? JSON.parse(stored) : true
+  }
+
+  private initializeBackgroundMusic(): void {
+    try {
+      // Create background music with loop setting
+      this.backgroundMusic = this.sound.add('backgroundMusic', {
+        loop: true,
+        volume: 0.3 // Start with moderate volume
+      })
+
+      // Start music if sound is enabled
+      if (this.soundEnabled && this.backgroundMusic) {
+        this.backgroundMusic.play()
+      }
+    } catch (error) {
+      console.warn('[GameUIScene] Error initializing background music:', error)
+    }
   }
 
   private broadcastCombatSetting(): void {
@@ -265,8 +301,22 @@ export class GameUIScene extends Phaser.Scene {
     }
 
     try {
-      const currentSoundState = this.soundButton.text.includes('ON')
-      const newSoundState = !currentSoundState
+      const newSoundState = !this.soundEnabled
+      
+      // Update sound state
+      this.soundEnabled = newSoundState
+      
+      // Control background music
+      if (this.backgroundMusic) {
+        if (newSoundState) {
+          this.backgroundMusic.resume()
+        } else {
+          this.backgroundMusic.pause()
+        }
+      }
+      
+      // Persist setting to localStorage
+      localStorage.setItem('portfolioQuest_soundEnabled', JSON.stringify(newSoundState))
       
       this.updateSoundButton(newSoundState)
       gameEventBridge.emitGameEvent('ui:setting-changed', { 
