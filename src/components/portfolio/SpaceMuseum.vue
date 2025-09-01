@@ -634,7 +634,7 @@ export default defineComponent({
       if (!state.camera) return
       
       const playerPosition = state.camera.position
-      let nearestFrame: { mesh: THREE.Mesh; projectData: ProjectData } | null = null
+      let nearestFrame = null as { mesh: THREE.Mesh; projectData: ProjectData } | null
       let minDistance = Infinity
       
       state.portfolioFrames.forEach(frame => {
@@ -645,7 +645,7 @@ export default defineComponent({
         }
       })
       
-      if (nearestFrame && nearestFrame.projectData) {
+      if (nearestFrame) {
         interactionPrompt.value = `Click to explore: ${nearestFrame.projectData.title}`
       } else {
         interactionPrompt.value = ''
