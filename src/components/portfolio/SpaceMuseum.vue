@@ -617,8 +617,8 @@ export default defineComponent({
       const speed = 20.0
       if (state.moveForward) state.velocity.z -= speed * delta
       if (state.moveBackward) state.velocity.z += speed * delta
-      if (state.moveLeft) state.velocity.x -= speed * delta
-      if (state.moveRight) state.velocity.x += speed * delta
+      if (state.moveLeft) state.velocity.x += speed * delta
+      if (state.moveRight) state.velocity.x -= speed * delta
 
       state.controls.moveRight(-state.velocity.x * delta)
       state.controls.moveForward(-state.velocity.z * delta)
