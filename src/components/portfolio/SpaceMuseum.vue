@@ -10,11 +10,11 @@
       </div>
       
       <!-- Settings Panel -->
-      <div class="settings-panel" :class="{ active: showSettings }">
-        <button @click="toggleSettings" class="settings-toggle" :class="{ active: showSettings }">
+      <div class="settings-panel" :class="{ active: showSettings }" @click.stop>
+        <button @click.stop="toggleSettings" class="settings-toggle" :class="{ active: showSettings }">
           ⚙️ Settings
         </button>
-        <div v-if="showSettings" class="settings-content">
+        <div v-if="showSettings" class="settings-content" @click.stop>
           <div class="setting-item">
             <label class="setting-label">
               <input 
@@ -76,18 +76,18 @@
       </div>
       
       <!-- Interaction Prompt -->
-      <div v-if="interactionPrompt" class="interaction-prompt">
+      <div v-if="interactionPrompt" class="interaction-prompt" @click.stop>
         {{ interactionPrompt }}
       </div>
       
       <!-- Instructions -->
-      <div class="instructions">
+      <div class="instructions" @click.stop>
         <p>WASD: Move | Mouse: Look Around | SPACE: Jump | SHIFT: Hold to Run</p>
         <p>Click: Interact with Portfolio Pieces | ESC: Exit Museum | Gravity: 0.8x Earth (Space Station)</p>
       </div>
       
       <!-- Loading Screen -->
-      <div v-if="isLoading" class="loading-screen">
+      <div v-if="isLoading" class="loading-screen" @click.stop>
         <div class="loading-content">
           <div class="loading-spinner"></div>
           <p>Loading Space Museum...</p>
@@ -1286,6 +1286,7 @@ export default defineComponent({
 
 .setting-range {
   -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   height: 6px;
   border-radius: 5px;
