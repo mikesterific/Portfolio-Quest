@@ -34,6 +34,71 @@ npm run dev
   - **Integration**: Standalone Vue component with proper lifecycle management
   - **Performance**: Optimized for web with 1K textures and efficient geometry
 
+### Three.js FPS Controls & Y-Axis Inversion
+
+#### Gaming Context & Conventions
+Y-axis inversion preferences in FPS games have roots in flight simulator controls, where pulling back on a joystick (or mouse) naturally makes the aircraft pitch up. This creates two distinct player preferences:
+
+- **Normal/Standard**: Mouse up = look up, Mouse down = look down
+- **Inverted**: Mouse up = look down, Mouse down = look up (flight sim style)
+
+The gaming community is roughly split between these preferences, making it essential to provide this as a user setting rather than forcing one approach.
+
+#### Three.js Implementation Approach
+
+**Camera Hierarchy Pattern** (Most Robust):
+- **Yaw Object**: Controls horizontal rotation (left/right)
+- **Pitch Object**: Controls vertical rotation (up/down) 
+- **Camera**: Child of pitch object, which is child of yaw object
+
+This separation prevents gimbal lock and provides clean control over each rotation axis.
+
+**Key Technical Elements**:
+
+1. **Rotation Order**: Set camera rotation order to 'YXZ' to ensure yaw is applied before pitch, preventing unwanted roll behavior.
+
+2. **Mouse Movement Capture**: Use either:
+   - Standard mouse events for basic implementation
+   - Pointer Lock API for true FPS experience (captures cursor, provides continuous movement)
+
+3. **Movement Delta Processing**:
+   - Capture `movementX` and `movementY` from mouse events
+   - Apply sensitivity multiplier for user customization
+   - For y-axis inversion: multiply vertical delta by -1
+
+#### Best Practices
+
+**Input Processing**:
+- Normalize mouse input to be independent of screen resolution
+- Apply sensitivity scaling to make controls customizable
+- Implement smooth movement interpolation to avoid jittery camera motion
+
+**Rotation Constraints**:
+- Clamp pitch rotation (typically between -π/2 and π/2 radians) to prevent camera flipping
+- Leave yaw rotation unclamped for full 360° horizontal movement
+- Consider adding slight dead zones for very small movements
+
+**User Experience**:
+- **Always provide a settings toggle** for y-axis inversion
+- Default to "normal" (non-inverted) as it's more intuitive for new players
+- Consider adding a brief control test/calibration screen
+- Store user preference in localStorage/settings
+
+**Performance Considerations**:
+- Use `requestAnimationFrame` for smooth camera updates
+- Implement mouse sensitivity as a multiplier rather than recalculating each frame
+- Consider using Three.js built-in controls as a starting point (PointerLockControls)
+
+#### Implementation Strategy
+1. Create separate objects for yaw and pitch control
+2. Use event listeners to capture mouse movement
+3. Apply movement deltas to respective rotation objects
+4. Handle the inversion by conditionally negating the pitch delta
+5. Integrate with game's configuration system for user preferences
+6. Ensure compatibility with other camera behaviors (zoom, collision, etc.)
+
+**Note**: Y-axis inversion should be treated as a fundamental accessibility feature rather than an advanced option, since player preferences are deeply ingrained and affect the core gameplay experience.
+
 ### Frontend Framework
 - **Vue 3** with Composition API
 - **TypeScript** for type safety

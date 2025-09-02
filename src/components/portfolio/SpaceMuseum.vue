@@ -9,6 +9,43 @@
         <div class="crosshair-dot"></div>
       </div>
       
+      <!-- Settings Panel -->
+      <div class="settings-panel" :class="{ active: showSettings }">
+        <button @click="toggleSettings" class="settings-toggle" :class="{ active: showSettings }">
+          ⚙️ Settings
+        </button>
+        <div v-if="showSettings" class="settings-content">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input 
+                type="checkbox" 
+                v-model="invertYAxis" 
+                @change="saveSettings"
+                class="setting-checkbox"
+              />
+              <span class="checkmark"></span>
+              Invert Mouse Y-Axis
+            </label>
+            <p class="setting-description">Flight simulator style controls</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label-range">
+              Mouse Sensitivity
+              <input 
+                type="range" 
+                min="0.1" 
+                max="3.0" 
+                step="0.1" 
+                v-model="mouseSensitivity" 
+                @input="saveSettings"
+                class="setting-range"
+              />
+              <span class="sensitivity-value">{{ mouseSensitivity }}x</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
       <!-- Interaction Prompt -->
       <div v-if="interactionPrompt" class="interaction-prompt">
         {{ interactionPrompt }}
@@ -34,7 +71,6 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted, onUnmounted } from 'vue'
 import * as THREE from 'three'
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js'
 import { portfolioData } from '@/data/portfolio'
 import type { ProjectData } from '@/types/game'
 
@@ -42,7 +78,6 @@ interface MuseumState {
   scene: THREE.Scene | null
   camera: THREE.PerspectiveCamera | null
   renderer: THREE.WebGLRenderer | null
-  controls: PointerLockControls | null
   clock: THREE.Clock | null
   raycaster: THREE.Raycaster | null
   mouse: THREE.Vector2 | null
@@ -70,6 +105,10 @@ interface MuseumState {
     jumpsRemaining: number
     maxJumps: number
   }
+  // Custom camera controls
+  yawObject: THREE.Object3D | null
+  pitchObject: THREE.Object3D | null
+  isPointerLocked: boolean
 }
 
 export default defineComponent({
@@ -87,13 +126,15 @@ export default defineComponent({
     const museumCanvas = ref<HTMLCanvasElement>()
     const isLoading = ref(true)
     const interactionPrompt = ref('')
+    const showSettings = ref(false)
+    const invertYAxis = ref(false)
+    const mouseSensitivity = ref(1.0)
     
     // Museum state
     const state: MuseumState = {
       scene: null,
       camera: null,
       renderer: null,
-      controls: null,
       clock: null,
       raycaster: null,
       mouse: null,
@@ -117,6 +158,132 @@ export default defineComponent({
         groundHeight: 1.8, // Human eye height
         jumpsRemaining: 2, // Start with full jumps available
         maxJumps: 2 // Allow double jump
+      },
+      // Custom camera controls
+      yawObject: null,
+      pitchObject: null,
+      isPointerLocked: false
+    }
+
+    // Settings management
+    const loadSettings = (): void => {
+      try {
+        const savedInvert = localStorage.getItem('museum-invert-y-axis')
+        const savedSensitivity = localStorage.getItem('museum-mouse-sensitivity')
+        
+        if (savedInvert !== null) {
+          invertYAxis.value = JSON.parse(savedInvert)
+        }
+        
+        if (savedSensitivity !== null) {
+          mouseSensitivity.value = parseFloat(savedSensitivity)
+        }
+      } catch (error) {
+        console.warn('Failed to load settings:', error)
+      }
+    }
+    
+    const saveSettings = (): void => {
+      try {
+        localStorage.setItem('museum-invert-y-axis', JSON.stringify(invertYAxis.value))
+        localStorage.setItem('museum-mouse-sensitivity', mouseSensitivity.value.toString())
+      } catch (error) {
+        console.warn('Failed to save settings:', error)
+      }
+    }
+    
+    const toggleSettings = (): void => {
+      showSettings.value = !showSettings.value
+    }
+
+    // Setup custom camera controls with yaw/pitch hierarchy
+    const setupCustomCameraControls = (): void => {
+      if (!museumContainer.value) return
+
+      // Create camera
+      state.camera = new THREE.PerspectiveCamera(
+        75,
+        museumContainer.value.clientWidth / museumContainer.value.clientHeight,
+        0.1,
+        1000
+      )
+      
+      // Set camera rotation order for FPS controls
+      state.camera.rotation.order = 'YXZ'
+      
+      // Create yaw object (horizontal rotation)
+      state.yawObject = new THREE.Object3D()
+      state.yawObject.position.set(0, 1.8, 0) // Center of circular museum at human height
+      
+      // Create pitch object (vertical rotation) 
+      state.pitchObject = new THREE.Object3D()
+      
+      // Set up hierarchy: yaw -> pitch -> camera
+      state.yawObject.add(state.pitchObject)
+      state.pitchObject.add(state.camera)
+      
+      // Add yaw object to scene
+      if (state.scene) {
+        state.scene.add(state.yawObject)
+      }
+    }
+
+    // Handle pointer lock events
+    const onPointerLockChange = (): void => {
+      state.isPointerLocked = document.pointerLockElement === museumCanvas.value
+      if (!state.isPointerLocked) {
+        interactionPrompt.value = ''
+      }
+    }
+
+    // Handle mouse movement for camera rotation
+    const onMouseMove = (event: MouseEvent): void => {
+      if (!state.isPointerLocked || !state.yawObject || !state.pitchObject) return
+      
+      const sensitivity = mouseSensitivity.value * 0.002
+      const movementX = event.movementX || 0
+      const movementY = event.movementY || 0
+      
+      // Apply yaw (horizontal rotation)
+      state.yawObject.rotation.y -= movementX * sensitivity
+      
+      // Apply pitch (vertical rotation) with inversion option
+      const pitchDelta = movementY * sensitivity * (invertYAxis.value ? 1 : -1)
+      state.pitchObject.rotation.x += pitchDelta
+      
+      // Clamp pitch to prevent camera flipping
+      const maxPitch = Math.PI / 2 - 0.1 // Leave small margin
+      state.pitchObject.rotation.x = Math.max(-maxPitch, Math.min(maxPitch, state.pitchObject.rotation.x))
+    }
+
+    // Handle mouse clicks for interactions
+    const onMouseClick = (event: MouseEvent): void => {
+      // Don't handle clicks if modal is open
+      if (props.modalOpen) return
+      
+      if (!state.raycaster || !state.camera || !state.mouse || !museumContainer.value) return
+      
+      // Update mouse coordinates for raycasting
+      const rect = museumContainer.value.getBoundingClientRect()
+      const x = (event.clientX - rect.left) / rect.width
+      const y = (event.clientY - rect.top) / rect.height
+      
+      state.mouse.x = (x * 2) - 1
+      state.mouse.y = -(y * 2) + 1
+      
+      state.raycaster.setFromCamera(state.mouse, state.camera)
+      const intersects = state.raycaster.intersectObjects(
+        state.portfolioFrames.map(frame => frame.mesh)
+      )
+      
+      if (intersects.length > 0) {
+        const clickedFrame = state.portfolioFrames.find(
+          frame => frame.mesh === intersects[0].object
+        )
+        
+        if (clickedFrame) {
+          handleProjectInteraction(clickedFrame.projectData.id)
+        }
       }
     }
 
@@ -125,18 +292,15 @@ export default defineComponent({
       if (!museumCanvas.value || !museumContainer.value) return
 
       try {
+        // Load settings first
+        loadSettings()
+        
         // Scene setup
         state.scene = new THREE.Scene()
         state.scene.fog = new THREE.Fog(0x000011, 50, 200)
         
-        // Camera setup
-        state.camera = new THREE.PerspectiveCamera(
-          75,
-          museumContainer.value.clientWidth / museumContainer.value.clientHeight,
-          0.1,
-          1000
-        )
-        state.camera.position.set(0, 1.8, 0) // Center of circular museum at human height
+        // Camera setup with yaw/pitch hierarchy
+        setupCustomCameraControls()
         
         // Renderer setup
         state.renderer = new THREE.WebGLRenderer({ 
@@ -150,9 +314,6 @@ export default defineComponent({
         state.renderer.setClearColor(0x000011)
         state.renderer.shadowMap.enabled = true
         state.renderer.shadowMap.type = THREE.PCFSoftShadowMap
-        
-        // Controls setup
-        state.controls = new PointerLockControls(state.camera, state.renderer.domElement)
         
         // Initialize other components
         state.clock = new THREE.Clock()
@@ -518,15 +679,19 @@ export default defineComponent({
 
     // Setup event listeners
     const setupEventListeners = (): void => {
-      if (!state.controls || !museumContainer.value) return
+      if (!museumContainer.value) return
 
       // Pointer lock
       museumContainer.value.addEventListener('click', () => {
-        state.controls?.lock()
+        if (!state.isPointerLocked) {
+          museumCanvas.value?.requestPointerLock()
+        }
       })
 
-      state.controls.addEventListener('lock', () => {
-        interactionPrompt.value = ''
+      // Pointer lock change events
+      document.addEventListener('pointerlockchange', onPointerLockChange)
+      document.addEventListener('pointerlockerror', () => {
+        console.warn('Pointer lock failed')
       })
 
       // Keyboard controls
@@ -539,7 +704,7 @@ export default defineComponent({
       
       // ESC to exit
       document.addEventListener('keydown', (event) => {
-        if (event.code === 'Escape' && state.controls?.isLocked) {
+        if (event.code === 'Escape' && state.isPointerLocked) {
           exitMuseum()
         }
       })
@@ -606,40 +771,10 @@ export default defineComponent({
       }
     }
 
-    // Mouse event handlers
-    const onMouseMove = (event: MouseEvent): void => {
-      if (!state.mouse || !museumContainer.value) return
-      
-      state.mouse.x = (event.clientX / museumContainer.value.clientWidth) * 2 - 1
-      state.mouse.y = -(event.clientY / museumContainer.value.clientHeight) * 2 + 1
-    }
-
-    const onMouseClick = (): void => {
-      // Don't handle clicks if modal is open
-      if (props.modalOpen) return
-      
-      if (!state.raycaster || !state.camera || !state.mouse) return
-      
-      state.raycaster.setFromCamera(state.mouse, state.camera)
-      const intersects = state.raycaster.intersectObjects(
-        state.portfolioFrames.map(frame => frame.mesh)
-      )
-      
-      if (intersects.length > 0) {
-        const clickedFrame = state.portfolioFrames.find(
-          frame => frame.mesh === intersects[0].object
-        )
-        
-        if (clickedFrame) {
-          handleProjectInteraction(clickedFrame.projectData.id)
-        }
-      }
-    }
-
     // Handle project interaction - emit event instead of using game bridge
     const handleProjectInteraction = (projectId: string): void => {
       // Release pointer lock when opening a modal
-      if (state.controls && state.controls.isLocked) {
+      if (state.isPointerLocked) {
         document.exitPointerLock()
       }
       emit('project-selected', { projectId })
@@ -689,7 +824,7 @@ export default defineComponent({
 
     // Animation loop
     const animate = (): void => {
-      if (!state.scene || !state.camera || !state.renderer || !state.controls || !state.clock) return
+      if (!state.scene || !state.camera || !state.renderer || !state.clock || !state.yawObject) return
 
       requestAnimationFrame(animate)
 
@@ -715,8 +850,12 @@ export default defineComponent({
       if (state.moveLeft) state.velocity.x += speed * delta
       if (state.moveRight) state.velocity.x -= speed * delta
 
-      state.controls.moveRight(-state.velocity.x * delta)
-      state.controls.moveForward(-state.velocity.z * delta)
+      // Apply movement using the yaw object's local directions
+      const direction = new THREE.Vector3()
+      direction.x = state.velocity.x * delta
+      direction.z = state.velocity.z * delta
+      direction.applyQuaternion(state.yawObject.quaternion)
+      state.yawObject.position.add(direction)
 
       // Check for nearby portfolio frames
       checkPortfolioProximity()
@@ -786,7 +925,12 @@ export default defineComponent({
       museumContainer,
       museumCanvas,
       isLoading,
-      interactionPrompt
+      interactionPrompt,
+      showSettings,
+      invertYAxis,
+      mouseSensitivity,
+      toggleSettings,
+      saveSettings
     }
   }
 })
@@ -898,5 +1042,168 @@ export default defineComponent({
   0% { opacity: 0.8; }
   50% { opacity: 1; }
   100% { opacity: 0.8; }
+}
+
+/* Settings Panel Styles */
+.settings-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.settings-toggle {
+  background: rgba(52, 73, 94, 0.9);
+  border: 2px solid #3498db;
+  border-radius: 8px;
+  color: #ecf0f1;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.settings-toggle:hover {
+  background: rgba(52, 152, 219, 0.9);
+  transform: translateY(-2px);
+}
+
+.settings-toggle.active {
+  background: rgba(52, 152, 219, 0.9);
+  border-color: #e74c3c;
+}
+
+.settings-content {
+  margin-top: 10px;
+  background: rgba(44, 62, 80, 0.95);
+  border: 2px solid #34495e;
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 250px;
+  backdrop-filter: blur(10px);
+}
+
+.setting-item {
+  margin-bottom: 16px;
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.setting-label {
+  display: flex;
+  align-items: center;
+  color: #ecf0f1;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+}
+
+.setting-checkbox {
+  opacity: 0;
+  position: absolute;
+  cursor: pointer;
+}
+
+.checkmark {
+  height: 20px;
+  width: 20px;
+  background-color: #34495e;
+  border: 2px solid #3498db;
+  border-radius: 4px;
+  margin-right: 10px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.setting-checkbox:checked + .checkmark {
+  background-color: #3498db;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.setting-checkbox:checked + .checkmark:after {
+  display: block;
+}
+
+.setting-description {
+  margin: 4px 0 0 30px;
+  font-size: 12px;
+  color: #95a5a6;
+  font-style: italic;
+}
+
+.setting-label-range {
+  display: flex;
+  flex-direction: column;
+  color: #ecf0f1;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 8px;
+}
+
+.setting-range {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 5px;
+  background: #34495e;
+  outline: none;
+  cursor: pointer;
+}
+
+.setting-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3498db;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.setting-range::-webkit-slider-thumb:hover {
+  background: #2980b9;
+  transform: scale(1.1);
+}
+
+.setting-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3498db;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.setting-range::-moz-range-thumb:hover {
+  background: #2980b9;
+  transform: scale(1.1);
+}
+
+.sensitivity-value {
+  align-self: flex-end;
+  font-size: 12px;
+  color: #3498db;
+  font-weight: bold;
+  min-width: 30px;
+  text-align: right;
 }
 </style>
