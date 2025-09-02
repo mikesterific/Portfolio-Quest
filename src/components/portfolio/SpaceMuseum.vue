@@ -43,6 +43,35 @@
               <span class="sensitivity-value">{{ mouseSensitivity }}x</span>
             </label>
           </div>
+          <div class="setting-item">
+            <label class="setting-label">
+              <input 
+                type="checkbox" 
+                v-model="musicEnabled" 
+                @change="saveSettings"
+                class="setting-checkbox"
+              />
+              <span class="checkmark"></span>
+              Background Music
+            </label>
+            <p class="setting-description">Atmospheric space music for immersion</p>
+          </div>
+          <div class="setting-item">
+            <label class="setting-label-range">
+              Music Volume
+              <input 
+                type="range" 
+                min="0.0" 
+                max="1.0" 
+                step="0.1" 
+                v-model="musicVolume" 
+                @input="saveSettings"
+                class="setting-range"
+                :disabled="!musicEnabled"
+              />
+              <span class="sensitivity-value">{{ Math.round(musicVolume * 100) }}%</span>
+            </label>
+          </div>
         </div>
       </div>
       
@@ -109,6 +138,9 @@ interface MuseumState {
   yawObject: THREE.Object3D | null
   pitchObject: THREE.Object3D | null
   isPointerLocked: boolean
+  // Background music state
+  backgroundMusic: HTMLAudioElement | null
+  soundEnabled: boolean
 }
 
 export default defineComponent({
@@ -129,6 +161,8 @@ export default defineComponent({
     const showSettings = ref(false)
     const invertYAxis = ref(false)
     const mouseSensitivity = ref(1.0)
+    const musicVolume = ref(0.4) // Slightly louder default volume
+    const musicEnabled = ref(true) // Default to music ON for better experience
     
     // Museum state
     const state: MuseumState = {
@@ -162,7 +196,10 @@ export default defineComponent({
       // Custom camera controls
       yawObject: null,
       pitchObject: null,
-      isPointerLocked: false
+      isPointerLocked: false,
+      // Background music state  
+      backgroundMusic: null,
+      soundEnabled: true // Default to sound ON for immersive experience
     }
 
     // Settings management
@@ -170,6 +207,8 @@ export default defineComponent({
       try {
         const savedInvert = localStorage.getItem('museum-invert-y-axis')
         const savedSensitivity = localStorage.getItem('museum-mouse-sensitivity')
+        const savedMusicVolume = localStorage.getItem('museum-music-volume')
+        const savedMusicEnabled = localStorage.getItem('museum-music-enabled')
         
         if (savedInvert !== null) {
           invertYAxis.value = JSON.parse(savedInvert)
@@ -177,6 +216,18 @@ export default defineComponent({
         
         if (savedSensitivity !== null) {
           mouseSensitivity.value = parseFloat(savedSensitivity)
+        }
+        
+        if (savedMusicVolume !== null) {
+          musicVolume.value = parseFloat(savedMusicVolume)
+        }
+        
+        if (savedMusicEnabled !== null) {
+          musicEnabled.value = JSON.parse(savedMusicEnabled)
+        } else {
+          // First time user - ensure music is enabled by default and save it
+          musicEnabled.value = true
+          localStorage.setItem('museum-music-enabled', JSON.stringify(true))
         }
       } catch (error) {
         console.warn('Failed to load settings:', error)
@@ -187,6 +238,26 @@ export default defineComponent({
       try {
         localStorage.setItem('museum-invert-y-axis', JSON.stringify(invertYAxis.value))
         localStorage.setItem('museum-mouse-sensitivity', mouseSensitivity.value.toString())
+        localStorage.setItem('museum-music-volume', musicVolume.value.toString())
+        localStorage.setItem('museum-music-enabled', JSON.stringify(musicEnabled.value))
+        
+        // Update music settings if audio is loaded
+        if (state.backgroundMusic) {
+          state.soundEnabled = musicEnabled.value
+          
+          if (musicEnabled.value) {
+            // Music enabled: set volume and play if paused
+            state.backgroundMusic.volume = musicVolume.value
+            if (state.backgroundMusic.paused) {
+              state.backgroundMusic.play().catch(error => {
+                console.warn('[SpaceMuseum] Error resuming music:', error)
+              })
+            }
+          } else {
+            // Music disabled: pause the music
+            state.backgroundMusic.pause()
+          }
+        }
       } catch (error) {
         console.warn('Failed to save settings:', error)
       }
@@ -194,6 +265,54 @@ export default defineComponent({
     
     const toggleSettings = (): void => {
       showSettings.value = !showSettings.value
+    }
+
+    // Background music management
+    const initializeBackgroundMusic = async (): Promise<void> => {
+      try {
+        // Load settings first
+        loadSettings()
+        
+        // Create background music audio element
+        state.backgroundMusic = new Audio('/src/assets/sound/I like this one.mp3')
+        state.backgroundMusic.loop = true
+        state.backgroundMusic.volume = musicEnabled.value ? musicVolume.value : 0
+        state.soundEnabled = musicEnabled.value
+        
+        // Handle loading errors
+        state.backgroundMusic.addEventListener('error', (e) => {
+          console.warn('[SpaceMuseum] Failed to load background music:', e)
+        })
+        
+        // Start playing when ready if enabled
+        if (musicEnabled.value) {
+          try {
+            await state.backgroundMusic.play()
+          } catch (error) {
+            console.warn('[SpaceMuseum] Autoplay blocked - music will start on user interaction:', error)
+          }
+        }
+      } catch (error) {
+        console.warn('[SpaceMuseum] Error initializing background music:', error)
+      }
+    }
+
+    const playBackgroundMusic = async (): Promise<void> => {
+      if (state.backgroundMusic && musicEnabled.value) {
+        try {
+          state.backgroundMusic.volume = musicVolume.value
+          await state.backgroundMusic.play()
+        } catch (error) {
+          console.warn('[SpaceMuseum] Error playing background music:', error)
+        }
+      }
+    }
+
+    const stopBackgroundMusic = (): void => {
+      if (state.backgroundMusic) {
+        state.backgroundMusic.pause()
+        state.backgroundMusic.currentTime = 0
+      }
     }
 
     // Setup custom camera controls with yaw/pitch hierarchy
@@ -233,6 +352,9 @@ export default defineComponent({
       state.isPointerLocked = document.pointerLockElement === museumCanvas.value
       if (!state.isPointerLocked) {
         interactionPrompt.value = ''
+      } else {
+        // User has entered the museum - try to start music if enabled
+        playBackgroundMusic()
       }
     }
 
@@ -292,8 +414,8 @@ export default defineComponent({
       if (!museumCanvas.value || !museumContainer.value) return
 
       try {
-        // Load settings first
-        loadSettings()
+        // Initialize background music first
+        await initializeBackgroundMusic()
         
         // Scene setup
         state.scene = new THREE.Scene()
@@ -906,6 +1028,9 @@ export default defineComponent({
       document.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('resize', handleResize)
       
+      // Stop background music
+      stopBackgroundMusic()
+      
       if (state.renderer) {
         state.renderer.dispose()
       }
@@ -929,6 +1054,8 @@ export default defineComponent({
       showSettings,
       invertYAxis,
       mouseSensitivity,
+      musicVolume,
+      musicEnabled,
       toggleSettings,
       saveSettings
     }
@@ -1205,5 +1332,20 @@ export default defineComponent({
   font-weight: bold;
   min-width: 30px;
   text-align: right;
+}
+
+.setting-range:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.setting-range:disabled::-webkit-slider-thumb {
+  background: #7f8c8d;
+  cursor: not-allowed;
+}
+
+.setting-range:disabled::-moz-range-thumb {
+  background: #7f8c8d;
+  cursor: not-allowed;
 }
 </style>
