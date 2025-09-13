@@ -1017,33 +1017,40 @@ export default defineComponent({
 
     // Update physics
     const updatePhysics = (delta: number): void => {
-      if (!state.camera) return
+      if (!state.camera || !state.yawObject) return
 
       // Apply gravity with ceiling collision check
       if (!state.physics.isGrounded) {
         state.physics.velocityY -= state.physics.gravity * delta
         const proposedYMovement = state.physics.velocityY * delta
         
-        // Check ceiling collision before applying vertical movement
-        if (!checkCeilingCollision(state.camera.position.y, proposedYMovement)) {
-          state.camera.position.y += proposedYMovement
+        // Check ceiling collision before applying vertical movement (use yawObject position)
+        if (!checkCeilingCollision(state.yawObject.position.y, proposedYMovement)) {
+          state.yawObject.position.y += proposedYMovement
         } else {
           // Hit ceiling - apply slight bounce-back effect
           const wallHeight = 12
           const ceilingHeight = wallHeight - 0.5
-          state.camera.position.y = ceilingHeight
+          state.yawObject.position.y = ceilingHeight
           state.physics.velocityY = -Math.abs(state.physics.velocityY) * 0.1 // Small bounce downward
         }
       }
 
-      // Ground collision detection
-      if (state.camera.position.y <= state.physics.groundHeight) {
-        state.camera.position.y = state.physics.groundHeight
+      // Ground collision detection (use yawObject position)
+      if (state.yawObject.position.y <= state.physics.groundHeight) {
+        state.yawObject.position.y = state.physics.groundHeight
         state.physics.velocityY = 0
         state.physics.isGrounded = true
         state.physics.jumpsRemaining = state.physics.maxJumps // Reset jumps when landing
       }
 
+      // MANDATORY ceiling collision enforcement (runs every frame regardless of grounded state)
+      const wallHeight = 12
+      const ceilingHeight = wallHeight - 0.5
+      if (state.yawObject.position.y > ceilingHeight) {
+        state.yawObject.position.y = ceilingHeight
+        state.physics.velocityY = Math.min(state.physics.velocityY, 0) // Stop upward movement
+      }
 
     }
 
@@ -1094,9 +1101,9 @@ export default defineComponent({
 
     // Check proximity to portfolio frames
     const checkPortfolioProximity = (): void => {
-      if (!state.camera) return
+      if (!state.yawObject) return
       
-      const playerPosition = state.camera.position
+      const playerPosition = state.yawObject.position
       let nearestFrame = null as { mesh: THREE.Mesh; projectData: ProjectData } | null
       let minDistance = Infinity
       
