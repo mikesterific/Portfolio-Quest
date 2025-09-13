@@ -246,6 +246,87 @@ public/textures/
 - **Material Sharing**: Reuse materials where possible to reduce draw calls
 - **Shadow Optimization**: Selective shadow casting for performance
 
+### 3D Model Integration Patterns (NEW)
+
+#### GLTFLoader Implementation
+- **Import Strategy**: `import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'`
+- **Async Loading**: Use `loader.loadAsync()` for Promise-based model loading
+- **State Management**: Add model properties to Museum state interface
+- **Error Handling**: Graceful fallbacks with console logging for missing models
+
+#### Model Configuration Best Practices
+```javascript
+// Scaling and Positioning Pattern:
+state.couchModel = gltf.scene
+state.couchModel.scale.setScalar(2.0)           // Uniform scaling
+state.couchModel.position.set(0, 0, 10)         // Museum positioning
+state.couchModel.rotation.y = Math.PI           // Face portfolio walls
+```
+
+#### Material and Lighting Optimization
+- **Shadow Integration**: Enable `castShadow` and `receiveShadow` on all mesh children
+- **Material Updates**: Force `material.needsUpdate = true` after loading
+- **PBR Compatibility**: Loaded models work seamlessly with existing PBR lighting system
+- **Traversal Pattern**: Use `model.traverse()` to configure all child meshes
+
+#### Collision Detection for 3D Objects
+```javascript
+// Collision Pattern for Loaded Models:
+const checkCouchCollision = (playerPosition) => {
+  if (!state.couchModel) return false
+  const distance = playerPosition.distanceTo(state.couchModel.position)
+  const collisionRadius = Math.max(bounds.width, bounds.depth) / 2 + buffer
+  return distance < collisionRadius
+}
+```
+
+#### Memory Management for 3D Models
+- **Geometry Disposal**: `child.geometry.dispose()` in cleanup
+- **Material Disposal**: Handle both single materials and material arrays
+- **Scene Removal**: `scene.remove(model)` before setting model to null
+- **Complete Cleanup**: Traverse all children to dispose resources properly
+
+### Enhanced Collision Detection Patterns (NEW)
+
+#### Raycaster-Based Surface Detection
+- **Downward Raycasting**: Use `raycaster.set(position, new THREE.Vector3(0, -1, 0))` for ground detection
+- **Multi-Object Intersection**: Build collidable objects array from floor, furniture, and other surfaces
+- **Surface Height Detection**: Use `intersection.point.y` for precise landing height calculation
+- **Performance**: Single raycaster per frame more efficient than multiple collision checks
+
+#### Advanced Physics Integration
+```javascript
+// Enhanced Surface Landing Pattern:
+const intersections = raycaster.intersectObjects(collidableObjects, true)
+const validIntersections = intersections.filter(i => i.point.y <= playerPosition.y)
+const targetGroundLevel = validIntersections[0].point.y
+const distanceToGround = playerPosition.y - targetGroundLevel
+
+// Landing Logic:
+if (state.physics.velocityY <= 0 && distanceToGround <= playerGroundHeight + 0.1) {
+  state.yawObject.position.y = targetGroundLevel + playerGroundHeight
+  state.physics.isGrounded = true
+}
+```
+
+#### Multi-Level Ground System
+- **Dynamic Ground Heights**: Support floor (0), furniture tops (variable), platforms
+- **Surface Identification**: Name objects for debugging and interaction feedback
+- **Seamless Transitions**: Maintain existing physics while adding surface detection
+- **Collision Hierarchy**: Walls block movement, surfaces support landing
+
+#### Debugging and Validation for 3D Interactions
+- **Surface Logging**: `console.log('🎯 Landed on: ${surfaceName} at height ${height}')` for testing
+- **Intersection Filtering**: Only consider surfaces below player position
+- **Visual Debugging**: Object naming helps identify interaction targets
+- **Performance Monitoring**: Single raycaster vs multiple collision checks comparison
+
+#### Integration Best Practices
+- **State Management**: Add surface references (`floorMesh`) to Museum state
+- **Non-Breaking Changes**: Enhance existing physics without removing core functionality
+- **Extensible Architecture**: Easy to add new furniture and surfaces
+- **Cleanup Patterns**: Dispose surface mesh references in component unmount
+
 ### Integration Patterns
 
 #### Vue + Three.js Best Practices

@@ -30,9 +30,11 @@ npm run dev
 ### 3D Graphics Engine
 - **Three.js**: WebGL-based 3D graphics library for the space museum
   - **Version**: Latest (installed via npm)
-  - **Features**: PBR materials, shadow mapping, first-person controls
+  - **Features**: PBR materials, shadow mapping, first-person controls, advanced collision detection
   - **Integration**: Standalone Vue component with proper lifecycle management
   - **Performance**: Optimized for web with 1K textures and efficient geometry
+  - **3D Models**: GLTFLoader support for external .glb/.gltf assets with full PBR integration
+  - **Collision System**: Raycaster-based surface detection for realistic 3D object interaction
 
 ### Three.js FPS Controls & Y-Axis Inversion
 

@@ -101,6 +101,7 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted, onUnmounted } from 'vue'
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { portfolioData } from '@/data/portfolio'
 import type { ProjectData } from '@/types/game'
 
@@ -115,6 +116,9 @@ interface MuseumState {
     mesh: THREE.Mesh
     projectData: ProjectData
   }>
+  // 3D Models
+  couchModel: THREE.Group | null
+  floorMesh: THREE.Mesh | null
   moveForward: boolean
   moveBackward: boolean
   moveLeft: boolean
@@ -175,6 +179,9 @@ export default defineComponent({
       raycaster: null,
       mouse: null,
       portfolioFrames: [],
+      // 3D Models
+      couchModel: null,
+      floorMesh: null,
       moveForward: false,
       moveBackward: false,
       moveLeft: false,
@@ -464,6 +471,7 @@ export default defineComponent({
         // Build the museum environment
         await createMuseumEnvironment()
         await createPortfolioDisplays()
+        await loadCouchModel() // Load the couch 3D model
         setupLighting()
         setupEventListeners()
         
@@ -504,6 +512,10 @@ export default defineComponent({
       const floor = new THREE.Mesh(floorGeometry, floorMaterial)
       floor.rotation.x = -Math.PI / 2
       floor.receiveShadow = false // OPTIMIZED: Disabled shadows to reduce GPU usage
+      floor.name = 'floor' // Name for raycaster identification
+      
+      // Store floor reference for collision detection
+      state.floorMesh = floor
       state.scene.add(floor)
 
       // OPTIMIZED: Rectangular Ceiling (4 vertices vs 64)
@@ -636,6 +648,54 @@ export default defineComponent({
       if (!state.scene) return
 
       // Space decorations can be added here if needed in the future
+    }
+
+    // Load and position the couch 3D model
+    const loadCouchModel = async (): Promise<void> => {
+      if (!state.scene) return
+
+      const loader = new GLTFLoader()
+      
+      try {
+        console.log('🪑 Loading couch model...')
+        const gltf = await loader.loadAsync('/src/assets/3d/base_basic_pbr.glb')
+        
+        state.couchModel = gltf.scene
+        
+        // Scale the couch appropriately for the museum space
+        state.couchModel.scale.setScalar(2.0) // Adjust scale as needed
+        
+        // Position the couch in the center-front area of the museum
+        state.couchModel.position.set(0, 0, 10) // Center X, ground Y, front area Z
+        
+        // Rotate the couch to face towards the back wall (portfolio area)
+        state.couchModel.rotation.y = Math.PI
+        
+        // Enable shadows for the couch
+        state.couchModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+            
+            // Ensure materials are properly configured for lighting
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(mat => {
+                  mat.needsUpdate = true
+                })
+              } else {
+                child.material.needsUpdate = true
+              }
+            }
+          }
+        })
+        
+        state.scene.add(state.couchModel)
+        console.log('✅ Couch model loaded and positioned successfully')
+        
+      } catch (error) {
+        console.error('❌ Failed to load couch model:', error)
+      }
     }
 
     // Create portfolio displays in professional grid layout on walls
@@ -986,7 +1046,7 @@ export default defineComponent({
       }
     }
 
-    // Check boundary collision to prevent walking through walls and ceiling
+    // Check boundary collision to prevent walking through walls, ceiling, and objects
     const checkBoundaryCollision = (currentPosition: THREE.Vector3, proposedMovement: THREE.Vector3): boolean => {
       const newPosition = currentPosition.clone().add(proposedMovement)
       
@@ -995,15 +1055,37 @@ export default defineComponent({
       const depth = 40  
       const wallHeight = 12
       const buffer = 1.5 // Keep player away from walls
-      const ceilingBuffer = 0.5 // Keep player away from ceiling
       
       // Check if new position would be outside boundaries
-      return (
+      const wallCollision = (
         newPosition.x < -width/2 + buffer || 
         newPosition.x > width/2 - buffer ||
         newPosition.z < -depth/2 + buffer || 
         newPosition.z > depth/2 - buffer
       )
+      
+      // Note: Couch collision removed - now handled by raycaster for jumping/landing
+      return wallCollision
+    }
+
+    // Legacy couch collision function (now replaced by raycaster surface detection)
+    // Keeping for potential future use with different collision needs
+    const checkCouchCollision = (playerPosition: THREE.Vector3): boolean => {
+      if (!state.couchModel) return false
+      
+      const couchPosition = state.couchModel.position
+      const couchBounds = {
+        // Approximate couch dimensions (adjust based on your model size)
+        width: 4.0,  // X-axis
+        depth: 2.0,  // Z-axis
+        height: 2.0  // Y-axis (for sitting/jumping on couch)
+      }
+      
+      // Simple bounding box collision detection
+      const distance = playerPosition.distanceTo(couchPosition)
+      const collisionRadius = Math.max(couchBounds.width, couchBounds.depth) / 2 + 1.0 // Player buffer
+      
+      return distance < collisionRadius
     }
 
     // Check ceiling collision for vertical movement (jumping/gravity)
@@ -1015,43 +1097,98 @@ export default defineComponent({
       return newY >= ceilingHeight
     }
 
-    // Update physics
+    // Enhanced physics with raycaster surface detection
     const updatePhysics = (delta: number): void => {
-      if (!state.camera || !state.yawObject) return
+      if (!state.camera || !state.yawObject || !state.scene) return
 
-      // Apply gravity with ceiling collision check
-      if (!state.physics.isGrounded) {
+      // Create downward raycaster from player position
+      const raycaster = new THREE.Raycaster()
+      const playerPosition = state.yawObject.position.clone()
+      
+      // Cast ray downward from player (with slight forward offset for better detection)
+      raycaster.set(playerPosition, new THREE.Vector3(0, -1, 0))
+      
+      // Get all objects that can be landed on
+      const collidableObjects: THREE.Object3D[] = []
+      
+      // Add floor mesh
+      if (state.floorMesh) {
+        collidableObjects.push(state.floorMesh)
+      }
+      
+      // Add couch model meshes
+      if (state.couchModel) {
+        state.couchModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.name = child.name || 'couch-part' // Name for identification
+            collidableObjects.push(child)
+          }
+        })
+      }
+      
+      // Perform intersection test with increased ray distance
+      const intersections = raycaster.intersectObjects(collidableObjects, true)
+      
+      let targetGroundLevel = 0 // Default floor level
+      let landedOnSurface = null
+      
+      if (intersections.length > 0) {
+        // Get the highest surface below the player
+        const validIntersections = intersections.filter(intersection => 
+          intersection.point.y <= playerPosition.y
+        )
+        
+        if (validIntersections.length > 0) {
+          const closestIntersection = validIntersections[0]
+          targetGroundLevel = closestIntersection.point.y
+          landedOnSurface = closestIntersection.object.name || 'unknown surface'
+        }
+      }
+      
+      const distanceToGround = playerPosition.y - targetGroundLevel
+      const playerGroundHeight = state.physics.groundHeight
+      
+      // Apply gravity if not grounded or falling
+      if (!state.physics.isGrounded || state.physics.velocityY < 0) {
         state.physics.velocityY -= state.physics.gravity * delta
         const proposedYMovement = state.physics.velocityY * delta
         
-        // Check ceiling collision before applying vertical movement (use yawObject position)
+        // Check ceiling collision before applying vertical movement
         if (!checkCeilingCollision(state.yawObject.position.y, proposedYMovement)) {
           state.yawObject.position.y += proposedYMovement
         } else {
-          // Hit ceiling - apply slight bounce-back effect
+          // Hit ceiling - apply bounce-back effect
           const wallHeight = 12
           const ceilingHeight = wallHeight - 0.5
           state.yawObject.position.y = ceilingHeight
-          state.physics.velocityY = -Math.abs(state.physics.velocityY) * 0.1 // Small bounce downward
+          state.physics.velocityY = -Math.abs(state.physics.velocityY) * 0.1
         }
       }
-
-      // Ground collision detection (use yawObject position)
-      if (state.yawObject.position.y <= state.physics.groundHeight) {
-        state.yawObject.position.y = state.physics.groundHeight
+      
+      // Enhanced ground/surface collision detection
+      if (state.physics.velocityY <= 0 && distanceToGround <= playerGroundHeight + 0.1) {
+        // Land on the detected surface
+        state.yawObject.position.y = targetGroundLevel + playerGroundHeight
         state.physics.velocityY = 0
         state.physics.isGrounded = true
         state.physics.jumpsRemaining = state.physics.maxJumps // Reset jumps when landing
+        
+        // Optional: Log what surface we landed on (great for debugging!)
+        if (landedOnSurface && landedOnSurface !== 'floor') {
+          console.log(`🎯 Landed on: ${landedOnSurface} at height ${targetGroundLevel.toFixed(2)}`)
+        }
+      } else if (distanceToGround > playerGroundHeight + 0.1) {
+        // Player is in the air
+        state.physics.isGrounded = false
       }
-
-      // MANDATORY ceiling collision enforcement (runs every frame regardless of grounded state)
+      
+      // MANDATORY ceiling collision enforcement
       const wallHeight = 12
       const ceilingHeight = wallHeight - 0.5
       if (state.yawObject.position.y > ceilingHeight) {
         state.yawObject.position.y = ceilingHeight
-        state.physics.velocityY = Math.min(state.physics.velocityY, 0) // Stop upward movement
+        state.physics.velocityY = Math.min(state.physics.velocityY, 0)
       }
-
     }
 
     // Animation loop
@@ -1144,6 +1281,42 @@ export default defineComponent({
       
       // Stop background music
       stopBackgroundMusic()
+      
+      // Dispose of 3D models
+      if (state.couchModel) {
+        state.couchModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            if (child.geometry) child.geometry.dispose()
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(material => material.dispose())
+              } else {
+                child.material.dispose()
+              }
+            }
+          }
+        })
+        if (state.scene) {
+          state.scene.remove(state.couchModel)
+        }
+        state.couchModel = null
+      }
+      
+      // Dispose of floor mesh
+      if (state.floorMesh) {
+        if (state.floorMesh.geometry) state.floorMesh.geometry.dispose()
+        if (state.floorMesh.material) {
+          if (Array.isArray(state.floorMesh.material)) {
+            state.floorMesh.material.forEach(material => material.dispose())
+          } else {
+            state.floorMesh.material.dispose()
+          }
+        }
+        if (state.scene) {
+          state.scene.remove(state.floorMesh)
+        }
+        state.floorMesh = null
+      }
       
       if (state.renderer) {
         state.renderer.dispose()
