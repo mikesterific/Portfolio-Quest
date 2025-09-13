@@ -118,6 +118,7 @@ interface MuseumState {
   }>
   // 3D Models
   couchModel: THREE.Group | null
+  benchModel: THREE.Group | null
   floorMesh: THREE.Mesh | null
   moveForward: boolean
   moveBackward: boolean
@@ -181,6 +182,7 @@ export default defineComponent({
       portfolioFrames: [],
       // 3D Models
       couchModel: null,
+      benchModel: null,
       floorMesh: null,
       moveForward: false,
       moveBackward: false,
@@ -472,6 +474,7 @@ export default defineComponent({
         await createMuseumEnvironment()
         await createPortfolioDisplays()
         await loadCouchModel() // Load the couch 3D model
+        await loadBenchModel() // Load the bench 3D model
         setupLighting()
         setupEventListeners()
         
@@ -695,6 +698,54 @@ export default defineComponent({
         
       } catch (error) {
         console.error('❌ Failed to load couch model:', error)
+      }
+    }
+
+    // Load and position the bench 3D model
+    const loadBenchModel = async (): Promise<void> => {
+      if (!state.scene) return
+
+      const loader = new GLTFLoader()
+      
+      try {
+        console.log('🪑 Loading bench model...')
+        const gltf = await loader.loadAsync('/src/assets/3d/bench_pbr.glb')
+        
+        state.benchModel = gltf.scene
+        
+        // Scale the bench appropriately for the museum space
+        state.benchModel.scale.setScalar(2.0) // Adjust scale as needed
+        
+        // Position the bench in a different area than the couch
+        state.benchModel.position.set(-12, 0, 8) // Left side of museum
+        
+        // Rotate the bench to face towards the center/portfolio area
+        state.benchModel.rotation.y = Math.PI / 4 // 45 degree angle
+        
+        // Enable shadows for the bench
+        state.benchModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+            
+            // Ensure materials are properly configured for lighting
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(mat => {
+                  mat.needsUpdate = true
+                })
+              } else {
+                child.material.needsUpdate = true
+              }
+            }
+          }
+        })
+        
+        state.scene.add(state.benchModel)
+        console.log('✅ Bench model loaded and positioned successfully')
+        
+      } catch (error) {
+        console.error('❌ Failed to load bench model:', error)
       }
     }
 
@@ -1126,6 +1177,16 @@ export default defineComponent({
         })
       }
       
+      // Add bench model meshes
+      if (state.benchModel) {
+        state.benchModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.name = child.name || 'bench-part' // Name for identification
+            collidableObjects.push(child)
+          }
+        })
+      }
+      
       // Perform intersection test with increased ray distance
       const intersections = raycaster.intersectObjects(collidableObjects, true)
       
@@ -1300,6 +1361,26 @@ export default defineComponent({
           state.scene.remove(state.couchModel)
         }
         state.couchModel = null
+      }
+      
+      // Dispose of bench model
+      if (state.benchModel) {
+        state.benchModel.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            if (child.geometry) child.geometry.dispose()
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(material => material.dispose())
+              } else {
+                child.material.dispose()
+              }
+            }
+          }
+        })
+        if (state.scene) {
+          state.scene.remove(state.benchModel)
+        }
+        state.benchModel = null
       }
       
       // Dispose of floor mesh
