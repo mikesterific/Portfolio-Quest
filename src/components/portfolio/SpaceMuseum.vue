@@ -84,6 +84,7 @@
       <div class="instructions" @click.stop>
         <p>WASD: Move | Mouse: Look Around | SPACE: Jump | SHIFT: Hold to Run</p>
         <p>Click: Interact with Portfolio Pieces | ESC: Exit Museum | Gravity: 0.8x Earth (Space Station)</p>
+        <p>Collision Detection: Walls & Ceiling | Double Jump Available</p>
       </div>
       
       <!-- Loading Screen -->
@@ -985,14 +986,16 @@ export default defineComponent({
       }
     }
 
-    // Check boundary collision to prevent walking through walls
+    // Check boundary collision to prevent walking through walls and ceiling
     const checkBoundaryCollision = (currentPosition: THREE.Vector3, proposedMovement: THREE.Vector3): boolean => {
       const newPosition = currentPosition.clone().add(proposedMovement)
       
       // Museum dimensions (matching createMuseumEnvironment)
       const width = 60
       const depth = 40  
+      const wallHeight = 12
       const buffer = 1.5 // Keep player away from walls
+      const ceilingBuffer = 0.5 // Keep player away from ceiling
       
       // Check if new position would be outside boundaries
       return (
@@ -1003,14 +1006,34 @@ export default defineComponent({
       )
     }
 
+    // Check ceiling collision for vertical movement (jumping/gravity)
+    const checkCeilingCollision = (currentY: number, proposedYMovement: number): boolean => {
+      const newY = currentY + proposedYMovement
+      const wallHeight = 12
+      const ceilingHeight = wallHeight - 0.5 // Leave headroom
+      
+      return newY >= ceilingHeight
+    }
+
     // Update physics
     const updatePhysics = (delta: number): void => {
       if (!state.camera) return
 
-      // Apply gravity
+      // Apply gravity with ceiling collision check
       if (!state.physics.isGrounded) {
         state.physics.velocityY -= state.physics.gravity * delta
-        state.camera.position.y += state.physics.velocityY * delta
+        const proposedYMovement = state.physics.velocityY * delta
+        
+        // Check ceiling collision before applying vertical movement
+        if (!checkCeilingCollision(state.camera.position.y, proposedYMovement)) {
+          state.camera.position.y += proposedYMovement
+        } else {
+          // Hit ceiling - apply slight bounce-back effect
+          const wallHeight = 12
+          const ceilingHeight = wallHeight - 0.5
+          state.camera.position.y = ceilingHeight
+          state.physics.velocityY = -Math.abs(state.physics.velocityY) * 0.1 // Small bounce downward
+        }
       }
 
       // Ground collision detection
@@ -1019,13 +1042,6 @@ export default defineComponent({
         state.physics.velocityY = 0
         state.physics.isGrounded = true
         state.physics.jumpsRemaining = state.physics.maxJumps // Reset jumps when landing
-      }
-
-      // Ceiling collision (wallHeight = 12)
-      const ceilingHeight = 11.5 // Leave some headroom
-      if (state.camera.position.y >= ceilingHeight) {
-        state.camera.position.y = ceilingHeight
-        state.physics.velocityY = 0 // Stop upward movement
       }
 
 
