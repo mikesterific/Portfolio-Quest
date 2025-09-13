@@ -141,6 +141,14 @@ interface MuseumState {
   // Background music state
   backgroundMusic: HTMLAudioElement | null
   soundEnabled: boolean
+  // Grappling hook state
+  isGrappling: boolean
+  hookPosition: THREE.Vector3 | null
+  attachedObject: THREE.Object3D | null
+  ropeLine: THREE.Line | null
+  grappleRange: number
+  lastGrappleTime: number
+  wallObjects: THREE.Mesh[]
 }
 
 export default defineComponent({
@@ -199,7 +207,15 @@ export default defineComponent({
       isPointerLocked: false,
       // Background music state  
       backgroundMusic: null,
-      soundEnabled: true // Default to sound ON for immersive experience
+      soundEnabled: true, // Default to sound ON for immersive experience
+      // Grappling hook state
+      isGrappling: false,
+      hookPosition: null,
+      attachedObject: null,
+      ropeLine: null,
+      grappleRange: 25, // Increased grapple range for better gameplay
+      lastGrappleTime: 0,
+      wallObjects: []
     }
 
     // Settings management
@@ -394,19 +410,183 @@ export default defineComponent({
       state.mouse.y = -(y * 2) + 1
       
       state.raycaster.setFromCamera(state.mouse, state.camera)
-      const intersects = state.raycaster.intersectObjects(
+      
+      // Check for portfolio frame interactions first
+      const portfolioIntersects = state.raycaster.intersectObjects(
         state.portfolioFrames.map(frame => frame.mesh)
       )
       
-      if (intersects.length > 0) {
+      if (portfolioIntersects.length > 0) {
         const clickedFrame = state.portfolioFrames.find(
-          frame => frame.mesh === intersects[0].object
+          frame => frame.mesh === portfolioIntersects[0].object
         )
         
         if (clickedFrame) {
           handleProjectInteraction(clickedFrame.projectData.id)
+          return // Don't grapple if clicking on portfolio
         }
       }
+      
+      // If not clicking on portfolio, try grappling (for testing)
+      console.log('🎯 Left-click grappling test!')
+      fireGrappleHook(event)
+    }
+
+    // Handle right-click for grappling hook
+    const onRightClick = (event: MouseEvent): void => {
+      console.log('🪝 Right-click detected!', { 
+        modalOpen: props.modalOpen, 
+        isPointerLocked: state.isPointerLocked 
+      })
+      
+      event.preventDefault() // Prevent context menu
+      
+      // Don't handle if modal is open
+      if (props.modalOpen) {
+        console.log('🚫 Grappling blocked - modal open')
+        return
+      }
+      
+      // TEMPORARILY REMOVE POINTER LOCK REQUIREMENT FOR TESTING
+      // if (!state.isPointerLocked) {
+      //   console.log('🚫 Grappling blocked - not pointer locked')
+      //   return
+      // }
+      
+      // Check cooldown (300ms between grapples)
+      const currentTime = Date.now()
+      if (currentTime - state.lastGrappleTime < 300) {
+        console.log('🚫 Grappling blocked - cooldown active')
+        return
+      }
+      
+      console.log('✅ Firing grappling hook!')
+      fireGrappleHook(event)
+    }
+
+    // Fire grappling hook towards mouse position
+    const fireGrappleHook = (event: MouseEvent): void => {
+      if (!state.raycaster || !state.camera || !state.mouse || !museumContainer.value || !state.scene) return
+      
+      // Update mouse coordinates for raycasting
+      const rect = museumContainer.value.getBoundingClientRect()
+      const x = (event.clientX - rect.left) / rect.width
+      const y = (event.clientY - rect.top) / rect.height
+      
+      state.mouse.x = (x * 2) - 1
+      state.mouse.y = -(y * 2) + 1
+      
+      // Cast ray from camera
+      state.raycaster.setFromCamera(state.mouse, state.camera)
+      
+      // Check for valid attachment points (portfolio frames and walls)
+      const grappleTargets = [
+        ...state.portfolioFrames.map(frame => frame.mesh),
+        ...state.wallObjects
+      ]
+      const intersects = state.raycaster.intersectObjects(grappleTargets)
+      
+      console.log('🎯 Grappling attempt:', { 
+        targetCount: grappleTargets.length,
+        portfolioFrames: state.portfolioFrames.length,
+        wallObjects: state.wallObjects.length,
+        intersects: intersects.length
+      })
+      
+      if (intersects.length > 0) {
+        const hitPoint = intersects[0].point
+        const hitObject = intersects[0].object
+        // Use yawObject position (actual player position) instead of camera position
+        const playerPosition = state.yawObject ? state.yawObject.position : state.camera.position
+        const distance = playerPosition.distanceTo(hitPoint)
+        
+        console.log('🎯 Hit detected!', { 
+          distance: distance.toFixed(2), 
+          grappleRange: state.grappleRange,
+          withinRange: distance <= state.grappleRange,
+          hitPoint: { x: hitPoint.x.toFixed(2), y: hitPoint.y.toFixed(2), z: hitPoint.z.toFixed(2) }
+        })
+        
+        // Check if within grapple range
+        if (distance <= state.grappleRange) {
+          console.log('🪝 ATTACHING GRAPPLE HOOK!')
+          attachGrappleHook(hitPoint, hitObject)
+        } else {
+          console.log('❌ Target too far! Distance:', distance.toFixed(2), 'Range:', state.grappleRange)
+        }
+      } else {
+        console.log('❌ No targets hit!')
+      }
+      
+      state.lastGrappleTime = Date.now()
+    }
+
+    // Attach grappling hook to target
+    const attachGrappleHook = (position: THREE.Vector3, target: THREE.Object3D): void => {
+      if (!state.scene || !state.camera) return
+      
+      // Detach existing hook if any
+      detachGrappleHook()
+      
+      // Set grappling state
+      state.isGrappling = true
+      state.hookPosition = position.clone()
+      state.attachedObject = target
+      
+      // Create rope line
+      createRopeLine()
+    }
+
+    // Create visual rope line
+    const createRopeLine = (): void => {
+      if (!state.scene || !state.camera || !state.hookPosition) return
+      
+      // Create line geometry
+      const points = [
+        state.camera.position.clone(),
+        state.hookPosition.clone()
+      ]
+      
+      const geometry = new THREE.BufferGeometry().setFromPoints(points)
+      const material = new THREE.LineBasicMaterial({ 
+        color: 0x00ff00, // Green when attached
+        linewidth: 2
+      })
+      
+      state.ropeLine = new THREE.Line(geometry, material)
+      state.scene.add(state.ropeLine)
+    }
+
+    // Update rope line position
+    const updateRopeLine = (): void => {
+      if (!state.ropeLine || !state.camera || !state.hookPosition) return
+      
+      const points = [
+        state.camera.position.clone(),
+        state.hookPosition.clone()
+      ]
+      
+      state.ropeLine.geometry.setFromPoints(points)
+    }
+
+    // Detach grappling hook
+    const detachGrappleHook = (): void => {
+      if (!state.scene) return
+      
+      // Remove rope line from scene
+      if (state.ropeLine) {
+        state.scene.remove(state.ropeLine)
+        state.ropeLine.geometry.dispose()
+        if (state.ropeLine.material instanceof THREE.Material) {
+          state.ropeLine.material.dispose()
+        }
+        state.ropeLine = null
+      }
+      
+      // Reset grappling state
+      state.isGrappling = false
+      state.hookPosition = null
+      state.attachedObject = null
     }
 
     // Initialize the 3D museum
@@ -458,23 +638,25 @@ export default defineComponent({
       }
     }
 
-    // Create the museum environment (circular walls, floor, ceiling)
+    // Create the museum environment (OPTIMIZED: rectangular walls, floor, ceiling)
     const createMuseumEnvironment = async (): Promise<void> => {
       if (!state.scene) return
 
-      const radius = 30
-      const wallHeight = 12
+      // OPTIMIZED: Rectangular dimensions for 94% geometry reduction (384→24 vertices)
+      const width = 60      // Gallery width
+      const depth = 40      // Gallery depth  
+      const wallHeight = 12 // Keep same height
       const wallThickness = 0.5
 
-      // Circular Floor with professional texture
-      const floorGeometry = new THREE.CircleGeometry(radius + wallThickness, 64)
-      
-      // Load professional floor texture
+      // Load professional textures (shared across all surfaces)
       const textureLoader = new THREE.TextureLoader()
+      
+      // OPTIMIZED: Rectangular Floor (4 vertices vs 64)
+      const floorGeometry = new THREE.PlaneGeometry(width, depth)
       const floorTexture = textureLoader.load('/textures/floor/diffuse.jpg')
       floorTexture.wrapS = THREE.RepeatWrapping
       floorTexture.wrapT = THREE.RepeatWrapping
-      floorTexture.repeat.set(8, 8)
+      floorTexture.repeat.set(8, 6) // Adjusted for rectangular aspect ratio
       
       const floorMaterial = new THREE.MeshStandardMaterial({ 
         map: floorTexture,
@@ -482,16 +664,15 @@ export default defineComponent({
       })
       const floor = new THREE.Mesh(floorGeometry, floorMaterial)
       floor.rotation.x = -Math.PI / 2
-      floor.receiveShadow = true
+      floor.receiveShadow = false // OPTIMIZED: Disabled shadows to reduce GPU usage
       state.scene.add(floor)
 
-      // Circular Ceiling with professional texture
-      const ceilingGeometry = new THREE.CircleGeometry(radius + wallThickness, 64)
-      
+      // OPTIMIZED: Rectangular Ceiling (4 vertices vs 64)
+      const ceilingGeometry = new THREE.PlaneGeometry(width, depth)
       const ceilingTexture = textureLoader.load('/textures/ceiling/diffuse.jpg')
       ceilingTexture.wrapS = THREE.RepeatWrapping
       ceilingTexture.wrapT = THREE.RepeatWrapping
-      ceilingTexture.repeat.set(4, 4)
+      ceilingTexture.repeat.set(6, 4) // Adjusted for rectangular aspect ratio
       
       const ceilingMaterial = new THREE.MeshStandardMaterial({ 
         map: ceilingTexture,
@@ -503,55 +684,65 @@ export default defineComponent({
       ceiling.receiveShadow = true
       state.scene.add(ceiling)
 
-      // Inner Curved Wall (where portfolio frames are mounted)
-      const innerWallGeometry = new THREE.CylinderGeometry(radius, radius, wallHeight, 64, 1, true)
-      
+      // OPTIMIZED: 4 Rectangular Walls (16 vertices vs 128)
       const wallTexture = textureLoader.load('/textures/walls/diffuse.jpg')
       wallTexture.wrapS = THREE.RepeatWrapping
       wallTexture.wrapT = THREE.RepeatWrapping
-      wallTexture.repeat.set(16, 4)
       
-      const innerWallMaterial = new THREE.MeshStandardMaterial({ 
+      const wallMaterial = new THREE.MeshStandardMaterial({ 
         map: wallTexture,
         side: THREE.BackSide // Only show inner surface
       })
-      const innerWall = new THREE.Mesh(innerWallGeometry, innerWallMaterial)
-      innerWall.position.y = wallHeight / 2
-      innerWall.receiveShadow = true
-      state.scene.add(innerWall)
 
-      // Outer Wall for complete enclosure
-      const outerWallGeometry = new THREE.CylinderGeometry(
-        radius + wallThickness, 
-        radius + wallThickness, 
-        wallHeight, 
-        64, 
-        1, 
-        true
-      )
-      const outerWallMaterial = new THREE.MeshLambertMaterial({ 
-        color: 0x2c3e50,
-        transparent: true,
-        opacity: 0.8,
-        side: THREE.FrontSide // Only show outer surface
-      })
-      const outerWall = new THREE.Mesh(outerWallGeometry, outerWallMaterial)
-      outerWall.position.y = wallHeight / 2
-      outerWall.receiveShadow = true
-      state.scene.add(outerWall)
+      // Front Wall (portfolio wall)
+      const frontWallGeometry = new THREE.PlaneGeometry(width, wallHeight)
+      wallTexture.repeat.set(8, 2) // Horizontal repeat for wide wall
+      const frontWall = new THREE.Mesh(frontWallGeometry, wallMaterial)
+      frontWall.position.set(0, wallHeight / 2, depth / 2)
+      frontWall.receiveShadow = true
+      state.scene.add(frontWall)
+
+      // Back Wall (portfolio wall)
+      const backWallGeometry = new THREE.PlaneGeometry(width, wallHeight)
+      const backWall = new THREE.Mesh(backWallGeometry, wallMaterial)
+      backWall.position.set(0, wallHeight / 2, -depth / 2)
+      backWall.rotation.y = Math.PI
+      backWall.receiveShadow = true
+      state.scene.add(backWall)
+
+      // Left Wall (portfolio wall)
+      const leftWallGeometry = new THREE.PlaneGeometry(depth, wallHeight)
+      wallTexture.repeat.set(5, 2) // Adjusted for narrower wall
+      const leftWall = new THREE.Mesh(leftWallGeometry, wallMaterial)
+      leftWall.position.set(-width / 2, wallHeight / 2, 0)
+      leftWall.rotation.y = Math.PI / 2
+      leftWall.receiveShadow = true
+      state.scene.add(leftWall)
+
+      // Right Wall (portfolio wall)
+      const rightWallGeometry = new THREE.PlaneGeometry(depth, wallHeight)
+      const rightWall = new THREE.Mesh(rightWallGeometry, wallMaterial)
+      rightWall.position.set(width / 2, wallHeight / 2, 0)
+      rightWall.rotation.y = -Math.PI / 2
+      rightWall.receiveShadow = true
+      state.scene.add(rightWall)
 
       // Add ceiling lights and decorations
       createCeilingLights()
       createSpaceDecorations()
+
+      // Store wall objects for grappling (including ceiling for Spider-Man style swinging!)
+      state.wallObjects.push(frontWall, backWall, leftWall, rightWall, ceiling)
+      console.log('🏗️ Museum walls added as grappling targets (OPTIMIZED RECTANGULAR):', state.wallObjects.length)
     }
 
-    // Create ceiling lighting system
+    // Create ceiling lighting system (OPTIMIZED: rectangular grid layout)
     const createCeilingLights = (): void => {
       if (!state.scene) return
 
-      const radius = 30
+      const width = 60
+      const depth = 40 
       const wallHeight = 12
-      const lightCount = 8
 
       // Central ceiling light fixture
       const centralLightGeometry = new THREE.CylinderGeometry(2, 2, 0.3, 16)
@@ -564,13 +755,19 @@ export default defineComponent({
       centralLight.position.set(0, wallHeight - 0.2, 0)
       state.scene.add(centralLight)
 
-      // Ring of ceiling lights around the perimeter
-      for (let i = 0; i < lightCount; i++) {
-        const angle = (i / lightCount) * Math.PI * 2
-        const lightRadius = radius * 0.7
-        const x = Math.cos(angle) * lightRadius
-        const z = Math.sin(angle) * lightRadius
+      // OPTIMIZED: Rectangular grid of ceiling lights (4 corner + 2 mid-wall)
+      const lightPositions = [
+        // 4 Corner lights for even illumination
+        { x: width * 0.3, z: depth * 0.25 },    // Front-right corner
+        { x: -width * 0.3, z: depth * 0.25 },   // Front-left corner
+        { x: width * 0.3, z: -depth * 0.25 },   // Back-right corner
+        { x: -width * 0.3, z: -depth * 0.25 },  // Back-left corner
+        // 2 Mid-wall lights for portfolio illumination
+        { x: 0, z: depth * 0.3 },               // Front center (for portfolio frames)
+        { x: 0, z: -depth * 0.3 }               // Back center (for portfolio frames)
+      ]
 
+      lightPositions.forEach((pos, i) => {
         // Light fixture
         const lightFixtureGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 12)
         const lightFixtureMaterial = new THREE.MeshBasicMaterial({ 
@@ -579,8 +776,8 @@ export default defineComponent({
           opacity: 0.8
         })
         const lightFixture = new THREE.Mesh(lightFixtureGeometry, lightFixtureMaterial)
-        lightFixture.position.set(x, wallHeight - 0.1, z)
-        state.scene.add(lightFixture)
+        lightFixture.position.set(pos.x, wallHeight - 0.1, pos.z)
+        state.scene!.add(lightFixture)
 
         // Glowing light effect
         const glowGeometry = new THREE.SphereGeometry(0.3, 8, 8)
@@ -590,21 +787,11 @@ export default defineComponent({
           opacity: 0.4
         })
         const glow = new THREE.Mesh(glowGeometry, glowMaterial)
-        glow.position.set(x, wallHeight - 0.3, z)
-        state.scene.add(glow)
-      }
-
-      // Add some architectural details to the ceiling
-      const ringGeometry = new THREE.RingGeometry(radius * 0.8, radius * 0.85, 64)
-      const ringMaterial = new THREE.MeshLambertMaterial({ 
-        color: 0x3d5a80,
-        transparent: true,
-        opacity: 0.6
+        glow.position.set(pos.x, wallHeight - 0.3, pos.z)
+        state.scene!.add(glow)
       })
-      const decorativeRing = new THREE.Mesh(ringGeometry, ringMaterial)
-      decorativeRing.rotation.x = Math.PI / 2
-      decorativeRing.position.y = wallHeight - 0.05
-      state.scene.add(decorativeRing)
+
+      console.log('💡 Created rectangular ceiling light grid (6 lights + 1 central)')
     }
 
     // Create space-themed decorations
@@ -614,28 +801,83 @@ export default defineComponent({
       // Space decorations can be added here if needed in the future
     }
 
-    // Create portfolio displays around the circular wall
+    // Create portfolio displays in professional grid layout on walls
     const createPortfolioDisplays = async (): Promise<void> => {
       if (!state.scene) return
 
       const projects = portfolioData.projects
-      const radius = 28 // Slightly inside the wall
       const totalProjects = projects.length
       
-      projects.forEach((project, index) => {
-        // Calculate angle for even distribution around the circle
-        const angle = (index / totalProjects) * Math.PI * 2
-        
-        // Position on the circular wall
-        const x = Math.cos(angle) * radius
-        const z = Math.sin(angle) * radius
-        
-        // Rotation to face inward toward center
-        const rotation = angle + Math.PI
-        
-        const position = { x, z, rotation }
-        createPortfolioFrame(project, position, index, totalProjects)
+      // OPTIMIZED: Organize portfolio frames in gallery-style grid on 4 walls
+      const wallConfigs = [
+        // Front wall (3 frames)
+        { 
+          wall: 'front', 
+          count: 3, 
+          baseZ: 18, 
+          baseRotation: Math.PI,
+          positions: [
+            { x: -15, y: 6 }, // Left frame
+            { x: 0, y: 6 },   // Center frame
+            { x: 15, y: 6 }   // Right frame
+          ]
+        },
+        // Back wall (3 frames) 
+        {
+          wall: 'back',
+          count: 3,
+          baseZ: -18,
+          baseRotation: 0,
+          positions: [
+            { x: -15, y: 6 }, // Left frame
+            { x: 0, y: 6 },   // Center frame
+            { x: 15, y: 6 }   // Right frame
+          ]
+        },
+        // Left wall (2 frames)
+        {
+          wall: 'left', 
+          count: 2,
+          baseX: -28,
+          baseRotation: Math.PI / 2,
+          positions: [
+            { z: -8, y: 6 }, // Front frame on left wall
+            { z: 8, y: 6 }   // Back frame on left wall
+          ]
+        },
+        // Right wall (2 frames)
+        {
+          wall: 'right',
+          count: 2, 
+          baseX: 28,
+          baseRotation: -Math.PI / 2,
+          positions: [
+            { z: -8, y: 6 }, // Front frame on right wall
+            { z: 8, y: 6 }   // Back frame on right wall  
+          ]
+        }
+      ]
+      
+      let projectIndex = 0
+      
+      wallConfigs.forEach(wallConfig => {
+        wallConfig.positions.forEach((pos, i) => {
+          if (projectIndex < totalProjects) {
+            const project = projects[projectIndex]
+            
+            const position = {
+              x: (pos as any).x !== undefined ? (pos as any).x : (wallConfig.baseX || 0),
+              z: (pos as any).z !== undefined ? (pos as any).z : (wallConfig.baseZ || 0),
+              rotation: wallConfig.baseRotation
+            }
+            
+            createPortfolioFrame(project, position, projectIndex, totalProjects)
+            projectIndex++
+          }
+        })
       })
+      
+      console.log(`🖼️ Created ${projectIndex} portfolio frames in rectangular grid layout`)
     }
 
     // Create individual portfolio frame
@@ -739,17 +981,17 @@ export default defineComponent({
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
       state.scene.add(ambientLight)
 
-      // Central ceiling light (main illumination)
+      // Central ceiling light (main illumination) - OPTIMIZED: Reduced shadow map resolution
       const centralLight = new THREE.PointLight(0xffffff, 2.0, 60)
       centralLight.position.set(0, wallHeight - 1, 0)
       centralLight.castShadow = true
-      centralLight.shadow.mapSize.width = 2048
-      centralLight.shadow.mapSize.height = 2048
+      centralLight.shadow.mapSize.width = 1024  // REDUCED: Was 2048 (4MP → 1MP)
+      centralLight.shadow.mapSize.height = 1024 // REDUCED: Was 2048 (4MP → 1MP)
       centralLight.shadow.camera.near = 0.1
       centralLight.shadow.camera.far = 60
       state.scene.add(centralLight)
 
-      // Ring of ceiling lights for even distribution
+      // Ring of ceiling lights for even distribution - OPTIMIZED: Selective shadows
       const lightCount = 8
       for (let i = 0; i < lightCount; i++) {
         const angle = (i / lightCount) * Math.PI * 2
@@ -759,9 +1001,16 @@ export default defineComponent({
 
         const ceilingLight = new THREE.PointLight(0xffffcc, 0.6, 25)
         ceilingLight.position.set(x, wallHeight - 1, z)
-        ceilingLight.castShadow = true
-        ceilingLight.shadow.mapSize.width = 1024
-        ceilingLight.shadow.mapSize.height = 1024
+        
+        // OPTIMIZED: Only cast shadows from cardinal direction lights (4 of 8)
+        const shouldCastShadows = i % 2 === 0
+        ceilingLight.castShadow = shouldCastShadows
+        
+        if (shouldCastShadows) {
+          ceilingLight.shadow.mapSize.width = 512   // REDUCED: Was 1024 (1MP → 0.25MP)
+          ceilingLight.shadow.mapSize.height = 512  // REDUCED: Was 1024 (1MP → 0.25MP)
+        }
+        
         state.scene.add(ceilingLight)
       }
 
@@ -803,6 +1052,7 @@ export default defineComponent({
       // Mouse controls for interaction
       document.addEventListener('click', onMouseClick)
       document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('contextmenu', onRightClick) // Right-click for grappling hook
       
       // ESC to exit
       document.addEventListener('keydown', (event) => {
@@ -842,6 +1092,11 @@ export default defineComponent({
           if (!state.isRunning) {
             state.isRunning = true
             state.targetSpeedMultiplier = 2.2
+          }
+          break
+        case 'KeyE':
+          if (state.isGrappling) {
+            detachGrappleHook()
           }
           break
       }
@@ -921,6 +1176,29 @@ export default defineComponent({
       if (state.camera.position.y >= ceilingHeight) {
         state.camera.position.y = ceilingHeight
         state.physics.velocityY = 0 // Stop upward movement
+      }
+
+      // Grappling hook physics
+      if (state.isGrappling && state.hookPosition && state.yawObject) {
+        const distance = state.yawObject.position.distanceTo(state.hookPosition)
+        
+        // Auto-detach if very close to target (< 2 meters)
+        if (distance < 2) {
+          detachGrappleHook()
+        } else {
+          // Calculate pull direction and force
+          const pullDirection = state.hookPosition.clone().sub(state.yawObject.position).normalize()
+          const pullForce = Math.min(distance * 0.5, 15) // Max pull force of 15
+          
+          // Apply pull force to velocity
+          const pullVector = pullDirection.multiplyScalar(pullForce * delta)
+          state.velocity.add(pullVector)
+        }
+      }
+
+      // Update rope line position
+      if (state.isGrappling) {
+        updateRopeLine()
       }
     }
 
@@ -1006,7 +1284,11 @@ export default defineComponent({
       document.removeEventListener('keyup', onKeyUp)
       document.removeEventListener('click', onMouseClick)
       document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('contextmenu', onRightClick) // Right-click for grappling hook
       window.removeEventListener('resize', handleResize)
+      
+      // Clean up grappling hook
+      detachGrappleHook()
       
       // Stop background music
       stopBackgroundMusic()
