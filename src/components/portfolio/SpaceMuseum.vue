@@ -985,6 +985,24 @@ export default defineComponent({
       }
     }
 
+    // Check boundary collision to prevent walking through walls
+    const checkBoundaryCollision = (currentPosition: THREE.Vector3, proposedMovement: THREE.Vector3): boolean => {
+      const newPosition = currentPosition.clone().add(proposedMovement)
+      
+      // Museum dimensions (matching createMuseumEnvironment)
+      const width = 60
+      const depth = 40  
+      const buffer = 1.5 // Keep player away from walls
+      
+      // Check if new position would be outside boundaries
+      return (
+        newPosition.x < -width/2 + buffer || 
+        newPosition.x > width/2 - buffer ||
+        newPosition.z < -depth/2 + buffer || 
+        newPosition.z > depth/2 - buffer
+      )
+    }
+
     // Update physics
     const updatePhysics = (delta: number): void => {
       if (!state.camera) return
@@ -1041,12 +1059,16 @@ export default defineComponent({
       if (state.moveLeft) state.velocity.x -= speed * delta
       if (state.moveRight) state.velocity.x += speed * delta
 
-      // Apply movement using the yaw object's local directions
+      // Apply movement using the yaw object's local directions with collision detection
       const direction = new THREE.Vector3()
       direction.x = state.velocity.x * delta
       direction.z = state.velocity.z * delta
       direction.applyQuaternion(state.yawObject.quaternion)
-      state.yawObject.position.add(direction)
+      
+      // Check collision before applying movement
+      if (!checkBoundaryCollision(state.yawObject.position, direction)) {
+        state.yawObject.position.add(direction)
+      }
 
       // Check for nearby portfolio frames
       checkPortfolioProximity()
