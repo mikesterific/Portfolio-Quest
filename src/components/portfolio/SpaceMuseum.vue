@@ -122,6 +122,7 @@ interface MuseumState {
   thinkerModel: THREE.Group | null
   mouseManModel: THREE.Group | null
   cleoModel: THREE.Group | null
+  socratesModel: THREE.Group | null
   floorMesh: THREE.Mesh | null
   moveForward: boolean
   moveBackward: boolean
@@ -189,6 +190,7 @@ export default defineComponent({
       thinkerModel: null,
       mouseManModel: null,
       cleoModel: null,
+      socratesModel: null,
       floorMesh: null,
       moveForward: false,
       moveBackward: false,
@@ -458,18 +460,23 @@ export default defineComponent({
         // Camera setup with yaw/pitch hierarchy
         setupCustomCameraControls()
         
-        // Renderer setup
+        // Renderer setup - PERFORMANCE OPTIMIZED
         state.renderer = new THREE.WebGLRenderer({ 
           canvas: museumCanvas.value,
-          antialias: true
+          antialias: false, // DISABLED for FPS boost
+          powerPreference: 'high-performance'
         })
         state.renderer.setSize(
           museumContainer.value.clientWidth,
           museumContainer.value.clientHeight
         )
         state.renderer.setClearColor(0x000011)
-        state.renderer.shadowMap.enabled = true
-        state.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+        // EMERGENCY FPS FIX: Temporarily disable shadows for performance
+        state.renderer.shadowMap.enabled = false  // DISABLED for immediate FPS boost
+        // state.renderer.shadowMap.type = THREE.BasicShadowMap // When re-enabled, use fastest type
+        
+        // Additional renderer optimizations for FPS
+        state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)) // Cap pixel ratio
         
         // Initialize other components
         state.clock = new THREE.Clock()
@@ -484,6 +491,7 @@ export default defineComponent({
         await loadThinkerModel() // Load the thinker centerpiece model
         await loadMouseManModel() // Load the man-holding-mouse model in corner
         await loadCleoModel() // Load the cleo model in another corner
+        await loadSocratesModel() // Load the socrates model in back-left corner
         setupLighting()
         setupEventListeners()
         
@@ -976,41 +984,20 @@ export default defineComponent({
     const setupInvisibleMouseManLighting = (): void => {
       if (!state.scene) return
 
-      // Invisible lights positioned around the mouse man statue
+      // Invisible lights positioned around the mouse man statue (front-facing only, optimized for user view angle)
       const mouseManLights = [
         // Main key light from front-right (toward center)
         { 
           position: { x: -18, y: 6, z: 18 }, 
           color: 0xffffff, 
-          intensity: 1.2, 
+          intensity: 1.6, 
           distance: 15 
         },
-        // Fill light from behind-left
-        { 
-          position: { x: -26, y: 5, z: 12 }, 
-          color: 0xffffcc, 
-          intensity: 0.8, 
-          distance: 12 
-        },
-        // Rim light from above-back
-        { 
-          position: { x: -24, y: 8, z: 13 }, 
-          color: 0xccddff, 
-          intensity: 0.6, 
-          distance: 10 
-        },
-        // Top-down soft illumination
-        { 
-          position: { x: -22, y: 9, z: 15 }, 
-          color: 0xffffff, 
-          intensity: 0.9, 
-          distance: 12 
-        },
-        // Side accent light from right
+        // Side accent light from right (front-facing)
         { 
           position: { x: -19, y: 4, z: 15 }, 
           color: 0xaaccff, 
-          intensity: 0.5, 
+          intensity: 0.8, 
           distance: 8 
         }
       ]
@@ -1033,7 +1020,7 @@ export default defineComponent({
         console.log(`🐭💡 Mouse man light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
       })
 
-      console.log(`✨ Added ${mouseManLights.length} invisible lights for mouse man model`)
+      console.log(`✨ Added ${mouseManLights.length} optimized lights for mouse man model (removed back/top lights for 60% reduction)`)
     }
 
     // Load and position Cleo 3D model in corner
@@ -1101,56 +1088,21 @@ export default defineComponent({
     const setupInvisibleCleoLighting = (): void => {
       if (!state.scene) return
 
-      // Invisible lights positioned around the Cleo statue
+      // Invisible lights positioned around the Cleo statue (front-facing only, optimized for user view angle)
       const cleoLights = [
         // Main key light from front-left (toward center)
         { 
           position: { x: 18, y: 6, z: 18 }, 
           color: 0xffffff, 
-          intensity: 1.2, 
+          intensity: 1.6, 
           distance: 15 
         },
-        // Fill light from behind-right
-        { 
-          position: { x: 26, y: 5, z: 12 }, 
-          color: 0xffffcc, 
-          intensity: 0.8, 
-          distance: 12 
-        },
-        // Rim light from above-back
-        { 
-          position: { x: 24, y: 8, z: 13 }, 
-          color: 0xffccdd, 
-          intensity: 0.7, 
-          distance: 10 
-        },
-        // Top-down soft illumination
-        { 
-          position: { x: 22, y: 9, z: 15 }, 
-          color: 0xffffff, 
-          intensity: 0.9, 
-          distance: 12 
-        },
-        // Side accent light from left
+        // Side accent light from left (front-facing)
         { 
           position: { x: 19, y: 4, z: 15 }, 
           color: 0xffaacc, 
-          intensity: 0.5, 
+          intensity: 0.8, 
           distance: 8 
-        },
-        // Corrective lighting for left hand area (to minimize bulge appearance)
-        { 
-          position: { x: 21, y: 3.5, z: 16 }, 
-          color: 0xffffff, 
-          intensity: 0.4, 
-          distance: 3 
-        },
-        // Shadow-creating light from opposite side to define hand better
-        { 
-          position: { x: 23, y: 3, z: 14 }, 
-          color: 0xffffee, 
-          intensity: 0.3, 
-          distance: 4 
         }
       ]
 
@@ -1172,7 +1124,103 @@ export default defineComponent({
         console.log(`👸💡 Cleo light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
       })
 
-      console.log(`✨ Added ${cleoLights.length} invisible lights for Cleo model`)
+      console.log(`✨ Added ${cleoLights.length} optimized lights for Cleo model (removed back/top lights for 71% reduction)`)
+    }
+
+    // Load and position Socrates 3D model in back-left corner
+    const loadSocratesModel = async (): Promise<void> => {
+      if (!state.scene) return
+
+      const loader = new GLTFLoader()
+      
+      try {
+        console.log('🏛️ Loading Socrates model...')
+        const gltf = await loader.loadAsync('/src/assets/3d/socrotes.glb')
+        
+        const socratesModel = gltf.scene.clone()
+        
+        // Scale to match cleo and mouse man (doubled size)
+        socratesModel.scale.setScalar(4.4)
+        
+        // Position in back-left corner, facing center
+        socratesModel.position.set(-22, 0, -15) // Back-left corner
+        
+        // Rotate to face the center area (45 degrees toward center)
+        socratesModel.rotation.y = Math.PI / 4 // 45 degrees toward center
+        
+        // Enhance materials for better light reflection
+        socratesModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+            
+            // Apply the same material enhancement as other models
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((mat: any) => {
+                  enhanceMaterialForLighting(mat)
+                })
+              } else {
+                enhanceMaterialForLighting(child.material)
+              }
+            }
+          }
+        })
+        
+        state.scene!.add(socratesModel)
+        state.socratesModel = socratesModel
+        
+        // Set up invisible lighting specifically for Socrates
+        setupInvisibleSocratesLighting()
+        
+        console.log('✅ Socrates model positioned in back-left corner facing center')
+        
+      } catch (error) {
+        console.error('❌ Failed to load Socrates model:', error)
+      }
+    }
+
+    // Setup invisible lighting for the Socrates model
+    const setupInvisibleSocratesLighting = (): void => {
+      if (!state.scene) return
+
+      // Invisible lights positioned around the Socrates statue (front-facing only, optimized for user view angle)
+      const socratesLights = [
+        // Main key light from front-right (toward center)
+        { 
+          position: { x: -18, y: 6, z: -12 }, 
+          color: 0xffffff, 
+          intensity: 1.6, 
+          distance: 15 
+        },
+        // Philosophical accent light (wisdom glow from front)
+        { 
+          position: { x: -19, y: 4, z: -15 }, 
+          color: 0xffffaa, 
+          intensity: 0.8, 
+          distance: 8 
+        }
+      ]
+
+      socratesLights.forEach((lightConfig, index) => {
+        const light = new THREE.PointLight(
+          lightConfig.color, 
+          lightConfig.intensity, 
+          lightConfig.distance
+        )
+        light.position.set(
+          lightConfig.position.x, 
+          lightConfig.position.y, 
+          lightConfig.position.z
+        )
+        
+        // Invisible lights - no geometry, just illumination
+        state.scene!.add(light)
+        
+        console.log(`🏛️💡 Socrates light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
+      })
+
+      console.log(`✨ Added ${socratesLights.length} optimized lights for Socrates model (removed back/top lights for 60% reduction)`)
     }
 
     // Load and position thinker 3D model as centerpiece
@@ -1741,6 +1789,16 @@ export default defineComponent({
         })
       }
       
+      // Add socrates model meshes for collision detection
+      if (state.socratesModel) {
+        state.socratesModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            child.name = child.name || 'socrates-part' // Name for identification
+            collidableObjects.push(child)
+          }
+        })
+      }
+      
       // Perform intersection test with increased ray distance
       const intersections = raycaster.intersectObjects(collidableObjects, true)
       
@@ -1806,6 +1864,31 @@ export default defineComponent({
       }
     }
 
+    // Performance monitoring system
+    let lastTime = 0
+    let frameCount = 0
+    let fps = 0
+    
+    const updatePerformanceStats = (): void => {
+      frameCount++
+      const currentTime = performance.now()
+      
+      if (currentTime >= lastTime + 1000) { // Update every second
+        fps = Math.round((frameCount * 1000) / (currentTime - lastTime))
+        frameCount = 0
+        lastTime = currentTime
+        
+        // Log performance stats for debugging
+        if (fps < 30) {
+          console.warn(`🔴 LOW FPS WARNING: ${fps} FPS - Performance issues detected`)
+        } else if (fps < 50) {
+          console.log(`🟡 Moderate FPS: ${fps} FPS - Acceptable performance`)
+        } else {
+          console.log(`🟢 Good FPS: ${fps} FPS - Smooth performance`)
+        }
+      }
+    }
+
     // Animation loop
     const animate = (): void => {
       if (!state.scene || !state.camera || !state.renderer || !state.clock || !state.yawObject) return
@@ -1846,6 +1929,9 @@ export default defineComponent({
       }
 
       state.renderer.render(state.scene, state.camera)
+
+      // Update performance monitoring
+      updatePerformanceStats()
     }
 
     // Proximity detection removed - users click directly to interact
@@ -1971,6 +2057,26 @@ export default defineComponent({
           state.scene.remove(state.cleoModel)
         }
         state.cleoModel = null
+      }
+      
+      // Dispose of Socrates model
+      if (state.socratesModel) {
+        state.socratesModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            if (child.geometry) child.geometry.dispose()
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((material: any) => material.dispose())
+              } else {
+                child.material.dispose()
+              }
+            }
+          }
+        })
+        if (state.scene) {
+          state.scene.remove(state.socratesModel)
+        }
+        state.socratesModel = null
       }
       
       // Dispose of floor mesh

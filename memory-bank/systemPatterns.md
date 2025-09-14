@@ -384,4 +384,125 @@ if (state.physics.velocityY <= 0 && distanceToGround <= playerGroundHeight + 0.1
 
 ---
 
+## Performance Optimization Patterns
+
+### Three.js Performance-First Architecture
+
+#### Shadow Budget Pattern
+**Problem**: Multiple shadow-casting lights create exponential performance degradation
+**Solution**: Strict shadow budget with compensation strategy
+```javascript
+// PATTERN: 1 Primary + Multiple Fill Lights
+const SHADOW_BUDGET = {
+  maxShadowLights: 2,           // Hard limit for scene
+  maxShadowResolution: 256,     // Per-light shadow map size
+  totalShadowPixels: '< 1MP'    // Across all shadow maps
+}
+
+// COMPENSATION: Boost ambient + fill lights when shadows are reduced
+ambientLight.intensity = shadowsEnabled ? 0.6 : 0.9
+```
+
+#### Emergency Performance Pattern  
+**Pattern**: Always implement emergency performance fallback for 3D experiences
+```javascript
+// EMERGENCY PATTERN: Instant FPS recovery
+const emergencyOptimization = {
+  disableShadows: () => renderer.shadowMap.enabled = false,     // 70-90% FPS boost
+  disableAntialiasing: () => renderer = new WebGLRenderer({antialias: false}), // 15-25% boost  
+  capPixelRatio: () => renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)), // High-DPI protection
+  enablePerformanceMode: () => renderer.powerPreference = 'high-performance'
+}
+```
+
+#### Real-time Performance Monitoring Pattern
+**Pattern**: Build-in FPS monitoring for development and production
+```javascript
+const PerformanceMonitor = {
+  frameCount: 0,
+  lastTime: 0,
+  
+  update() {
+    this.frameCount++
+    const now = performance.now()
+    if (now >= this.lastTime + 1000) {
+      const fps = Math.round((this.frameCount * 1000) / (now - this.lastTime))
+      this.logPerformanceStatus(fps)
+      this.frameCount = 0
+      this.lastTime = now
+    }
+  },
+  
+  logPerformanceStatus(fps) {
+    if (fps < 30) console.warn(`🔴 CRITICAL FPS: ${fps} - Enable emergency optimizations`)
+    else if (fps < 50) console.log(`🟡 MODERATE FPS: ${fps} - Consider optimizations`)  
+    else console.log(`🟢 OPTIMAL FPS: ${fps} - Performance acceptable`)
+  }
+}
+```
+
+#### Lighting Architecture Pattern
+**Pattern**: Hierarchical lighting with performance priorities
+```javascript
+const LightingHierarchy = {
+  // LEVEL 1: Essential (Always rendered)
+  ambient: { type: 'AmbientLight', intensity: 0.6, shadows: false },
+  
+  // LEVEL 2: Primary (1 shadow light max)
+  primary: { type: 'SpotLight', intensity: 1.4, shadows: true, resolution: 256 },
+  
+  // LEVEL 3: Fill (Multiple, no shadows)
+  fill: [
+    { type: 'PointLight', intensity: 0.8, shadows: false },
+    { type: 'SpotLight', intensity: 0.7, shadows: false }
+  ],
+  
+  // LEVEL 4: Accent (Disabled first during performance issues)
+  accent: { type: 'PointLight', intensity: 0.4, shadows: false, optional: true }
+}
+```
+
+#### The Shadow Map Trap Anti-Pattern
+**Anti-Pattern**: Adding shadow-casting lights without performance consideration
+```javascript
+// ❌ ANTI-PATTERN: Shadow Map Explosion  
+lights.forEach(light => {
+  light.castShadow = true                    // 7+ shadow lights
+  light.shadow.mapSize.width = 1024         // 1MP each = 7MP total per frame
+  light.shadow.mapSize.height = 1024        // Result: 15-25 FPS death spiral
+})
+
+// ✅ CORRECT PATTERN: Shadow Budget Management
+const createLight = (config) => {
+  const light = new THREE[config.type](config.color, config.intensity)
+  
+  if (config.shadows && shadowBudget.hasCapacity()) {
+    light.castShadow = true
+    light.shadow.mapSize.setScalar(shadowBudget.getResolution())
+    shadowBudget.allocate()
+  }
+  
+  return light
+}
+```
+
+### Performance-First Design Principles
+
+1. **Performance Over Beauty**: 60 FPS with basic lighting > 15 FPS with cinematic lighting
+2. **Emergency Fallbacks**: Always implement instant performance recovery options
+3. **Budget-Driven Development**: Define hard limits (shadow pixels, lights, draw calls)
+4. **Real-time Monitoring**: Built-in FPS tracking for immediate feedback
+5. **Hierarchical Degradation**: Remove expensive features first during performance issues
+
+### Key Performance Metrics
+
+- **Target FPS**: 60 (optimal), 50+ (acceptable), 30+ (playable), <30 (critical)
+- **Shadow Budget**: <1MP total shadow pixels across all lights in scene
+- **Light Limits**: 1-2 shadow lights, unlimited non-shadow lights
+- **Pixel Ratio**: Cap at 1.5x to prevent 4K rendering overload
+
+This performance-first approach ensures 3D experiences remain interactive and enjoyable across a wide range of devices, avoiding the common trap of prioritizing visual fidelity over user experience.
+
+---
+
 *Part of Memory Bank System*

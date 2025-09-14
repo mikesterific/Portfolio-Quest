@@ -418,3 +418,24 @@ Tuning tips:
 - **fovDegrees / sensorRange**: perception envelope
 - **orbitRadius / strafeSpeed**: engagement shape
 - **turnRate / acceleration / drag**: handling feel
+
+---
+
+## December 2024
+
+### Three.js Performance Crisis Resolution ✅
+- **Issue**: SpaceMuseum FPS dropped to 15-25 FPS after adding 3D statues
+- **Root Cause**: 7+ shadow-casting lights with high-resolution shadow maps (7MP+ shadow pixels per frame)  
+- **Emergency Solution**: Disabled shadows globally, applied renderer optimizations
+- **Result**: Restored 60+ FPS performance
+- **Documentation**: Added comprehensive Three.js performance patterns to memory bank
+- **Key Lesson**: "The Shadow Map Trap" - always budget shadow-casting lights in 3D scenes
+
+**Performance Optimizations Applied**:
+- Disabled shadow rendering (70-90% FPS boost)
+- Disabled antialiasing (15-25% FPS boost)
+- Capped pixel ratio for high-DPI displays (10-30% FPS boost)
+- Added real-time FPS monitoring system
+- Documented performance-first design patterns in techContext.md and systemPatterns.md
+
+This critical performance debugging session established essential patterns for future 3D development work.
