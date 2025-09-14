@@ -619,12 +619,12 @@ export default defineComponent({
       const depth = 40 
       const wallHeight = 12
 
-      // Central ceiling light fixture
+      // Central ceiling light fixture - ENHANCED BRIGHTNESS
       const centralLightGeometry = new THREE.CylinderGeometry(2, 2, 0.3, 16)
       const centralLightMaterial = new THREE.MeshBasicMaterial({ 
-        color: 0xffffff,
+        color: 0xffffee, // Slightly warmer white for brighter appearance
         transparent: true,
-        opacity: 0.9
+        opacity: 1.0 // Increased from 0.9 to 1.0 for maximum brightness
       })
       const centralLight = new THREE.Mesh(centralLightGeometry, centralLightMaterial)
       centralLight.position.set(0, wallHeight - 0.2, 0)
@@ -643,30 +643,30 @@ export default defineComponent({
       ]
 
       lightPositions.forEach((pos, i) => {
-        // Light fixture
+        // Light fixture - ENHANCED BRIGHTNESS
         const lightFixtureGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 12)
         const lightFixtureMaterial = new THREE.MeshBasicMaterial({ 
-          color: 0xe8e8e8,
+          color: 0xffffee, // Brighter, warmer white
           transparent: true,
-          opacity: 0.8
+          opacity: 1.0 // Increased from 0.8 to 1.0
         })
         const lightFixture = new THREE.Mesh(lightFixtureGeometry, lightFixtureMaterial)
         lightFixture.position.set(pos.x, wallHeight - 0.1, pos.z)
         state.scene!.add(lightFixture)
 
-        // Glowing light effect
-        const glowGeometry = new THREE.SphereGeometry(0.3, 8, 8)
+        // Enhanced glowing light effect
+        const glowGeometry = new THREE.SphereGeometry(0.4, 8, 8) // Slightly larger for more presence
         const glowMaterial = new THREE.MeshBasicMaterial({ 
-          color: 0xffffaa,
+          color: 0xffffcc, // Warmer glow color
           transparent: true,
-          opacity: 0.4
+          opacity: 0.7 // Increased from 0.4 to 0.7 for brighter glow
         })
         const glow = new THREE.Mesh(glowGeometry, glowMaterial)
         glow.position.set(pos.x, wallHeight - 0.3, pos.z)
         state.scene!.add(glow)
       })
 
-      console.log('💡 Created rectangular ceiling light grid (6 lights + 1 central)')
+      console.log('💡 Created enhanced brightness rectangular ceiling light grid (6 lights + 1 central) - SUPER BRIGHT MODE!')
     }
 
     // Create space-themed decorations
@@ -1548,21 +1548,21 @@ export default defineComponent({
       const radius = 30
       const wallHeight = 12
 
-      // Professional gallery lighting (inspired by 3D Art Gallery)
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
+      // Professional gallery lighting (inspired by 3D Art Gallery) - ENHANCED
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8) // Increased from 0.6 to 0.8
       state.scene.add(ambientLight)
 
-      // Central ceiling light (main illumination) - OPTIMIZED: Reduced shadow map resolution
-      const centralLight = new THREE.PointLight(0xffffff, 2.0, 60)
+      // Central ceiling light (main illumination) - ENHANCED BRIGHTNESS
+      const centralLight = new THREE.PointLight(0xffffff, 3.5, 70) // Increased from 2.0 to 3.5, extended range
       centralLight.position.set(0, wallHeight - 1, 0)
       centralLight.castShadow = true
       centralLight.shadow.mapSize.width = 1024  // REDUCED: Was 2048 (4MP → 1MP)
       centralLight.shadow.mapSize.height = 1024 // REDUCED: Was 2048 (4MP → 1MP)
       centralLight.shadow.camera.near = 0.1
-      centralLight.shadow.camera.far = 60
+      centralLight.shadow.camera.far = 70 // Extended shadow range
       state.scene.add(centralLight)
 
-      // Ring of ceiling lights for even distribution - OPTIMIZED: Selective shadows
+      // Ring of ceiling lights for even distribution - ENHANCED BRIGHTNESS
       const lightCount = 8
       for (let i = 0; i < lightCount; i++) {
         const angle = (i / lightCount) * Math.PI * 2
@@ -1570,7 +1570,7 @@ export default defineComponent({
         const x = Math.cos(angle) * lightRadius
         const z = Math.sin(angle) * lightRadius
 
-        const ceilingLight = new THREE.PointLight(0xffffcc, 0.6, 25)
+        const ceilingLight = new THREE.PointLight(0xffffcc, 1.2, 35) // Increased from 0.6 to 1.2, extended range from 25 to 35
         ceilingLight.position.set(x, wallHeight - 1, z)
         
         // OPTIMIZED: Only cast shadows from cardinal direction lights (4 of 8)
