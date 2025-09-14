@@ -164,7 +164,7 @@ export default defineComponent({
     const museumContainer = ref<HTMLDivElement>()
     const museumCanvas = ref<HTMLCanvasElement>()
     const isLoading = ref(true)
-    const interactionPrompt = ref('')
+    const interactionPrompt = ref('') // Always empty - no proximity detection
     const showSettings = ref(false)
     const invertYAxis = ref(false)
     const mouseSensitivity = ref(1.0)
@@ -480,6 +480,9 @@ export default defineComponent({
         
         // Start the render loop
         animate()
+        
+        // Ensure interaction prompt is cleared
+        interactionPrompt.value = ''
         
         isLoading.value = false
       } catch (error) {
@@ -1317,34 +1320,10 @@ export default defineComponent({
         state.yawObject.position.add(direction)
       }
 
-      // Check for nearby portfolio frames
-      checkPortfolioProximity()
-
       state.renderer.render(state.scene, state.camera)
     }
 
-    // Check proximity to portfolio frames
-    const checkPortfolioProximity = (): void => {
-      if (!state.yawObject) return
-      
-      const playerPosition = state.yawObject.position
-      let nearestFrame = null as { mesh: THREE.Mesh; projectData: ProjectData } | null
-      let minDistance = Infinity
-      
-      state.portfolioFrames.forEach(frame => {
-        const distance = playerPosition.distanceTo(frame.mesh.position)
-        if (distance < 15 && distance < minDistance) {
-          minDistance = distance
-          nearestFrame = frame
-        }
-      })
-      
-      if (nearestFrame) {
-        interactionPrompt.value = `Click to explore: ${nearestFrame.projectData.title}`
-      } else {
-        interactionPrompt.value = ''
-      }
-    }
+    // Proximity detection removed - users click directly to interact
 
     // Handle window resize
     const handleResize = (): void => {
