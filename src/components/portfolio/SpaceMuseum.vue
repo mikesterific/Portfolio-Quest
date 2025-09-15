@@ -462,26 +462,27 @@ export default defineComponent({
         // Camera setup with yaw/pitch hierarchy
         setupCustomCameraControls()
         
-        // Renderer setup - ANTI-FLICKERING OPTIMIZED
+        // BALANCED: Renderer setup for quality portfolio display with good FPS
         state.renderer = new THREE.WebGLRenderer({ 
           canvas: museumCanvas.value,
-          antialias: true,  // ENABLED to eliminate flickering and jagged edges
-          logarithmicDepthBuffer: true, // ENABLED for better depth precision
-          powerPreference: 'high-performance'
+          antialias: true,  // ENABLED for crisp portfolio images
+          logarithmicDepthBuffer: false, // Still disabled for performance
+          powerPreference: 'high-performance',
+          stencil: false, // Not needed, saves memory
+          depth: true
         })
         state.renderer.setSize(
           museumContainer.value.clientWidth,
           museumContainer.value.clientHeight
         )
         state.renderer.setClearColor(0x000011)
-        state.renderer.outputColorSpace = THREE.SRGBColorSpace // Proper color space for web display
+        state.renderer.outputColorSpace = THREE.SRGBColorSpace
         
-        // EMERGENCY FPS FIX: Temporarily disable shadows for performance
-        state.renderer.shadowMap.enabled = false  // DISABLED for immediate FPS boost
-        // state.renderer.shadowMap.type = THREE.BasicShadowMap // When re-enabled, use fastest type
+        // Shadows completely disabled for maximum performance
+        state.renderer.shadowMap.enabled = false
         
-        // Optimize pixel ratio for quality vs performance balance
-        state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0)) // Increased cap for better quality
+        // PERFORMANCE: Lower pixel ratio for better FPS
+        state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)) // Reduced from 2.0 to 1.5
         
         // Initialize other components
         state.clock = new THREE.Clock()
@@ -614,7 +615,7 @@ export default defineComponent({
 
     }
 
-    // Create ceiling lighting system (OPTIMIZED: rectangular grid layout)
+    // OPTIMIZED: Minimal ceiling decorations (visual only, no actual lights)
     const createCeilingLights = (): void => {
       if (!state.scene) return
 
@@ -622,54 +623,27 @@ export default defineComponent({
       const depth = 40 
       const wallHeight = 12
 
-      // Central ceiling light fixture - ENHANCED BRIGHTNESS
-      const centralLightGeometry = new THREE.CylinderGeometry(2, 2, 0.3, 16)
-      const centralLightMaterial = new THREE.MeshBasicMaterial({ 
-        color: 0xffffee, // Slightly warmer white for brighter appearance
-        transparent: true,
-        opacity: 1.0 // Increased from 0.9 to 1.0 for maximum brightness
+      // PERFORMANCE: Single merged geometry for all ceiling fixtures
+      const fixtureGeometry = new THREE.CylinderGeometry(1, 1, 0.2, 8) // Reduced segments
+      const fixtureMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xffffee,
+        transparent: false // No transparency for better performance
       })
-      const centralLight = new THREE.Mesh(centralLightGeometry, centralLightMaterial)
-      centralLight.position.set(0, wallHeight - 0.2, 0)
-      state.scene.add(centralLight)
 
-      // OPTIMIZED: Rectangular grid of ceiling lights (4 corner + 2 mid-wall)
-      const lightPositions = [
-        // 4 Corner lights for even illumination
-        { x: width * 0.3, z: depth * 0.25 },    // Front-right corner
-        { x: -width * 0.3, z: depth * 0.25 },   // Front-left corner
-        { x: width * 0.3, z: -depth * 0.25 },   // Back-right corner
-        { x: -width * 0.3, z: -depth * 0.25 },  // Back-left corner
-        // 2 Mid-wall lights for portfolio illumination
-        { x: 0, z: depth * 0.3 },               // Front center (for portfolio frames)
-        { x: 0, z: -depth * 0.3 }               // Back center (for portfolio frames)
+      // Create only 3 visual fixtures (decorative only)
+      const positions = [
+        { x: 0, z: 0 },           // Center
+        { x: -width * 0.25, z: 0 }, // Left
+        { x: width * 0.25, z: 0 }   // Right
       ]
 
-      lightPositions.forEach((pos, i) => {
-        // Light fixture - ENHANCED BRIGHTNESS
-        const lightFixtureGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 12)
-        const lightFixtureMaterial = new THREE.MeshBasicMaterial({ 
-          color: 0xffffee, // Brighter, warmer white
-          transparent: true,
-          opacity: 1.0 // Increased from 0.8 to 1.0
-        })
-        const lightFixture = new THREE.Mesh(lightFixtureGeometry, lightFixtureMaterial)
-        lightFixture.position.set(pos.x, wallHeight - 0.1, pos.z)
-        state.scene!.add(lightFixture)
-
-        // Enhanced glowing light effect
-        const glowGeometry = new THREE.SphereGeometry(0.4, 8, 8) // Slightly larger for more presence
-        const glowMaterial = new THREE.MeshBasicMaterial({ 
-          color: 0xffffcc, // Warmer glow color
-          transparent: true,
-          opacity: 0.7 // Increased from 0.4 to 0.7 for brighter glow
-        })
-        const glow = new THREE.Mesh(glowGeometry, glowMaterial)
-        glow.position.set(pos.x, wallHeight - 0.3, pos.z)
-        state.scene!.add(glow)
+      positions.forEach(pos => {
+        const fixture = new THREE.Mesh(fixtureGeometry, fixtureMaterial)
+        fixture.position.set(pos.x, wallHeight - 0.2, pos.z)
+        state.scene!.add(fixture)
       })
 
-      console.log('💡 Created enhanced brightness rectangular ceiling light grid (6 lights + 1 central) - SUPER BRIGHT MODE!')
+      console.log('💡 OPTIMIZED: Created 3 decorative ceiling fixtures (visual only)')
     }
 
     // Create space-themed decorations
@@ -856,66 +830,27 @@ export default defineComponent({
       console.log(`🔧 Enhanced material: ${material.type} - metalness: ${material.metalness}, roughness: ${material.roughness}`)
     }
 
-    // Setup invisible ambient lighting around the Thinker for better illumination
+    // OPTIMIZED: Reduced lighting for better performance
     const setupInvisibleThinkerLighting = (): void => {
       if (!state.scene) return
 
-      // Invisible fill lights positioned around the statue (no visible geometry)
+      // PERFORMANCE: Reduced from 7 to 2 lights (71% reduction)
       const invisibleLights = [
-        // Front-left fill light
+        // Single key light from front
         { 
-          position: { x: -4, y: 6, z: 4 }, 
+          position: { x: 0, y: 6, z: 4 }, 
           color: 0xffffff, 
-          intensity: 0.8, 
-          type: 'point',
-          distance: 12 
-        },
-        // Front-right fill light  
-        { 
-          position: { x: 4, y: 6, z: 4 }, 
-          color: 0xffffff, 
-          intensity: 0.8, 
-          type: 'point',
-          distance: 12 
-        },
-        // Back-left rim light
-        { 
-          position: { x: -3, y: 7, z: -3 }, 
-          color: 0xffffcc, 
-          intensity: 0.6, 
-          type: 'point',
-          distance: 10 
-        },
-        // Back-right rim light
-        { 
-          position: { x: 3, y: 7, z: -3 }, 
-          color: 0xffffcc, 
-          intensity: 0.6, 
-          type: 'point',
-          distance: 10 
-        },
-        // Top-down soft illumination
-        { 
-          position: { x: 0, y: 8, z: 0 }, 
-          color: 0xffffff, 
-          intensity: 1.0, 
+          intensity: 1.2, 
           type: 'point',
           distance: 15 
         },
-        // Side accent lights
+        // Single fill light from above
         { 
-          position: { x: -6, y: 4, z: 0 }, 
-          color: 0xccddff, 
-          intensity: 0.5, 
+          position: { x: 0, y: 8, z: 0 }, 
+          color: 0xffffcc, 
+          intensity: 0.8, 
           type: 'point',
-          distance: 8 
-        },
-        { 
-          position: { x: 6, y: 4, z: 0 }, 
-          color: 0xccddff, 
-          intensity: 0.5, 
-          type: 'point',
-          distance: 8 
+          distance: 12 
         }
       ]
 
@@ -931,13 +866,10 @@ export default defineComponent({
           lightConfig.position.z
         )
         
-        // These lights are invisible - no geometry, just illumination
         state.scene!.add(light)
-        
-        console.log(`💡 Invisible light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
       })
 
-      console.log(`✨ Added ${invisibleLights.length} invisible lights for enhanced Thinker illumination`)
+      console.log(`✨ OPTIMIZED: Added ${invisibleLights.length} lights for Thinker (reduced from 7)`)
     }
 
     // Load and position man-holding-mouse 3D model in corner
@@ -993,47 +925,10 @@ export default defineComponent({
       }
     }
 
-    // Setup invisible lighting for the man-holding-mouse model
+    // OPTIMIZED: Minimal lighting for mouse man model
     const setupInvisibleMouseManLighting = (): void => {
-      if (!state.scene) return
-
-      // Invisible lights positioned around the mouse man statue (front-facing only, optimized for user view angle)
-      const mouseManLights = [
-        // Main key light from front-right (toward center)
-        { 
-          position: { x: -18, y: 6, z: 18 }, 
-          color: 0xffffff, 
-          intensity: 1.6, 
-          distance: 15 
-        },
-        // Side accent light from right (front-facing)
-        { 
-          position: { x: -19, y: 4, z: 15 }, 
-          color: 0xaaccff, 
-          intensity: 0.8, 
-          distance: 8 
-        }
-      ]
-
-      mouseManLights.forEach((lightConfig, index) => {
-        const light = new THREE.PointLight(
-          lightConfig.color, 
-          lightConfig.intensity, 
-          lightConfig.distance
-        )
-        light.position.set(
-          lightConfig.position.x, 
-          lightConfig.position.y, 
-          lightConfig.position.z
-        )
-        
-        // Invisible lights - no geometry, just illumination
-        state.scene!.add(light)
-        
-        console.log(`🐭💡 Mouse man light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
-      })
-
-      console.log(`✨ Added ${mouseManLights.length} optimized lights for mouse man model (removed back/top lights for 60% reduction)`)
+      // PERFORMANCE: Lighting removed - rely on ambient and main scene lights
+      console.log(`✨ OPTIMIZED: Mouse man using ambient lighting only (100% reduction)`)
     }
 
     // Load and position Cleo 3D model in corner
@@ -1097,47 +992,10 @@ export default defineComponent({
       }
     }
 
-    // Setup invisible lighting for the Cleo model
+    // OPTIMIZED: Minimal lighting for Cleo model
     const setupInvisibleCleoLighting = (): void => {
-      if (!state.scene) return
-
-      // Invisible lights positioned around the Cleo statue (front-facing only, optimized for user view angle)
-      const cleoLights = [
-        // Main key light from front-left (toward center)
-        { 
-          position: { x: 18, y: 6, z: 18 }, 
-          color: 0xffffff, 
-          intensity: 1.6, 
-          distance: 15 
-        },
-        // Side accent light from left (front-facing)
-        { 
-          position: { x: 19, y: 4, z: 15 }, 
-          color: 0xffaacc, 
-          intensity: 0.8, 
-          distance: 8 
-        }
-      ]
-
-      cleoLights.forEach((lightConfig, index) => {
-        const light = new THREE.PointLight(
-          lightConfig.color, 
-          lightConfig.intensity, 
-          lightConfig.distance
-        )
-        light.position.set(
-          lightConfig.position.x, 
-          lightConfig.position.y, 
-          lightConfig.position.z
-        )
-        
-        // Invisible lights - no geometry, just illumination
-        state.scene!.add(light)
-        
-        console.log(`👸💡 Cleo light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
-      })
-
-      console.log(`✨ Added ${cleoLights.length} optimized lights for Cleo model (removed back/top lights for 71% reduction)`)
+      // PERFORMANCE: Lighting removed - rely on ambient and main scene lights
+      console.log(`✨ OPTIMIZED: Cleo using ambient lighting only (100% reduction)`)
     }
 
     // Load and position Socrates 3D model in back-left corner
@@ -1193,47 +1051,10 @@ export default defineComponent({
       }
     }
 
-    // Setup invisible lighting for the Socrates model
+    // OPTIMIZED: Minimal lighting for Socrates model
     const setupInvisibleSocratesLighting = (): void => {
-      if (!state.scene) return
-
-      // Invisible lights positioned around the Socrates statue (front-facing only, optimized for user view angle)
-      const socratesLights = [
-        // Main key light from front-right (toward center)
-        { 
-          position: { x: -18, y: 6, z: -12 }, 
-          color: 0xffffff, 
-          intensity: 1.6, 
-          distance: 15 
-        },
-        // Philosophical accent light (wisdom glow from front)
-        { 
-          position: { x: -19, y: 4, z: -15 }, 
-          color: 0xffffaa, 
-          intensity: 0.8, 
-          distance: 8 
-        }
-      ]
-
-      socratesLights.forEach((lightConfig, index) => {
-        const light = new THREE.PointLight(
-          lightConfig.color, 
-          lightConfig.intensity, 
-          lightConfig.distance
-        )
-        light.position.set(
-          lightConfig.position.x, 
-          lightConfig.position.y, 
-          lightConfig.position.z
-        )
-        
-        // Invisible lights - no geometry, just illumination
-        state.scene!.add(light)
-        
-        console.log(`🏛️💡 Socrates light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
-      })
-
-      console.log(`✨ Added ${socratesLights.length} optimized lights for Socrates model (removed back/top lights for 60% reduction)`)
+      // PERFORMANCE: Lighting removed - rely on ambient and main scene lights
+      console.log(`✨ OPTIMIZED: Socrates using ambient lighting only (100% reduction)`)
     }
 
     // Load and position Starbucks 3D model in back-right corner
@@ -1289,47 +1110,10 @@ export default defineComponent({
       }
     }
 
-    // Setup invisible lighting for the Starbucks model
+    // OPTIMIZED: Minimal lighting for Starbucks model
     const setupInvisibleStarbucksLighting = (): void => {
-      if (!state.scene) return
-
-      // Performance-optimized lighting (2 lights only, front-facing for user view angle)
-      const starbucksLights = [
-        // Main key light from front-left (toward center)
-        { 
-          position: { x: 18, y: 6, z: -12 }, 
-          color: 0xffffff, 
-          intensity: 1.6, 
-          distance: 15 
-        },
-        // Caffeine accent light (energetic glow from front)
-        { 
-          position: { x: 19, y: 4, z: -15 }, 
-          color: 0xffddaa, 
-          intensity: 0.8, 
-          distance: 8 
-        }
-      ]
-
-      starbucksLights.forEach((lightConfig, index) => {
-        const light = new THREE.PointLight(
-          lightConfig.color, 
-          lightConfig.intensity, 
-          lightConfig.distance
-        )
-        light.position.set(
-          lightConfig.position.x, 
-          lightConfig.position.y, 
-          lightConfig.position.z
-        )
-        
-        // Invisible lights - no geometry, just illumination
-        state.scene!.add(light)
-        
-        console.log(`☕💡 Starbucks light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
-      })
-
-      console.log(`✨ Added ${starbucksLights.length} optimized lights for Starbucks model (performance-first lighting)`)
+      // PERFORMANCE: Lighting removed - rely on ambient and main scene lights
+      console.log(`✨ OPTIMIZED: Starbucks using ambient lighting only (100% reduction)`)
     }
 
     // Load and position thinker 3D model as centerpiece
@@ -1481,10 +1265,10 @@ export default defineComponent({
       const frameHeight = 4.17  // Custom aspect ratio (854/445 ≈ 1.92:1)
       const frameGeometry = new THREE.PlaneGeometry(frameWidth, frameHeight)
       
-      // Create a canvas texture for the project info - power-of-two dimensions for GPU optimization
+      // High-quality canvas for portfolio showcase images
       const canvas = document.createElement('canvas')
-      canvas.width = 1024   // Power of 2 for better GPU performance (was 854)
-      canvas.height = 512   // Power of 2, maintains ~2:1 widescreen aspect ratio (was 445)
+      canvas.width = 1024   // Full resolution for crisp portfolio images
+      canvas.height = 512   // Maintains 2:1 widescreen aspect ratio
             const ctx = canvas.getContext('2d')!
       
       // Helper function to draw text-based frame
@@ -1540,11 +1324,11 @@ export default defineComponent({
       // Start with text-based frame
       drawTextBasedFrame()
       
-      // Phase 1: Configure proper sRGB color space for accurate color reproduction
+      // High-quality texture settings for portfolio images
       const texture = new THREE.CanvasTexture(canvas)
       texture.colorSpace = THREE.SRGBColorSpace
-      texture.generateMipmaps = true
-      texture.minFilter = THREE.LinearMipmapLinearFilter
+      texture.generateMipmaps = true // Enable for better quality at distance
+      texture.minFilter = THREE.LinearMipmapLinearFilter // High-quality filtering
       texture.magFilter = THREE.LinearFilter
       
       // Phase 2: Use MeshStandardMaterial for better image fidelity
@@ -1590,10 +1374,10 @@ export default defineComponent({
           
           // Clean image display - overlay banners removed to eliminate flickering
           
-          // Update texture after image loads with proper color space configuration
+          // High-quality texture update for loaded images
           const newTexture = new THREE.CanvasTexture(canvas)
           newTexture.colorSpace = THREE.SRGBColorSpace
-          newTexture.generateMipmaps = true
+          newTexture.generateMipmaps = true // Enable for quality
           newTexture.minFilter = THREE.LinearMipmapLinearFilter
           newTexture.magFilter = THREE.LinearFilter
           frameMaterial.map = newTexture
@@ -1637,147 +1421,69 @@ export default defineComponent({
       })
     }
 
-    // Setup lighting
+    // OPTIMIZED: Minimal high-performance lighting setup
     const setupLighting = (): void => {
       if (!state.scene) return
 
-      const radius = 30
       const wallHeight = 12
 
-      // Professional gallery lighting (inspired by 3D Art Gallery) - ENHANCED
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8) // Increased from 0.6 to 0.8
+      // PERFORMANCE: Increased ambient light to compensate for fewer dynamic lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2) // Increased to 1.2
       state.scene.add(ambientLight)
 
-      // Central ceiling light (main illumination) - ENHANCED BRIGHTNESS
-      const centralLight = new THREE.PointLight(0xffffff, 3.5, 70) // Increased from 2.0 to 3.5, extended range
+      // Central ceiling light (main illumination) - NO SHADOWS
+      const centralLight = new THREE.PointLight(0xffffff, 2.5, 80)
       centralLight.position.set(0, wallHeight - 1, 0)
-      centralLight.castShadow = true
-      centralLight.shadow.mapSize.width = 1024  // REDUCED: Was 2048 (4MP → 1MP)
-      centralLight.shadow.mapSize.height = 1024 // REDUCED: Was 2048 (4MP → 1MP)
-      centralLight.shadow.camera.near = 0.1
-      centralLight.shadow.camera.far = 70 // Extended shadow range
+      centralLight.castShadow = false // DISABLED for performance
       state.scene.add(centralLight)
 
-      // Ring of ceiling lights for even distribution - ENHANCED BRIGHTNESS
-      const lightCount = 8
+      // PERFORMANCE: Reduced from 8 to 4 ceiling lights (50% reduction)
+      const lightCount = 4
       for (let i = 0; i < lightCount; i++) {
         const angle = (i / lightCount) * Math.PI * 2
-        const lightRadius = radius * 0.7
-        const x = Math.cos(angle) * lightRadius
-        const z = Math.sin(angle) * lightRadius
+        const x = Math.cos(angle) * 20
+        const z = Math.sin(angle) * 20
 
-        const ceilingLight = new THREE.PointLight(0xffffcc, 1.2, 35) // Increased from 0.6 to 1.2, extended range from 25 to 35
+        const ceilingLight = new THREE.PointLight(0xffffcc, 1.0, 40)
         ceilingLight.position.set(x, wallHeight - 1, z)
-        
-        // OPTIMIZED: Only cast shadows from cardinal direction lights (4 of 8)
-        const shouldCastShadows = i % 2 === 0
-        ceilingLight.castShadow = shouldCastShadows
-        
-        if (shouldCastShadows) {
-          ceilingLight.shadow.mapSize.width = 512   // REDUCED: Was 1024 (1MP → 0.25MP)
-          ceilingLight.shadow.mapSize.height = 512  // REDUCED: Was 1024 (1MP → 0.25MP)
-        }
-        
+        ceilingLight.castShadow = false // NO SHADOWS for performance
         state.scene.add(ceilingLight)
       }
 
-      // Accent lights for portfolio frames
-      const accentLight1 = new THREE.SpotLight(0x3498db, 0.8, 40, Math.PI / 6, 0.3)
-      accentLight1.position.set(0, wallHeight - 2, 0)
-      accentLight1.target.position.set(radius * 0.8, 6, 0)
-      state.scene.add(accentLight1)
-      state.scene.add(accentLight1.target)
+      // REMOVED: Accent spotlights (not needed with higher ambient)
 
-      const accentLight2 = new THREE.SpotLight(0x3498db, 0.8, 40, Math.PI / 6, 0.3)
-      accentLight2.position.set(0, wallHeight - 2, 0)
-      accentLight2.target.position.set(-radius * 0.8, 6, 0)
-      state.scene.add(accentLight2)
-      state.scene.add(accentLight2.target)
-
-      // Enhanced lighting for the Thinker centerpiece
+      // Optimized lighting for the Thinker centerpiece
       setupThinkerLighting()
+      
+      console.log('💡 OPTIMIZED: Scene lighting reduced from 11+ to 5 lights total')
     }
 
-    // Dedicated lighting setup for the Thinker statue
+    // OPTIMIZED: Reduced lighting for the Thinker statue
     const setupThinkerLighting = (): void => {
       if (!state.scene) return
 
+      // PERFORMANCE: Reduced from 8 lights to 2 (75% reduction)
+      
       // Main dramatic spotlight from above-front (key light)
-      const mainSpotlight = new THREE.SpotLight(0xffffff, 1.4)
-      mainSpotlight.position.set(0, 10, 8) // Above and in front
-      mainSpotlight.angle = Math.PI / 4 // 45-degree cone
-      mainSpotlight.penumbra = 0.3 // Soft edges for dramatic effect
-      mainSpotlight.distance = 25
-      mainSpotlight.castShadow = true
-      mainSpotlight.shadow.mapSize.width = 1024
-      mainSpotlight.shadow.mapSize.height = 1024
-      // Target the thinker position
-      mainSpotlight.target.position.set(0, 2.5, 0) // Slightly above base
+      const mainSpotlight = new THREE.SpotLight(0xffffff, 1.8)
+      mainSpotlight.position.set(0, 10, 8)
+      mainSpotlight.angle = Math.PI / 3
+      mainSpotlight.penumbra = 0.4
+      mainSpotlight.distance = 30
+      mainSpotlight.castShadow = false // DISABLED shadows for performance
+      mainSpotlight.target.position.set(0, 2.5, 0)
       state.scene.add(mainSpotlight)
       state.scene.add(mainSpotlight.target)
 
-      // Rim light from behind-left (creates dramatic silhouette)
-      const rimLight = new THREE.SpotLight(0xaaccff, 0.9)
-      rimLight.position.set(-6, 9, -6)
-      rimLight.angle = Math.PI / 3
-      rimLight.penumbra = 0.4
-      rimLight.distance = 20
-      rimLight.target.position.set(0, 2.5, 0)
-      state.scene.add(rimLight)
-      state.scene.add(rimLight.target)
-
-      // Fill light from right side (softens harsh shadows)
-      const fillLight = new THREE.SpotLight(0xffffaa, 0.7)
-      fillLight.position.set(8, 7, 2)
-      fillLight.angle = Math.PI / 2.5
-      fillLight.penumbra = 0.5
-      fillLight.distance = 18
-      fillLight.target.position.set(0, 2.5, 0)
-      state.scene.add(fillLight)
-      state.scene.add(fillLight.target)
-
-      // Warm ambient point light near the statue base
-      const baseLight = new THREE.PointLight(0xffffcc, 0.6, 12)
-      baseLight.position.set(0, 1, 0)
-      state.scene.add(baseLight)
-
-      // Cool accent point light for depth
-      const accentPoint = new THREE.PointLight(0xccddff, 0.4, 10)
-      accentPoint.position.set(3, 4, -3)
-      state.scene.add(accentPoint)
-
-      // Laptop screen light emanating from the actual screen surface - MAXIMUM INTENSITY
-      const laptopScreenLight = new THREE.PointLight(0x88bbff, 2.5, 12)
-      // Position the light at the laptop screen surface (angled toward the face)
-      laptopScreenLight.position.set(0, 2.8, 1.0) // Lower and closer to avoid arm
+      // Single laptop screen light for face illumination
+      const laptopScreenLight = new THREE.PointLight(0x88bbff, 1.5, 15)
+      laptopScreenLight.position.set(0, 2.8, 1.0)
       state.scene.add(laptopScreenLight)
       
-      // Additional focused spotlight from laptop screen toward face - ULTRA BRIGHT
-      const laptopSpotlight = new THREE.SpotLight(0xaaccff, 2.0)
-      laptopSpotlight.position.set(0, 2.8, 1.0) // Lower starting position
-      laptopSpotlight.angle = Math.PI / 5 // Slightly narrower beam
-      laptopSpotlight.penumbra = 0.3 // Sharp enough to show details
-      laptopSpotlight.distance = 15
-      // Target higher - aim for the head/face area specifically
-      laptopSpotlight.target.position.set(0, 4.2, -0.2) // Higher target, angled up
-      state.scene.add(laptopSpotlight)
-      state.scene.add(laptopSpotlight.target)
+      // Call optimized invisible lighting (now only 2 lights)
+      setupInvisibleThinkerLighting()
 
-      // Additional face-specific light angled upward for maximum detail visibility - BOOSTED
-      const faceDetailLight = new THREE.SpotLight(0xbbddff, 1.5)
-      faceDetailLight.position.set(0, 2.9, 1.2) // Lower position, closer to screen
-      faceDetailLight.angle = Math.PI / 7 // Very focused beam on face only
-      faceDetailLight.penumbra = 0.2 // Sharp detail lighting
-      faceDetailLight.distance = 8
-      faceDetailLight.target.position.set(0, 4.5, -0.3) // Target face specifically, angled up
-      state.scene.add(faceDetailLight)
-      state.scene.add(faceDetailLight.target)
-
-              // Add invisible ambient lighting around the Thinker for better general illumination
-        setupInvisibleThinkerLighting()
-
-        console.log('🎭 Enhanced dramatic lighting applied to Thinker centerpiece')
-        console.log('💻 Laptop screen light illuminating the Thinker\'s face')
+      console.log('🎭 OPTIMIZED: Thinker lighting reduced to 4 total lights (from 15+)')
     }
 
     // Setup event listeners
@@ -1935,77 +1641,83 @@ export default defineComponent({
       return newY >= ceilingHeight
     }
 
-    // Enhanced physics with raycaster surface detection
-    const updatePhysics = (delta: number): void => {
-      if (!state.camera || !state.yawObject || !state.scene) return
-
-      // Create downward raycaster from player position
-      const raycaster = new THREE.Raycaster()
-      const playerPosition = state.yawObject.position.clone()
-      
-      // Cast ray downward from player (with slight forward offset for better detection)
-      raycaster.set(playerPosition, new THREE.Vector3(0, -1, 0))
-      
-      // Get all objects that can be landed on
-      const collidableObjects: THREE.Object3D[] = []
+    // OPTIMIZED: Cache collision objects to avoid rebuilding every frame
+    let cachedCollidableObjects: THREE.Object3D[] | null = null
+    let physicsRaycaster: THREE.Raycaster | null = null
+    
+    const buildCollisionCache = (): void => {
+      cachedCollidableObjects = []
       
       // Add floor mesh
       if (state.floorMesh) {
-        collidableObjects.push(state.floorMesh)
+        cachedCollidableObjects.push(state.floorMesh)
       }
       
-      // Add all couch model meshes
+      // Add all couch model meshes (pre-cached)
       state.couchModels.forEach(couchModel => {
         couchModel.traverse((child: any) => {
           if (child instanceof THREE.Mesh) {
-            child.name = child.name || 'couch-part' // Name for identification
-            collidableObjects.push(child)
+            child.name = child.name || 'couch-part'
+            cachedCollidableObjects!.push(child)
           }
         })
       })
       
-      // Add all bench model meshes
+      // Add all bench model meshes (pre-cached)
       state.benchModels.forEach(benchModel => {
         benchModel.traverse((child: any) => {
           if (child instanceof THREE.Mesh) {
-            child.name = child.name || 'bench-part' // Name for identification
-            collidableObjects.push(child)
+            child.name = child.name || 'bench-part'
+            cachedCollidableObjects!.push(child)
           }
         })
       })
       
-      // Add thinker model meshes for collision detection
+      // Add thinker model meshes (pre-cached)
       if (state.thinkerModel) {
         state.thinkerModel.traverse((child: any) => {
           if (child instanceof THREE.Mesh) {
-            child.name = child.name || 'thinker-part' // Name for identification
-            collidableObjects.push(child)
+            child.name = child.name || 'thinker-part'
+            cachedCollidableObjects!.push(child)
           }
         })
       }
       
-      // Add socrates model meshes for collision detection
-      if (state.socratesModel) {
-        state.socratesModel.traverse((child: any) => {
-          if (child instanceof THREE.Mesh) {
-            child.name = child.name || 'socrates-part' // Name for identification
-            collidableObjects.push(child)
-          }
-        })
+      // Add other models (pre-cached)
+      const models = [state.socratesModel, state.starbucksModel, state.cleoModel, state.mouseManModel]
+      models.forEach((model, index) => {
+        if (model) {
+          model.traverse((child: any) => {
+            if (child instanceof THREE.Mesh) {
+              child.name = child.name || `model-${index}-part`
+              cachedCollidableObjects!.push(child)
+            }
+          })
+        }
+      })
+    }
+
+    // Enhanced physics with OPTIMIZED raycaster surface detection
+    const updatePhysics = (delta: number): void => {
+      if (!state.camera || !state.yawObject || !state.scene) return
+
+      // Initialize raycaster once (reuse same instance)
+      if (!physicsRaycaster) {
+        physicsRaycaster = new THREE.Raycaster()
       }
       
-      // Add starbucks model meshes for collision detection
-      if (state.starbucksModel) {
-        state.starbucksModel.traverse((child: any) => {
-          if (child instanceof THREE.Mesh) {
-            child.name = child.name || 'starbucks-part' // Name for identification
-            collidableObjects.push(child)
-          }
-        })
+      // Build collision cache once after all models are loaded
+      if (!cachedCollidableObjects) {
+        buildCollisionCache()
       }
       
-      // Perform intersection test with increased ray distance
-      const intersections = raycaster.intersectObjects(collidableObjects, true)
+      const playerPosition = state.yawObject.position
+      
+      // Cast ray downward from player
+      physicsRaycaster.set(playerPosition, new THREE.Vector3(0, -1, 0))
+      
+      // Perform intersection test with cached objects
+      const intersections = physicsRaycaster.intersectObjects(cachedCollidableObjects!, false)
       
       let targetGroundLevel = 0 // Default floor level
       let landedOnSurface = null
