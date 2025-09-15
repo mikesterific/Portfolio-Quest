@@ -1270,21 +1270,20 @@ export default defineComponent({
       canvas.width = 1024   // Full resolution for crisp portfolio images
       canvas.height = 512   // Maintains 2:1 widescreen aspect ratio
       const ctx = canvas.getContext('2d', {
-        alpha: true,
-        colorSpace: 'srgb',      // ADDED: Explicit sRGB color space
-        desynchronized: false    // ADDED: Better color accuracy
+        alpha: false,            // DISABLED: No alpha channel needed, prevents blending artifacts
+        colorSpace: 'srgb'       // KEPT: Explicit sRGB color space for accuracy
       })!
       
       // Helper function to draw text-based frame
       const drawTextBasedFrame = () => {
-        // Draw project information on canvas with improved widescreen layout
-        ctx.fillStyle = '#2c3e50'
+        // Draw project information on canvas with improved widescreen layout - FIXED: Pure black background
+        ctx.fillStyle = '#000000' // RESTORED: Pure black to eliminate grey artifacts
         ctx.fillRect(0, 0, canvas.width, canvas.height)
         
-        // Add a subtle border
-        ctx.strokeStyle = '#34495e'
-        ctx.lineWidth = 8
-        ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8)
+        // Add a subtle border - ENHANCED: Cleaner border
+        ctx.strokeStyle = '#1a1a1a' // CHANGED: Very dark grey for subtle definition
+        ctx.lineWidth = 4 // REDUCED: Thinner border to minimize grey artifacts
+        ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
         
         // Project title - larger for widescreen format
         ctx.fillStyle = '#ecf0f1'
@@ -1328,14 +1327,15 @@ export default defineComponent({
       // Start with text-based frame
       drawTextBasedFrame()
       
-      // High-quality texture settings for portfolio images - FIXED: Reduced pixelation
+      // High-quality texture settings for portfolio images - BALANCED: Clean + smooth
       const texture = new THREE.CanvasTexture(canvas)
       texture.colorSpace = THREE.SRGBColorSpace
-      texture.generateMipmaps = false // DISABLED: Prevents blue pixelation artifacts
-      texture.minFilter = THREE.LinearFilter // SIMPLIFIED: Reduces color artifacts
-      texture.magFilter = THREE.LinearFilter
+      texture.generateMipmaps = false // DISABLED: Prevents pixelation artifacts
+      texture.minFilter = THREE.LinearFilter // RESTORED: Smooth rendering
+      texture.magFilter = THREE.LinearFilter // RESTORED: Smooth rendering
       texture.wrapS = THREE.ClampToEdgeWrapping // ADDED: Prevents edge artifacts
       texture.wrapT = THREE.ClampToEdgeWrapping
+      // REMOVED: flipY setting to maintain correct orientation
       
       // Phase 2: Use MeshStandardMaterial for better image fidelity - ENHANCED
       const frameMaterial = new THREE.MeshStandardMaterial({ 
@@ -1353,8 +1353,8 @@ export default defineComponent({
         img.crossOrigin = 'anonymous' // Handle CORS if needed
         
         img.onload = () => {
-          // Clear canvas and draw the project image - IMPROVED: Better color handling
-          ctx.fillStyle = '#1a1a1a' // CHANGED: Dark gray instead of pure black to reduce contrast artifacts
+          // Clear canvas and draw the project image - SMART: Context-aware background
+          ctx.fillStyle = '#000000' // RESTORED: Pure black for clean backgrounds
           ctx.fillRect(0, 0, canvas.width, canvas.height)
           
           // Draw image to fit canvas while maintaining aspect ratio
@@ -1376,21 +1376,23 @@ export default defineComponent({
             offsetX = (canvas.width - drawWidth) / 2
           }
           
-          // ENHANCED: Better image rendering
+          // ENHANCED: Better image rendering - OPTIMIZED: Reduced artifacts
           ctx.imageSmoothingEnabled = true
           ctx.imageSmoothingQuality = 'high'
+          ctx.globalCompositeOperation = 'source-over' // ADDED: Ensure clean pixel replacement
           ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight)
           
           // Clean image display - overlay banners removed to eliminate flickering
           
-          // High-quality texture update for loaded images - FIXED: Matching main texture settings
+          // High-quality texture update for loaded images - OPTIMIZED: Consistent clean rendering
           const newTexture = new THREE.CanvasTexture(canvas)
           newTexture.colorSpace = THREE.SRGBColorSpace
-          newTexture.generateMipmaps = false // DISABLED: Prevents blue pixelation artifacts
-          newTexture.minFilter = THREE.LinearFilter // SIMPLIFIED: Reduces color artifacts
-          newTexture.magFilter = THREE.LinearFilter
+          newTexture.generateMipmaps = false // DISABLED: Prevents pixelation artifacts
+          newTexture.minFilter = THREE.LinearFilter // CONSISTENT: Smooth rendering
+          newTexture.magFilter = THREE.LinearFilter // CONSISTENT: Smooth rendering
           newTexture.wrapS = THREE.ClampToEdgeWrapping // ADDED: Prevents edge artifacts
           newTexture.wrapT = THREE.ClampToEdgeWrapping
+          // REMOVED: flipY setting to maintain correct orientation
           frameMaterial.map = newTexture
           frameMaterial.needsUpdate = true
         }

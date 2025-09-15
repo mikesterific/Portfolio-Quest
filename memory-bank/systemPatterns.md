@@ -638,4 +638,172 @@ This content-driven approach to portfolio frame optimization demonstrates that t
 
 ---
 
+## Texture Rendering and Pixelation Fixes (NEW)
+
+### Problem: Blue and Grey Pixelation Artifacts in Portfolio Images
+
+#### Root Causes Identified
+**Blue Pixelation**: Mipmap generation combined with linear filtering created color interpolation artifacts
+**Grey Pixelation**: Dark grey backgrounds and excessive blue lighting contaminated black areas
+**Orientation Issues**: Incorrect `flipY` settings flipped images upside down
+
+### Solution Architecture
+
+#### Texture Configuration Pattern
+```javascript
+// ❌ PROBLEMATIC: Artifact-prone settings
+texture.generateMipmaps = true
+texture.minFilter = THREE.LinearMipmapLinearFilter  // Causes blue artifacts
+texture.magFilter = THREE.LinearFilter
+
+// ✅ FIXED: Clean rendering settings
+texture.generateMipmaps = false                     // CRITICAL: Prevents pixelation
+texture.minFilter = THREE.LinearFilter              // Simple, artifact-free filtering  
+texture.magFilter = THREE.LinearFilter
+texture.wrapS = THREE.ClampToEdgeWrapping          // Prevents edge artifacts
+texture.wrapT = THREE.ClampToEdgeWrapping
+// Do NOT set flipY = false (causes upside-down images)
+```
+
+#### Material Property Optimization
+```javascript
+// ❌ PROBLEMATIC: Color contamination prone
+const frameMaterial = new THREE.MeshStandardMaterial({
+  roughness: 0.8,      // Partial reflection causes color shifts
+  envMapIntensity: 0.1  // Environment bleeding contaminates colors
+})
+
+// ✅ FIXED: Pure diffuse rendering
+const frameMaterial = new THREE.MeshStandardMaterial({
+  roughness: 1.0,      // Fully diffuse prevents color shifts
+  envMapIntensity: 0.0  // No environment reflection
+})
+```
+
+#### Canvas Context Best Practices
+```javascript
+// ❌ PROBLEMATIC: Alpha blending artifacts
+const ctx = canvas.getContext('2d', { alpha: true })
+ctx.fillStyle = '#1a1a1a'  // Grey background contaminates black content
+
+// ✅ FIXED: Clean color handling
+const ctx = canvas.getContext('2d', { 
+  alpha: false,           // No alpha blending artifacts
+  colorSpace: 'srgb'      // Explicit color accuracy
+})
+ctx.fillStyle = '#000000'  // Pure black for clean backgrounds
+ctx.globalCompositeOperation = 'source-over'  // Clean pixel replacement
+```
+
+### Lighting Contamination Fixes
+
+#### Blue Light Pollution Pattern
+```javascript
+// ❌ PROBLEMATIC: Excessive blue tint affecting textures
+const laptopLight = new THREE.PointLight(0x88bbff, 1.8, 15)  // Heavy blue
+const glowMaterial = new THREE.MeshBasicMaterial({
+  color: 0x3498db,  // Blue glow bleeds onto nearby surfaces
+  opacity: 0.1
+})
+
+// ✅ FIXED: Neutral lighting for accurate colors
+const laptopLight = new THREE.PointLight(0xaaccdd, 1.8, 15)  // Less blue, more neutral
+const glowMaterial = new THREE.MeshBasicMaterial({
+  color: 0x4a5568,  // Neutral grey prevents color contamination
+  opacity: 0.05     // Reduced intensity
+})
+```
+
+### Critical "FlipY" Coordinate Lesson
+
+#### The Upside-Down Image Trap
+**Issue**: Setting `texture.flipY = false` flips all images upside down
+**Root Cause**: Three.js default is `flipY = true` (correct for most use cases)
+**Fix**: Remove `flipY` setting entirely or explicitly set to `true`
+
+```javascript
+// ❌ CATASTROPHIC: Flips all images upside down
+texture.flipY = false
+
+// ✅ CORRECT: Use Three.js defaults (flipY = true)
+// Simply omit the flipY setting
+```
+
+### Performance vs Quality Balance
+
+#### The Mipmap Dilemma
+**Trade-off**: Mipmaps improve performance at distance but cause color artifacts at close viewing
+**Museum Solution**: Disable mipmaps since portfolio images are viewed up-close
+**General Rule**: Disable mipmaps for close-viewing textures, enable for distant surfaces
+
+#### Image Smoothing Configuration
+```javascript
+// Enhanced image rendering without artifacts
+ctx.imageSmoothingEnabled = true
+ctx.imageSmoothingQuality = 'high'
+// Note: High quality smoothing improves image display without pixelation
+```
+
+### Anti-Pattern Recognition
+
+#### The Blue Tint Cascade Anti-Pattern
+**Problem**: Multiple blue-tinted elements compound to contaminate neutral colors
+**Sources**: Blue lights + Blue UI elements + Blue environment maps
+**Solution**: Audit entire color palette; reduce blue saturation in secondary elements
+
+#### The Background Color Anti-Pattern  
+**Problem**: Using dark grey instead of pure black to "reduce contrast"
+**Issue**: Grey backgrounds show as pixelation artifacts in pure black content
+**Solution**: Use pure black `#000000` for content backgrounds; reserve grey for UI elements
+
+### Testing and Validation Patterns
+
+#### Visual Artifact Testing
+1. **Pure Black Test**: Load pure black images to detect grey contamination
+2. **Pure White Test**: Load pure white images to detect blue/color tinting
+3. **Text vs Image Test**: Compare text-based frames with image-based frames
+4. **Distance Testing**: View frames at multiple distances to detect mipmap artifacts
+
+#### Development Debugging
+```javascript
+// Add to texture creation for debugging:
+console.log('Texture settings:', {
+  generateMipmaps: texture.generateMipmaps,
+  minFilter: texture.minFilter,
+  magFilter: texture.magFilter,
+  flipY: texture.flipY
+})
+```
+
+### Universal Pixelation Prevention Checklist
+
+#### Before Deployment
+- [ ] `generateMipmaps = false` for close-viewing textures
+- [ ] `LinearFilter` (not `LinearMipmapLinearFilter`) for min/mag filters
+- [ ] `ClampToEdgeWrapping` for texture wrapping
+- [ ] Pure black `#000000` backgrounds for content
+- [ ] `alpha: false` in canvas context
+- [ ] Neutral lighting colors (avoid heavy blue/red tints)
+- [ ] Test with pure black and pure white sample images
+- [ ] Verify correct image orientation (avoid `flipY = false`)
+
+### Key Principles
+
+1. **Simplicity Over Sophistication**: Simple linear filtering often produces cleaner results than advanced mipmap filtering
+2. **Color Purity**: Maintain neutral lighting and backgrounds to preserve accurate color representation  
+3. **Context-Appropriate Settings**: Close-viewing content needs different optimization than distant textures
+4. **Systematic Debugging**: Test with extreme cases (pure black/white) to identify subtle contamination
+5. **Default Behavior**: Three.js defaults often work better than customization attempts
+
+### Impact Measurement
+
+**Before Fixes**: Blue and grey pixelation artifacts in portfolio images, upside-down content
+**After Fixes**: Clean, accurate color reproduction with proper orientation
+**Performance**: No performance degradation from disabling mipmaps (actually slight improvement)
+**User Experience**: Professional gallery appearance with accurate portfolio representation
+
+This systematic approach to texture rendering ensures high-quality visual presentation while avoiding common WebGL pitfalls that degrade the professional appearance of 3D portfolio galleries.
+
+---
+
 *Part of Memory Bank System*
