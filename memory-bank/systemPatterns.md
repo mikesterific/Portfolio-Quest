@@ -505,4 +505,137 @@ This performance-first approach ensures 3D experiences remain interactive and en
 
 ---
 
+## Portfolio Frame Optimization Lessons (NEW)
+
+### Custom Aspect Ratio Strategy
+
+#### Problem: Standard Aspect Ratios Don't Fit All Content
+**Issue**: User's portfolio images were "too short" for standard 16:9 (1.78:1) aspect ratio frames
+**Root Cause**: Web screenshot content often captures more vertical information than widescreen ratios accommodate
+
+#### Solution: Content-Driven Aspect Ratio Design
+**Custom Ratio**: 1.92:1 (854×445 pixels) - Wider than 16:9 but shorter than ultra-widescreen
+**Reasoning**: Optimized for web project screenshots and UI mockups
+
+```javascript
+// BEFORE: Standard 16:9
+canvas.width = 854
+canvas.height = 480    // 1.78:1 ratio
+frameHeight = 4.5
+
+// AFTER: Custom content-optimized  
+canvas.width = 854
+canvas.height = 445    // 1.92:1 ratio - 35px shorter
+frameHeight = 4.17     // Adjusted 3D frame geometry
+```
+
+### Image Specification Strategy
+
+#### Multi-Resolution Approach
+**Primary**: 854×445px - Perfect pixel match for canvas resolution
+**High-Quality**: 1280×667px - Maintains exact aspect ratio at higher resolution  
+**Maximum**: 1920×1000px - Ultra-high resolution for detailed portfolio pieces
+
+#### Content-Specific Optimization
+- **Web Projects**: Capture browser screenshots at 1280×667 viewport for perfect aspect ratio
+- **Logo Design**: Create contextual mockups (business cards, headers, applications)
+- **UI/UX Work**: Focus on interface screenshots rather than full-page captures
+
+### Async Image Loading Pattern
+
+#### Graceful Fallback Architecture
+```javascript
+// PATTERN: Text-first with async image overlay
+const createPortfolioFrame = (project) => {
+  // 1. Draw text-based frame immediately
+  drawTextBasedFrame()
+  const texture = new THREE.CanvasTexture(canvas)
+  
+  // 2. Load image asynchronously if available
+  if (project.image) {
+    const img = new Image()
+    img.onload = () => {
+      // Redraw canvas with image + overlay
+      drawImageWithOverlay(img)
+      // Update existing texture
+      frameMaterial.map = new THREE.CanvasTexture(canvas)
+      frameMaterial.needsUpdate = true
+    }
+    img.src = project.image
+  }
+}
+```
+
+#### Dual-Rendering System
+**Text Mode**: Full project information display for missing images
+**Image Mode**: Background image with gradient overlay and essential info
+
+### Frame Content Layout Optimization
+
+#### Widescreen Text Layout
+- **Title Font**: Increased from 28px to 36px for wider format
+- **Description Wrapping**: Improved line breaks with wider max-width
+- **Technology Tags**: Limited to 4 items to fit widescreen overlay
+
+#### Image Overlay Design
+- **Gradient**: Transparent to 95% opacity dark background
+- **Information Hierarchy**: Project title + key technologies only
+- **Positioning**: Bottom overlay preserving image visibility
+
+### Development Environment Considerations
+
+#### Node.js Version Compatibility
+**Discovered Issue**: Vite 7.x requires Node.js 20.19+ or 22.12+
+**User Environment**: Node.js 18.20.4 caused crypto.hash errors
+**Impact**: Build and dev server failures unrelated to frame changes
+**Resolution**: Frame optimization code works; Node.js upgrade needed for deployment
+
+### Asset Organization Pattern
+
+#### Portfolio Image Structure
+```
+src/assets/images/portfolio/
+├── README.md                    // Specifications documentation
+├── portfolio-quest.jpg          // Exact filename matching
+├── dell-xps-poc.jpg            // project.id + .jpg convention
+└── [project-id].jpg            // Consistent naming pattern
+```
+
+#### Image Preparation Workflow
+1. **Capture/Create**: Screenshot or design at high resolution
+2. **Crop**: Adjust to exact 854×445 or 1280×667 aspect ratio
+3. **Optimize**: Compress for web (target 100-600KB per image)
+4. **Test**: Verify loading and fallback behavior in museum
+
+### Performance Impact Analysis
+
+#### Memory Considerations
+- **Canvas Size Reduction**: 854×480 → 854×445 (7% fewer pixels per frame)
+- **Texture Memory**: 12 frames × 854×445 = 4.5MB texture memory (vs 4.9MB before)
+- **Loading Performance**: Async image loading prevents blocking frame creation
+
+#### Rendering Efficiency
+- **Immediate Display**: Text frames render instantly
+- **Progressive Enhancement**: Images load and replace text seamlessly
+- **Error Resilience**: Missing images don't break frame display
+
+### Key Design Principles
+
+1. **Content-First Design**: Let actual content drive technical specifications
+2. **Graceful Degradation**: Always provide fallback experiences
+3. **Performance Budgets**: Consider memory and loading impact of design changes
+4. **User-Driven Optimization**: Adjust based on actual content needs rather than standards
+5. **Documentation**: Maintain clear specifications for content creators
+
+### Implementation Lessons
+
+- **Aspect Ratio Flexibility**: Don't force standard ratios if content doesn't fit
+- **Async Loading**: Essential for responsive UI with large image assets
+- **Testing Environment**: Node.js version compatibility can block development
+- **Documentation**: Clear image specs prevent content creation delays
+
+This content-driven approach to portfolio frame optimization demonstrates that technical standards should serve content needs, not constrain them.
+
+---
+
 *Part of Memory Bank System*

@@ -9,84 +9,96 @@ export const portfolioData = {
       description: 'An interactive, retro RPG-inspired portfolio website that showcases professional work through an engaging game experience. Built with Vue 3, Phaser.js, and TypeScript.',
       technologies: ['Vue 3', 'Phaser.js', 'TypeScript', 'Vite', 'CSS3'],
       type: 'game' as const,
-      demoUrl: '#'
+      demoUrl: '#',
+      image: '/src/assets/images/portfolio/portfolio-quest.jpg' // Add your image path
     },
     {
       id: 'dell-xps-poc',
       title: 'Dell XPS Proof of Concept',
-      description: "Visionary UI prototype showcasing Dell’s front-end capabilities. Sparked Dell's premium branding initiative and inspired a broader digital transformation.",
+      description: "Visionary UI prototype showcasing Dell's front-end capabilities. Sparked Dell's premium branding initiative and inspired a broader digital transformation.",
       technologies: ['HTML5', 'CSS3', 'JavaScript', 'Performance'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/dell-xps-poc.jpg' // Add your image path
     },
     {
       id: 'dell-xps-landing',
       title: 'Dell XPS Landing Page',
-      description: 'Launched after leadership buy-in from the POC. Implemented with Dell’s internal design team as part of a modernized brand strategy.',
+      description: 'Launched after leadership buy-in from the POC. Implemented with Dell\'s internal design team as part of a modernized brand strategy.',
       technologies: ['HTML5', 'CSS3', 'JavaScript'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/dell-xps-landing.jpg' // Add your image path
     },
     {
       id: 'dell-home-poc',
       title: 'Dell Home Proof of Concept',
-      description: 'Foundational POC for Dell’s homepage which influenced the design and layout of the global production homepage.',
+      description: 'Foundational POC for Dell\'s homepage which influenced the design and layout of the global production homepage.',
       technologies: ['HTML5', 'CSS3', 'JavaScript'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/dell-home-poc.jpg' // Add your image path
     },
     {
       id: 'dell-home-live',
       title: 'Dell Home Page (Live Site)',
       description: 'Greenfield architecture deployed globally in under 30 days, built collaboratively with Dell tiger teams across countries.',
       technologies: ['AngularJS', 'ASP.NET MVC', 'Performance', 'Micro Frontends'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/dell-home-live.jpg' // Add your image path
     },
     {
       id: 'ea-support-site',
       title: 'EA Support Site',
       description: "Design contributions for EA's internal support site during a greenfield rebuild, alongside architectural responsibilities.",
       technologies: ['Salesforce', 'AWS', 'JavaScript', 'CSS3'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/ea-support-site.jpg' // Add your image path
     },
     {
       id: 'citi-flash-ux',
       title: 'Citi Flash + UX Work',
       description: 'Initially hired as a designer; rapidly transitioned into Flash development during the period when Flash was industry-standard.',
       technologies: ['Flash', 'ActionScript', 'UX'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/citi-flash-ux.jpg' // Add your image path
     },
     {
       id: 'bcbs-data-ux',
       title: 'BCBS Data UX Redesign',
       description: 'Redesign focused on simplifying complex data into digestible, intuitive UX patterns. Widely praised internally.',
       technologies: ['JavaScript', 'Data Visualization', 'UX'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/bcbs-data-ux.jpg' // Add your image path
     },
     {
       id: 'vsi-concept-content',
       title: 'VSI Concept & Content Creation',
       description: 'Built the content strategy and user flow for the experience, owning the project from ideation to execution.',
       technologies: ['HTML5', 'CSS3', 'JavaScript', 'Content Strategy'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/vsi-concept-content.jpg' // Add your image path
     },
     {
       id: 'joe-parker-guitars',
       title: 'Joe Parker Guitars – Custom Website',
       description: 'First website for a custom guitar builder, balancing artisan branding with clean UI.',
       technologies: ['HTML5', 'CSS3', 'JavaScript'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/joe-parker-guitars.jpg' // Add your image path
     },
     {
       id: 'decision-tree-logo',
       title: 'Decision Tree – Logo Design',
       description: 'Two-color print design that visually mimicked full-color output—economical and clever.',
       technologies: ['Branding', 'Logo Design'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/decision-tree-logo.jpg' // Add your image path
     },
     {
       id: 'bizatomic-logo',
       title: 'BizAtomic – Logo Design',
       description: 'Energetic branding concept with bold lines and a tight color palette for a startup launch.',
       technologies: ['Branding', 'Logo Design'],
-      type: 'web' as const
+      type: 'web' as const,
+      image: '/src/assets/images/portfolio/bizatomic-logo.jpg' // Add your image path
     }
   ] as ProjectData[],
 

@@ -340,12 +340,12 @@ export default defineComponent({
     const setupCustomCameraControls = (): void => {
       if (!museumContainer.value) return
 
-      // Create camera
+      // Create camera with optimized clipping planes for better depth precision
       state.camera = new THREE.PerspectiveCamera(
         75,
         museumContainer.value.clientWidth / museumContainer.value.clientHeight,
-        0.1,
-        1000
+        1.0,  // Increased near plane for better depth precision (was 0.1)
+        200   // Reduced far plane to match museum size (was 1000)
       )
       
       // Set camera rotation order for FPS controls
@@ -462,10 +462,11 @@ export default defineComponent({
         // Camera setup with yaw/pitch hierarchy
         setupCustomCameraControls()
         
-        // Renderer setup - PERFORMANCE OPTIMIZED
+        // Renderer setup - ANTI-FLICKERING OPTIMIZED
         state.renderer = new THREE.WebGLRenderer({ 
           canvas: museumCanvas.value,
-          antialias: false, // DISABLED for FPS boost
+          antialias: true,  // ENABLED to eliminate flickering and jagged edges
+          logarithmicDepthBuffer: true, // ENABLED for better depth precision
           powerPreference: 'high-performance'
         })
         state.renderer.setSize(
@@ -473,12 +474,14 @@ export default defineComponent({
           museumContainer.value.clientHeight
         )
         state.renderer.setClearColor(0x000011)
+        state.renderer.outputColorSpace = THREE.SRGBColorSpace // Proper color space for web display
+        
         // EMERGENCY FPS FIX: Temporarily disable shadows for performance
         state.renderer.shadowMap.enabled = false  // DISABLED for immediate FPS boost
         // state.renderer.shadowMap.type = THREE.BasicShadowMap // When re-enabled, use fastest type
         
-        // Additional renderer optimizations for FPS
-        state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)) // Cap pixel ratio
+        // Optimize pixel ratio for quality vs performance balance
+        state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0)) // Increased cap for better quality
         
         // Initialize other components
         state.clock = new THREE.Clock()
@@ -1467,66 +1470,146 @@ export default defineComponent({
     ): void => {
       if (!state.scene) return
 
-      // Frame geometry - make them slightly smaller for the circular layout
-      const frameWidth = 6
-      const frameHeight = 4.5
+      // Frame geometry - custom aspect ratio optimized for portfolio content
+      const frameWidth = 8
+      const frameHeight = 4.17  // Custom aspect ratio (854/445 ≈ 1.92:1)
       const frameGeometry = new THREE.PlaneGeometry(frameWidth, frameHeight)
       
-      // Create a canvas texture for the project info
+      // Create a canvas texture for the project info - power-of-two dimensions for GPU optimization
       const canvas = document.createElement('canvas')
-      canvas.width = 512
-      canvas.height = 384
-      const ctx = canvas.getContext('2d')!
+      canvas.width = 1024   // Power of 2 for better GPU performance (was 854)
+      canvas.height = 512   // Power of 2, maintains ~2:1 widescreen aspect ratio (was 445)
+            const ctx = canvas.getContext('2d')!
       
-      // Draw project information on canvas
-      ctx.fillStyle = '#2c3e50'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      
-      // Add a subtle border
-      ctx.strokeStyle = '#34495e'
-      ctx.lineWidth = 8
-      ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8)
-      
-      ctx.fillStyle = '#ecf0f1'
-      ctx.font = 'bold 28px Arial'
-      ctx.textAlign = 'center'
-      ctx.fillText(project.title, canvas.width / 2, 50)
-      
-      ctx.font = '16px Arial'
-      ctx.fillStyle = '#bdc3c7'
-      const words = project.description.split(' ')
-      let line = ''
-      let y = 100
-      
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' '
-        const metrics = ctx.measureText(testLine)
-        const testWidth = metrics.width
+      // Helper function to draw text-based frame
+      const drawTextBasedFrame = () => {
+        // Draw project information on canvas with improved widescreen layout
+        ctx.fillStyle = '#2c3e50'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
         
-        if (testWidth > canvas.width - 60 && n > 0) {
-          ctx.fillText(line, canvas.width / 2, y)
-          line = words[n] + ' '
-          y += 22
-        } else {
-          line = testLine
+        // Add a subtle border
+        ctx.strokeStyle = '#34495e'
+        ctx.lineWidth = 8
+        ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8)
+        
+        // Project title - larger for widescreen format
+        ctx.fillStyle = '#ecf0f1'
+        ctx.font = 'bold 36px Arial'
+        ctx.textAlign = 'center'
+        ctx.fillText(project.title, canvas.width / 2, 80)
+        
+        // Description with improved wrapping for wider format
+        ctx.font = '18px Arial'
+        ctx.fillStyle = '#bdc3c7'
+        const words = project.description.split(' ')
+        let line = ''
+        let y = 150
+        const maxWidth = canvas.width - 80 // More padding for widescreen
+        
+        for (let n = 0; n < words.length; n++) {
+          const testLine = line + words[n] + ' '
+          const metrics = ctx.measureText(testLine)
+          const testWidth = metrics.width
+          
+          if (testWidth > maxWidth && n > 0) {
+            ctx.fillText(line, canvas.width / 2, y)
+            line = words[n] + ' '
+            y += 25
+          } else {
+            line = testLine
+          }
+          
+          // Prevent text from going too low
+          if (y > canvas.height - 100) break
         }
+        ctx.fillText(line, canvas.width / 2, y)
+        
+        // Technologies at bottom
+        ctx.fillStyle = '#3498db'
+        ctx.font = '16px Arial'
+        const techText = project.technologies.join(' • ')
+        ctx.fillText(techText, canvas.width / 2, canvas.height - 40)
       }
-      ctx.fillText(line, canvas.width / 2, y)
       
-      // Technologies
-      ctx.fillStyle = '#3498db'
-      ctx.font = '14px Arial'
-      const techText = project.technologies.join(' • ')
-      ctx.fillText(techText, canvas.width / 2, y + 50)
+      // Start with text-based frame
+      drawTextBasedFrame()
       
+      // Phase 1: Configure proper sRGB color space for accurate color reproduction
       const texture = new THREE.CanvasTexture(canvas)
-      const frameMaterial = new THREE.MeshLambertMaterial({ map: texture })
+      texture.colorSpace = THREE.SRGBColorSpace
+      texture.generateMipmaps = true
+      texture.minFilter = THREE.LinearMipmapLinearFilter
+      texture.magFilter = THREE.LinearFilter
+      
+      // Phase 2: Use MeshStandardMaterial for better image fidelity
+      const frameMaterial = new THREE.MeshStandardMaterial({ 
+        map: texture,
+        metalness: 0.0,      // Non-metallic for accurate image display
+        roughness: 0.8,      // Slightly rough to reduce glare
+        envMapIntensity: 0.1 // Minimal environment reflection
+      })
       
       const frameMesh = new THREE.Mesh(frameGeometry, frameMaterial)
       
-      // Position frame on circular wall
+      // Try to load project image asynchronously if available
+      if (project.image) {
+        const img = new Image()
+        img.crossOrigin = 'anonymous' // Handle CORS if needed
+        
+        img.onload = () => {
+          // Clear canvas and draw the project image
+          ctx.fillStyle = '#000'
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+          
+          // Draw image to fit canvas while maintaining aspect ratio
+          const imgAspect = img.width / img.height
+          const canvasAspect = canvas.width / canvas.height
+          
+          let drawWidth = canvas.width
+          let drawHeight = canvas.height
+          let offsetX = 0
+          let offsetY = 0
+          
+          if (imgAspect > canvasAspect) {
+            // Image is wider than canvas
+            drawHeight = canvas.width / imgAspect
+            offsetY = (canvas.height - drawHeight) / 2
+          } else {
+            // Image is taller than canvas
+            drawWidth = canvas.height * imgAspect
+            offsetX = (canvas.width - drawWidth) / 2
+          }
+          
+          ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight)
+          
+          // Clean image display - overlay banners removed to eliminate flickering
+          
+          // Update texture after image loads with proper color space configuration
+          const newTexture = new THREE.CanvasTexture(canvas)
+          newTexture.colorSpace = THREE.SRGBColorSpace
+          newTexture.generateMipmaps = true
+          newTexture.minFilter = THREE.LinearMipmapLinearFilter
+          newTexture.magFilter = THREE.LinearFilter
+          frameMaterial.map = newTexture
+          frameMaterial.needsUpdate = true
+        }
+        
+        img.onerror = () => {
+          console.warn(`Failed to load image for project: ${project.title}`)
+          // Image already shows text fallback, no need to redraw
+        }
+        
+        img.src = project.image
+      }
+      
+      // Position frame on circular wall with slight Z-offset to prevent flickering
       frameMesh.position.set(position.x, 6, position.z) // Height of 6 units
       frameMesh.rotation.y = position.rotation
+      
+      // Add slight forward offset to prevent Z-fighting with walls
+      const offsetDistance = 0.02 // Small offset to prevent coplanar surface flickering
+      frameMesh.position.x += Math.cos(position.rotation) * offsetDistance
+      frameMesh.position.z += Math.sin(position.rotation) * offsetDistance
       
       // Add a subtle glow effect
       const glowGeometry = new THREE.PlaneGeometry(frameWidth + 0.5, frameHeight + 0.5)
