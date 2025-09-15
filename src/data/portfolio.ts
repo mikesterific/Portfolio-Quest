@@ -13,20 +13,20 @@ export const portfolioData = {
       image: '/src/assets/images/portfolio/ea-home.jpg'
     },
     {
-      id: 'dell-xps-poc',
-      title: 'Dell XPS Proof of Concept',
-      description: "Visionary UI prototype showcasing Dell's front-end capabilities. Sparked Dell's premium branding initiative and inspired a broader digital transformation.",
-      technologies: ['HTML5', 'CSS3', 'JavaScript', 'Performance'],
+      id: 'ea-support-site',
+      title: 'EA Support Site',
+      description: "Design contributions for EA's internal support site during a greenfield rebuild, alongside architectural responsibilities.",
+      technologies: ['Salesforce', 'AWS', 'JavaScript', 'CSS3'],
       type: 'web' as const,
-      image: '/src/assets/images/portfolio/dell-xps-poc.jpg' // Add your image path
+      image: '/src/assets/images/portfolio/ea-support-site.jpg' // Add your image path
     },
     {
-      id: 'dell-xps-landing',
-      title: 'Dell XPS Landing Page',
-      description: 'Launched after leadership buy-in from the POC. Implemented with Dell\'s internal design team as part of a modernized brand strategy.',
-      technologies: ['HTML5', 'CSS3', 'JavaScript'],
+      id: 'decision-tree-logo',
+      title: 'Decision Tree – Logo Design',
+      description: 'Two-color print design that visually mimicked full-color output—economical and clever.',
+      technologies: ['Branding', 'Logo Design'],
       type: 'web' as const,
-      image: '/src/assets/images/portfolio/dell-xps-landing.jpg' // Add your image path
+      image: '/src/assets/images/portfolio/decision-tree-logo.jpg' // Add your image path
     },
     {
       id: 'dell-home-poc',
@@ -45,12 +45,12 @@ export const portfolioData = {
       image: '/src/assets/images/portfolio/dell-home-live.jpg' // Add your image path
     },
     {
-      id: 'ea-support-site',
-      title: 'EA Support Site',
-      description: "Design contributions for EA's internal support site during a greenfield rebuild, alongside architectural responsibilities.",
-      technologies: ['Salesforce', 'AWS', 'JavaScript', 'CSS3'],
+      id: 'dell-xps-poc',
+      title: 'Dell XPS Proof of Concept',
+      description: "Visionary UI prototype showcasing Dell's front-end capabilities. Sparked Dell's premium branding initiative and inspired a broader digital transformation.",
+      technologies: ['HTML5', 'CSS3', 'JavaScript', 'Performance'],
       type: 'web' as const,
-      image: '/src/assets/images/portfolio/ea-support-site.jpg' // Add your image path
+      image: '/src/assets/images/portfolio/dell-xps-poc.jpg' // Add your image path
     },
     {
       id: 'citi-flash-ux',
@@ -69,12 +69,12 @@ export const portfolioData = {
       image: '/src/assets/images/portfolio/bcbs-data-ux.jpg' // Add your image path
     },
     {
-      id: 'decision-tree-logo',
-      title: 'Decision Tree – Logo Design',
-      description: 'Two-color print design that visually mimicked full-color output—economical and clever.',
-      technologies: ['Branding', 'Logo Design'],
+      id: 'dell-xps-landing',
+      title: 'Dell XPS Landing Page',
+      description: 'Launched after leadership buy-in from the POC. Implemented with Dell\'s internal design team as part of a modernized brand strategy.',
+      technologies: ['HTML5', 'CSS3', 'JavaScript'],
       type: 'web' as const,
-      image: '/src/assets/images/portfolio/decision-tree-logo.jpg' // Add your image path
+      image: '/src/assets/images/portfolio/dell-xps-landing.jpg' // Add your image path
     },
     {
       id: 'bizatomic-logo',
