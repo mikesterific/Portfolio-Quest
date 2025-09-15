@@ -1389,6 +1389,11 @@ export default defineComponent({
       const projects = portfolioData.projects
       const totalProjects = projects.length
       
+      // Calculate optimal artwork height (30% lower than center for better viewing)
+      const wallHeight = 12 // From createMuseumEnvironment
+      const centerHeight = wallHeight / 2 // Perfect vertical center: 6 units
+      const artworkHeight = centerHeight - (centerHeight * 0.3) // 30% lower than center: 4.2 units
+      
       // OPTIMIZED: Organize portfolio frames in gallery-style grid on 4 walls
       const wallConfigs = [
         // Front wall (3 frames)
@@ -1398,9 +1403,9 @@ export default defineComponent({
           baseZ: 18, 
           baseRotation: Math.PI,
           positions: [
-            { x: -15, y: 6 }, // Left frame
-            { x: 0, y: 6 },   // Center frame
-            { x: 15, y: 6 }   // Right frame
+            { x: -15, y: artworkHeight }, // Left frame - vertically centered
+            { x: 0, y: artworkHeight },   // Center frame - vertically centered
+            { x: 15, y: artworkHeight }   // Right frame - vertically centered
           ]
         },
         // Back wall (3 frames) 
@@ -1410,9 +1415,9 @@ export default defineComponent({
           baseZ: -18,
           baseRotation: 0,
           positions: [
-            { x: -15, y: 6 }, // Left frame
-            { x: 0, y: 6 },   // Center frame
-            { x: 15, y: 6 }   // Right frame
+            { x: -15, y: artworkHeight }, // Left frame - vertically centered
+            { x: 0, y: artworkHeight },   // Center frame - vertically centered
+            { x: 15, y: artworkHeight }   // Right frame - vertically centered
           ]
         },
         // Left wall (2 frames)
@@ -1422,8 +1427,8 @@ export default defineComponent({
           baseX: -28,
           baseRotation: Math.PI / 2,
           positions: [
-            { z: -8, y: 6 }, // Front frame on left wall
-            { z: 8, y: 6 }   // Back frame on left wall
+            { z: -8, y: artworkHeight }, // Front frame on left wall - vertically centered
+            { z: 8, y: artworkHeight }   // Back frame on left wall - vertically centered
           ]
         },
         // Right wall (2 frames)
@@ -1433,8 +1438,8 @@ export default defineComponent({
           baseX: 28,
           baseRotation: -Math.PI / 2,
           positions: [
-            { z: -8, y: 6 }, // Front frame on right wall
-            { z: 8, y: 6 }   // Back frame on right wall  
+            { z: -8, y: artworkHeight }, // Front frame on right wall - vertically centered
+            { z: 8, y: artworkHeight }   // Back frame on right wall - vertically centered
           ]
         }
       ]
@@ -1448,6 +1453,7 @@ export default defineComponent({
             
             const position = {
               x: (pos as any).x !== undefined ? (pos as any).x : (wallConfig.baseX || 0),
+              y: (pos as any).y !== undefined ? (pos as any).y : artworkHeight,
               z: (pos as any).z !== undefined ? (pos as any).z : (wallConfig.baseZ || 0),
               rotation: wallConfig.baseRotation
             }
@@ -1464,7 +1470,7 @@ export default defineComponent({
     // Create individual portfolio frame
     const createPortfolioFrame = (
       project: ProjectData,
-      position: { x: number, z: number, rotation: number },
+      position: { x: number, y: number, z: number, rotation: number },
       index: number,
       totalFrames: number
     ): void => {
@@ -1602,8 +1608,8 @@ export default defineComponent({
         img.src = project.image
       }
       
-      // Position frame on circular wall with slight Z-offset to prevent flickering
-      frameMesh.position.set(position.x, 6, position.z) // Height of 6 units
+      // Position frame on wall with proper vertical centering
+      frameMesh.position.set(position.x, position.y, position.z) // Use calculated vertical center
       frameMesh.rotation.y = position.rotation
       
       // Add slight forward offset to prevent Z-fighting with walls
