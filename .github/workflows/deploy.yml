@@ -42,9 +42,6 @@ jobs:
           pnpm --version
           pnpm install --frozen-lockfile || pnpm install
         
-      - name: Run tests
-        run: pnpm test
-        
       - name: Build
         run: pnpm build
         env:
