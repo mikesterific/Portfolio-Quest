@@ -31,18 +31,22 @@ jobs:
         with:
           node-version: '22.12.0'
           
+      - name: Enable Corepack and install Yarn
+        run: |
+          corepack enable
+          npm install -g yarn
+          
       - name: Install dependencies
         run: |
-          npm --version
           node --version
-          npm cache clean --force
-          npm install
+          yarn --version
+          yarn install --frozen-lockfile || yarn install
         
       - name: Run tests
-        run: npm run test
+        run: yarn test
         
       - name: Build
-        run: npm run build
+        run: yarn build
         env:
           NODE_ENV: production
           
