@@ -164,8 +164,8 @@ const updatePlayerVelocity = (
  * Preloads player assets - call this in scene preload methods
  */
 const preloadPlayerAssets = (scene: Phaser.Scene): void => {
-  scene.load.image('hero-spaceship-off', '/src/assets/images/HeroSpaceShipOff.png')
-  scene.load.image('hero-spaceship-on', '/src/assets/images/HeroSpaceShipOn.png')
+  scene.load.image('hero-spaceship-off', 'src/assets/images/HeroSpaceShipOff.png')
+  scene.load.image('hero-spaceship-on', 'src/assets/images/HeroSpaceShipOn.png')
 }
 
 /**

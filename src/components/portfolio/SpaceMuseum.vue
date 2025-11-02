@@ -534,7 +534,7 @@ export default defineComponent({
       
       // OPTIMIZED: Rectangular Floor (4 vertices vs 64) - CONSISTENT: No grey artifacts
       const floorGeometry = new THREE.PlaneGeometry(width, depth)
-      const floorTexture = textureLoader.load('/textures/floor/diffuse.jpg')
+      const floorTexture = textureLoader.load('textures/floor/diffuse.jpg')
       floorTexture.wrapS = THREE.RepeatWrapping
       floorTexture.wrapT = THREE.RepeatWrapping
       floorTexture.repeat.set(8, 6) // Adjusted for rectangular aspect ratio
@@ -560,7 +560,7 @@ export default defineComponent({
 
       // OPTIMIZED: Rectangular Ceiling (4 vertices vs 64) - FIXED: No grey artifacts
       const ceilingGeometry = new THREE.PlaneGeometry(width, depth)
-      const ceilingTexture = textureLoader.load('/textures/ceiling/diffuse.jpg')
+      const ceilingTexture = textureLoader.load('textures/ceiling/diffuse.jpg')
       ceilingTexture.wrapS = THREE.RepeatWrapping
       ceilingTexture.wrapT = THREE.RepeatWrapping
       ceilingTexture.repeat.set(6, 4) // Adjusted for rectangular aspect ratio
@@ -582,7 +582,7 @@ export default defineComponent({
       state.scene.add(ceiling)
 
       // OPTIMIZED: 4 Rectangular Walls (16 vertices vs 128) - FIXED: No grey pixelation
-      const wallTexture = textureLoader.load('/textures/walls/diffuse.jpg')
+      const wallTexture = textureLoader.load('textures/walls/diffuse.jpg')
       wallTexture.wrapS = THREE.RepeatWrapping
       wallTexture.wrapT = THREE.RepeatWrapping
       wallTexture.generateMipmaps = false // DISABLED: Prevents texture pixelation

@@ -252,7 +252,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.load.image(`starbase${i}`, `starbase${i}.png`)
     }
 
-    // Load enemy ship asset
+    // Load enemy ship asset (removed leading slash for GitHub Pages compatibility)
     this.load.image('enemy-ship', 'src/assets/images/enemy-ship.png')
 
     // Load explosion sprite (note: file name is intentionally spelled as in asset path)
