@@ -149,11 +149,15 @@ interface MuseumState {
   yawObject: THREE.Object3D | null
   pitchObject: THREE.Object3D | null
   isPointerLocked: boolean
-    // Background music state  
+      // Background music state
   backgroundMusic: HTMLAudioElement | null
   soundEnabled: boolean
   // Jetpack sound effect
   jetpackSound: HTMLAudioElement | null
+  // Input state tracking
+  inputState: {
+    spaceKeyHeld: boolean
+  }
 
 }
 
@@ -217,6 +221,10 @@ export default defineComponent({
         maxJumps: 2, // Allow double jump
         jetpackFired: false, // Track if jetpack was used for this jump sequence
         jumpCount: 0 // Track which jump in sequence this is (0 = grounded, 1 = first jump, 2 = second jump)
+      },
+      // Input state tracking
+      inputState: {
+        spaceKeyHeld: false // Track if space key is currently being held down
       },
       // Custom camera controls
       yawObject: null,
@@ -1619,8 +1627,12 @@ export default defineComponent({
           break
         case 'Space':
           event.preventDefault() // Prevent page scroll
-          if (state.physics.jumpsRemaining > 0) {
+          // Only jump on initial press, not while held down (prevents auto-repeat jumping)
+          if (!state.inputState.spaceKeyHeld && state.physics.jumpsRemaining > 0) {
+            state.inputState.spaceKeyHeld = true // Mark space as being held
             initiateJump()
+          } else if (state.inputState.spaceKeyHeld) {
+            console.log('🚫 Space held down - release and press again to jump')
           }
           break
         case 'ShiftLeft':
@@ -1656,6 +1668,11 @@ export default defineComponent({
         case 'ShiftRight':
           state.isRunning = false
           state.targetSpeedMultiplier = 1.0
+          break
+        case 'Space':
+          // Release space key - allow jumping again on next press
+          state.inputState.spaceKeyHeld = false
+          console.log('✅ Space key released - ready for next jump')
           break
       }
     }
@@ -1862,6 +1879,8 @@ export default defineComponent({
         state.physics.isGrounded = true
         state.physics.jumpsRemaining = state.physics.maxJumps // Reset jumps when landing
         state.physics.jumpCount = 0 // Reset jump sequence counter when landing
+        // Reset input state when landing (in case space is still held)
+        state.inputState.spaceKeyHeld = false
         
         // Optional: Log what surface we landed on (great for debugging!)
         if (landedOnSurface && landedOnSurface !== 'floor') {
@@ -1982,6 +2001,9 @@ export default defineComponent({
         state.jetpackSound.pause()
         state.jetpackSound = null
       }
+      
+      // Reset input state
+      state.inputState.spaceKeyHeld = false
       
       // Dispose of 3D models
       state.couchModels.forEach(couchModel => {

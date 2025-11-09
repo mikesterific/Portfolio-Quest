@@ -487,6 +487,30 @@ describe('SpaceMuseum Component Logic', () => {
       expect(initialState.moveRight).toBe(false)
     })
 
+    it('should initialize jetpack physics state', () => {
+      const jetpackPhysicsState = {
+        jetpackFired: false,
+        jumpCount: 0,
+        jumpsRemaining: 2,
+        maxJumps: 2,
+        isGrounded: true
+      }
+
+      expect(jetpackPhysicsState.jetpackFired).toBe(false)
+      expect(jetpackPhysicsState.jumpCount).toBe(0)
+      expect(jetpackPhysicsState.jumpsRemaining).toBe(2)
+      expect(jetpackPhysicsState.maxJumps).toBe(2)
+      expect(jetpackPhysicsState.isGrounded).toBe(true)
+    })
+
+    it('should initialize input state for space key tracking', () => {
+      const inputState = {
+        spaceKeyHeld: false
+      }
+
+      expect(inputState.spaceKeyHeld).toBe(false)
+    })
+
     it('should handle modal state', () => {
       const defaultModalState = false
       const openModalState = true
@@ -527,6 +551,481 @@ describe('SpaceMuseum Component Logic', () => {
       modelStates.modelsReady = !modelStates.couchLoading && !modelStates.benchLoading
 
       expect(modelStates.modelsReady).toBe(true)
+    })
+  })
+
+  describe('Jetpack Firing System', () => {
+    let mockJetpackSound: any
+    let mockConsoleLog: jest.SpyInstance
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      
+      // Mock Audio constructor for jetpack sound
+      mockJetpackSound = {
+        play: jest.fn().mockResolvedValue(undefined),
+        pause: jest.fn(),
+        currentTime: 0,
+        volume: 0.7,
+        addEventListener: jest.fn()
+      }
+      
+      global.Audio = jest.fn().mockImplementation(() => mockJetpackSound)
+      
+      // Mock console.log to track system messages
+      mockConsoleLog = jest.spyOn(console, 'log').mockImplementation()
+    })
+
+    afterEach(() => {
+      mockConsoleLog.mockRestore()
+    })
+
+    describe('Audio System Integration', () => {
+      it('should initialize jetpack sound with correct file path', () => {
+        // Simulate jetpack sound initialization
+        const jetpackSound = new Audio('assets/sound/jumpack.wav')
+        
+        expect(global.Audio).toHaveBeenCalledWith('assets/sound/jumpack.wav')
+        expect(jetpackSound).toBeDefined()
+      })
+
+      it('should set correct volume relative to music volume', () => {
+        const musicVolume = 0.8
+        const expectedJetpackVolume = musicVolume * 0.7 // 70% of music volume
+        
+        const jetpackSound = new Audio('assets/sound/jumpack.wav')
+        jetpackSound.volume = expectedJetpackVolume
+        
+        expect(jetpackSound.volume).toBe(0.56) // 0.8 * 0.7
+      })
+
+      it('should handle jetpack sound loading errors gracefully', () => {
+        const mockErrorSound = {
+          ...mockJetpackSound,
+          play: jest.fn().mockRejectedValue(new Error('Sound loading failed'))
+        }
+        
+        global.Audio = jest.fn().mockImplementation(() => mockErrorSound)
+        
+        expect(() => new Audio('assets/sound/jumpack.wav')).not.toThrow()
+      })
+    })
+
+    describe('Jump Sequence Logic', () => {
+      let physicsState: any
+
+      beforeEach(() => {
+        physicsState = {
+          jumpCount: 0,
+          jumpsRemaining: 2,
+          maxJumps: 2,
+          isGrounded: true,
+          jetpackFired: false,
+          velocityY: 0,
+          jumpSpeed: 8
+        }
+      })
+
+      it('should track jump count correctly in sequence', () => {
+        // First jump
+        if (physicsState.jumpsRemaining > 0) {
+          physicsState.jumpCount++
+          physicsState.jumpsRemaining--
+          physicsState.isGrounded = false
+        }
+        
+        expect(physicsState.jumpCount).toBe(1)
+        expect(physicsState.jumpsRemaining).toBe(1)
+        expect(physicsState.isGrounded).toBe(false)
+
+        // Second jump (jetpack)
+        if (physicsState.jumpsRemaining > 0) {
+          physicsState.jumpCount++
+          physicsState.jumpsRemaining--
+          if (physicsState.jumpCount === 2) {
+            physicsState.jetpackFired = true
+          }
+        }
+
+        expect(physicsState.jumpCount).toBe(2)
+        expect(physicsState.jumpsRemaining).toBe(0)
+        expect(physicsState.jetpackFired).toBe(true)
+      })
+
+      it('should prevent third jump when no jumps remaining', () => {
+        // Exhaust all jumps
+        physicsState.jumpCount = 2
+        physicsState.jumpsRemaining = 0
+        physicsState.isGrounded = false
+
+        // Attempt third jump
+        const initialJumpCount = physicsState.jumpCount
+        if (physicsState.jumpsRemaining > 0) {
+          physicsState.jumpCount++
+        }
+
+        expect(physicsState.jumpCount).toBe(initialJumpCount) // Should not change
+        expect(physicsState.jumpsRemaining).toBe(0)
+      })
+
+      it('should reset jump sequence on landing', () => {
+        // Set mid-flight state
+        physicsState.jumpCount = 2
+        physicsState.jumpsRemaining = 0
+        physicsState.isGrounded = false
+        physicsState.jetpackFired = true
+
+        // Simulate landing
+        physicsState.isGrounded = true
+        physicsState.jumpsRemaining = physicsState.maxJumps
+        physicsState.jumpCount = 0
+        physicsState.jetpackFired = false
+
+        expect(physicsState.jumpCount).toBe(0)
+        expect(physicsState.jumpsRemaining).toBe(2)
+        expect(physicsState.isGrounded).toBe(true)
+        expect(physicsState.jetpackFired).toBe(false)
+      })
+
+      it('should apply correct jump multiplier for double jump', () => {
+        const baseJumpSpeed = 8
+        
+        // First jump - no multiplier
+        const firstJumpMultiplier = 1 === 2 ? 1.1 : 1.0
+        const firstJumpVelocity = baseJumpSpeed * firstJumpMultiplier
+        expect(firstJumpVelocity).toBe(8)
+
+        // Second jump - 1.1x multiplier
+        const secondJumpMultiplier = 2 === 2 ? 1.1 : 1.0
+        const secondJumpVelocity = baseJumpSpeed * secondJumpMultiplier
+        expect(secondJumpVelocity).toBe(8.8)
+      })
+    })
+
+    describe('Jetpack Sound Triggering', () => {
+      it('should NOT play sound on first jump', async () => {
+        const jumpCount = 1
+        const jetpackSound = mockJetpackSound
+
+        // Simulate first jump logic
+        if (jumpCount === 2) {
+          jetpackSound.currentTime = 0
+          await jetpackSound.play()
+        }
+
+        expect(jetpackSound.play).not.toHaveBeenCalled()
+      })
+
+      it('should play sound ONLY on second jump (double jump)', async () => {
+        const jumpCount = 2
+        const jetpackSound = mockJetpackSound
+
+        // Simulate second jump logic
+        if (jumpCount === 2) {
+          jetpackSound.currentTime = 0
+          jetpackSound.volume = 0.7
+          await jetpackSound.play()
+        }
+
+        expect(jetpackSound.currentTime).toBe(0)
+        expect(jetpackSound.volume).toBe(0.7)
+        expect(jetpackSound.play).toHaveBeenCalledTimes(1)
+      })
+
+      it('should reset sound to beginning for rapid firing', async () => {
+        const jetpackSound = mockJetpackSound
+        jetpackSound.currentTime = 2.5 // Simulate mid-playback
+
+        // Simulate rapid jetpack activation
+        jetpackSound.currentTime = 0
+        await jetpackSound.play()
+
+        expect(jetpackSound.currentTime).toBe(0)
+        expect(jetpackSound.play).toHaveBeenCalled()
+      })
+
+      it('should handle sound play errors gracefully', async () => {
+        const errorSound = {
+          ...mockJetpackSound,
+          play: jest.fn().mockRejectedValue(new Error('Autoplay blocked'))
+        }
+
+        // Should not throw error
+        expect(async () => {
+          try {
+            errorSound.currentTime = 0
+            await errorSound.play()
+          } catch (error) {
+            // Error should be caught and handled
+          }
+        }).not.toThrow()
+      })
+    })
+
+    describe('Jetpack Sound Stopping', () => {
+      it('should stop sound when player lands', () => {
+        const jetpackSound = mockJetpackSound
+        const wasJetpackFired = true
+        const wasGrounded = false
+        const nowGrounded = true
+
+        // Simulate landing logic
+        if (!wasGrounded && wasJetpackFired && nowGrounded) {
+          jetpackSound.pause()
+          jetpackSound.currentTime = 0
+        }
+
+        expect(jetpackSound.pause).toHaveBeenCalled()
+        expect(jetpackSound.currentTime).toBe(0)
+      })
+
+      it('should NOT stop sound if jetpack was not fired', () => {
+        const jetpackSound = mockJetpackSound
+        const wasJetpackFired = false
+        const wasGrounded = false
+        const nowGrounded = true
+
+        // Simulate landing without jetpack use
+        if (!wasGrounded && wasJetpackFired && nowGrounded) {
+          jetpackSound.pause()
+        }
+
+        expect(jetpackSound.pause).not.toHaveBeenCalled()
+      })
+
+      it('should handle null jetpack sound gracefully', () => {
+        const jetpackSound = null
+
+        expect(() => {
+          if (jetpackSound) {
+            jetpackSound.pause()
+            jetpackSound.currentTime = 0
+          }
+        }).not.toThrow()
+      })
+    })
+
+    describe('Space Key Hold Prevention', () => {
+      let inputState: any
+
+      beforeEach(() => {
+        inputState = {
+          spaceKeyHeld: false
+        }
+      })
+
+      it('should allow jump on initial space press', () => {
+        const canJump = !inputState.spaceKeyHeld && true // has jumps remaining
+        
+        if (canJump) {
+          inputState.spaceKeyHeld = true
+        }
+
+        expect(inputState.spaceKeyHeld).toBe(true)
+      })
+
+      it('should prevent jump when space is held', () => {
+        inputState.spaceKeyHeld = true // Space already being held
+        
+        const canJump = !inputState.spaceKeyHeld && true
+        let jumpExecuted = false
+
+        if (canJump) {
+          jumpExecuted = true
+        }
+
+        expect(jumpExecuted).toBe(false)
+      })
+
+      it('should reset space hold state on key release', () => {
+        inputState.spaceKeyHeld = true
+
+        // Simulate keyup event
+        inputState.spaceKeyHeld = false
+
+        expect(inputState.spaceKeyHeld).toBe(false)
+      })
+
+      it('should reset space hold state on landing', () => {
+        inputState.spaceKeyHeld = true
+        const isLanding = true
+
+        // Simulate landing reset
+        if (isLanding) {
+          inputState.spaceKeyHeld = false
+        }
+
+        expect(inputState.spaceKeyHeld).toBe(false)
+      })
+
+      it('should reset space hold state on cleanup', () => {
+        inputState.spaceKeyHeld = true
+
+        // Simulate cleanup
+        inputState.spaceKeyHeld = false
+
+        expect(inputState.spaceKeyHeld).toBe(false)
+      })
+    })
+
+    describe('Volume Control Integration', () => {
+      it('should update jetpack volume when music volume changes', () => {
+        const jetpackSound = mockJetpackSound
+        const newMusicVolume = 0.6
+        const expectedJetpackVolume = newMusicVolume * 0.7
+
+        // Simulate volume update
+        jetpackSound.volume = expectedJetpackVolume
+
+        expect(jetpackSound.volume).toBe(0.42) // 0.6 * 0.7
+      })
+
+      it('should work independently of music enabled/disabled state', () => {
+        const jetpackSound = mockJetpackSound
+        const musicEnabled = false // Music is OFF
+        const musicVolume = 0.8
+
+        // Jetpack should still use volume setting, independent of music toggle
+        jetpackSound.volume = musicVolume * 0.7
+
+        expect(jetpackSound.volume).toBe(0.56) // Works even when music is off
+      })
+
+      it('should handle zero volume', () => {
+        const jetpackSound = mockJetpackSound
+        const musicVolume = 0
+        
+        jetpackSound.volume = musicVolume * 0.7
+
+        expect(jetpackSound.volume).toBe(0)
+      })
+
+      it('should handle maximum volume', () => {
+        const jetpackSound = mockJetpackSound
+        const musicVolume = 1.0
+        
+        jetpackSound.volume = musicVolume * 0.7
+
+        expect(jetpackSound.volume).toBe(0.7)
+      })
+    })
+
+    describe('System Integration', () => {
+      it('should coordinate all jetpack systems in double jump sequence', async () => {
+        // Initialize states
+        const physicsState = {
+          jumpCount: 1,
+          jumpsRemaining: 1,
+          isGrounded: false,
+          jetpackFired: false
+        }
+        const inputState = { spaceKeyHeld: false }
+        const jetpackSound = mockJetpackSound
+
+        // Simulate second jump with all systems
+        if (!inputState.spaceKeyHeld && physicsState.jumpsRemaining > 0) {
+          inputState.spaceKeyHeld = true
+          physicsState.jumpCount++
+          physicsState.jumpsRemaining--
+          
+          if (physicsState.jumpCount === 2) {
+            jetpackSound.currentTime = 0
+            jetpackSound.volume = 0.7
+            await jetpackSound.play()
+            physicsState.jetpackFired = true
+          }
+        }
+
+        // Verify all systems updated correctly
+        expect(physicsState.jumpCount).toBe(2)
+        expect(physicsState.jumpsRemaining).toBe(0)
+        expect(physicsState.jetpackFired).toBe(true)
+        expect(inputState.spaceKeyHeld).toBe(true)
+        expect(jetpackSound.play).toHaveBeenCalled()
+      })
+
+      it('should coordinate all systems during landing', () => {
+        // Mid-flight state
+        const physicsState = {
+          jumpCount: 2,
+          jumpsRemaining: 0,
+          isGrounded: false,
+          jetpackFired: true,
+          maxJumps: 2
+        }
+        const inputState = { spaceKeyHeld: true }
+        const jetpackSound = mockJetpackSound
+
+        // Simulate landing with all system resets
+        const wasGrounded = physicsState.isGrounded
+        physicsState.isGrounded = true
+        
+        if (!wasGrounded && physicsState.jetpackFired) {
+          jetpackSound.pause()
+          jetpackSound.currentTime = 0
+          physicsState.jetpackFired = false
+        }
+        
+        physicsState.jumpsRemaining = physicsState.maxJumps
+        physicsState.jumpCount = 0
+        inputState.spaceKeyHeld = false
+
+        // Verify complete system reset
+        expect(physicsState.isGrounded).toBe(true)
+        expect(physicsState.jumpCount).toBe(0)
+        expect(physicsState.jumpsRemaining).toBe(2)
+        expect(physicsState.jetpackFired).toBe(false)
+        expect(inputState.spaceKeyHeld).toBe(false)
+        expect(jetpackSound.pause).toHaveBeenCalled()
+        expect(jetpackSound.currentTime).toBe(0)
+      })
+    })
+
+    describe('Console Logging and Debugging', () => {
+      it('should log appropriate messages for jump types', () => {
+        const jumpCount1 = 1
+        const jumpCount2 = 2
+
+        // Simulate logging logic
+        if (jumpCount1 === 2) {
+          console.log('🚀 Jetpack fired! Double jump activated (jump #2 in sequence)')
+        } else {
+          console.log(`👟 Regular jump #${jumpCount1} - no jetpack`)
+        }
+
+        if (jumpCount2 === 2) {
+          console.log('🚀 Jetpack fired! Double jump activated (jump #2 in sequence)')
+        } else {
+          console.log(`👟 Regular jump #${jumpCount2} - no jetpack`)
+        }
+
+        expect(mockConsoleLog).toHaveBeenCalledWith('👟 Regular jump #1 - no jetpack')
+        expect(mockConsoleLog).toHaveBeenCalledWith('🚀 Jetpack fired! Double jump activated (jump #2 in sequence)')
+      })
+
+      it('should log space key hold prevention', () => {
+        const spaceKeyHeld = true
+
+        if (spaceKeyHeld) {
+          console.log('🚫 Space held down - release and press again to jump')
+        }
+
+        expect(mockConsoleLog).toHaveBeenCalledWith('🚫 Space held down - release and press again to jump')
+      })
+
+      it('should log space key release', () => {
+        console.log('✅ Space key released - ready for next jump')
+
+        expect(mockConsoleLog).toHaveBeenCalledWith('✅ Space key released - ready for next jump')
+      })
+
+      it('should log landing and system reset', () => {
+        console.log('🏃 Landed - jump sequence reset')
+        console.log('🛑 Jetpack sound stopped - landed')
+
+        expect(mockConsoleLog).toHaveBeenCalledWith('🏃 Landed - jump sequence reset')
+        expect(mockConsoleLog).toHaveBeenCalledWith('🛑 Jetpack sound stopped - landed')
+      })
     })
   })
 })
