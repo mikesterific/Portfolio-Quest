@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vueDevTools from "vite-plugin-vue-devtools";
 
-const base = process.env.VITE_BASE_PATH ?? "./";
+const base = process.env.VITE_BASE_PATH ?? "/portfolio-quest/";
 
 // https://vite.dev/config/
 export default defineConfig({
