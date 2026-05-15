@@ -1,8 +1,8 @@
-# Portfolio Quest
+# Portfolio-Quest
 
 Interactive, RPG-inspired portfolio: explore a pixel-art style world that surfaces skills, projects, and résumé content. Built for the web with smooth motion and large-screen (HDMI) use in mind.
 
-**Repository:** [github.com/mikesterific/resume-game](https://github.com/mikesterific/resume-game)
+**Repository:** [github.com/mikesterific/Portfolio-Quest](https://github.com/mikesterific/Portfolio-Quest)
 
 ## Stack
 
