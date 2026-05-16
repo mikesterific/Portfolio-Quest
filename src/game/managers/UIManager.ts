@@ -1,46 +1,46 @@
-import Phaser from 'phaser'
-import { UI_CONFIG } from '../config'
+import Phaser from "phaser";
+import { UI_CONFIG } from "../config";
 
 export class UIManager {
-  private scene: Phaser.Scene
-  private interactionPrompt: Phaser.GameObjects.Text | null = null
-  private healthText: Phaser.GameObjects.Text | null = null
-  private xpText: Phaser.GameObjects.Text | null = null
-  private xpTotal: number = 0
+  private scene: Phaser.Scene;
+  private interactionPrompt: Phaser.GameObjects.Text | null = null;
+  private healthText: Phaser.GameObjects.Text | null = null;
+  private xpText: Phaser.GameObjects.Text | null = null;
+  private xpTotal: number = 0;
 
   constructor(scene: Phaser.Scene) {
-    this.scene = scene
+    this.scene = scene;
   }
 
   /**
    * Initialize all UI elements
    */
   initialize(playerHealth: number, maxPlayerHealth: number): void {
-    this.setupInteractionPrompt()
-    this.setupNavigationHints()
-    this.setupHealthDisplay(playerHealth, maxPlayerHealth)
-    this.setupXpDisplay()
+    this.setupInteractionPrompt();
+    this.setupNavigationHints();
+    this.setupHealthDisplay(playerHealth, maxPlayerHealth);
+    this.setupXpDisplay();
   }
 
   /**
    * Get the interaction prompt text object
    */
   getInteractionPrompt(): Phaser.GameObjects.Text | null {
-    return this.interactionPrompt
+    return this.interactionPrompt;
   }
 
   /**
    * Get the XP text object for animations
    */
   getXpText(): Phaser.GameObjects.Text | null {
-    return this.xpText
+    return this.xpText;
   }
 
   /**
    * Get the health text object
    */
   getHealthText(): Phaser.GameObjects.Text | null {
-    return this.healthText
+    return this.healthText;
   }
 
   /**
@@ -48,7 +48,7 @@ export class UIManager {
    */
   updateHealth(currentHealth: number, maxHealth: number): void {
     if (this.healthText) {
-      this.healthText.setText(`Health: ${currentHealth}/${maxHealth}`)
+      this.healthText.setText(`Health: ${currentHealth}/${maxHealth}`);
     }
   }
 
@@ -56,9 +56,9 @@ export class UIManager {
    * Update XP total and display
    */
   updateXp(newTotal: number): void {
-    this.xpTotal = newTotal
+    this.xpTotal = newTotal;
     if (this.xpText) {
-      this.xpText.setText(`XP: ${this.xpTotal}`)
+      this.xpText.setText(`XP: ${this.xpTotal}`);
     }
   }
 
@@ -66,15 +66,15 @@ export class UIManager {
    * Add XP to the current total
    */
   addXp(amount: number): void {
-    this.xpTotal += amount
-    this.updateXp(this.xpTotal)
+    this.xpTotal += amount;
+    this.updateXp(this.xpTotal);
   }
 
   /**
    * Get current XP total
    */
   getXpTotal(): number {
-    return this.xpTotal
+    return this.xpTotal;
   }
 
   /**
@@ -82,8 +82,8 @@ export class UIManager {
    */
   showPortalPrompt(portalName: string): void {
     if (this.interactionPrompt) {
-      this.interactionPrompt.setText(`Press SPACE to travel to ${portalName}`)
-      this.interactionPrompt.setVisible(true)
+      this.interactionPrompt.setText(`Press D to travel to ${portalName}`);
+      this.interactionPrompt.setVisible(true);
     }
   }
 
@@ -92,8 +92,8 @@ export class UIManager {
    */
   showStationPrompt(stationName: string): void {
     if (this.interactionPrompt) {
-      this.interactionPrompt.setText(`Press SPACE to dock with ${stationName.replace('\n', ' ')}`)
-      this.interactionPrompt.setVisible(true)
+      this.interactionPrompt.setText(`Press D to dock with ${stationName.replace("\n", " ")}`);
+      this.interactionPrompt.setVisible(true);
     }
   }
 
@@ -102,8 +102,8 @@ export class UIManager {
    */
   showDockingPrompt(): void {
     if (this.interactionPrompt) {
-      this.interactionPrompt.setText('Docking...')
-      this.interactionPrompt.setVisible(true)
+      this.interactionPrompt.setText("Docking...");
+      this.interactionPrompt.setVisible(true);
     }
   }
 
@@ -112,8 +112,8 @@ export class UIManager {
    */
   showDockedPrompt(): void {
     if (this.interactionPrompt) {
-      this.interactionPrompt.setText('Docked! Press SPACE to undock')
-      this.interactionPrompt.setVisible(true)
+      this.interactionPrompt.setText("Docked! Press D to undock");
+      this.interactionPrompt.setVisible(true);
     }
   }
 
@@ -122,8 +122,8 @@ export class UIManager {
    */
   showShieldsUpPrompt(): void {
     if (this.interactionPrompt) {
-      this.interactionPrompt.setText('Shields up — docking disabled')
-      this.interactionPrompt.setVisible(true)
+      this.interactionPrompt.setText("Shields up — docking disabled");
+      this.interactionPrompt.setVisible(true);
     }
   }
 
@@ -132,57 +132,69 @@ export class UIManager {
    */
   hidePrompt(): void {
     if (this.interactionPrompt) {
-      this.interactionPrompt.setVisible(false)
+      this.interactionPrompt.setVisible(false);
     }
   }
 
   private setupInteractionPrompt(): void {
-    this.interactionPrompt = this.scene.add.text(
-      this.scene.scale.width / 2, 
-      this.scene.scale.height - UI_CONFIG.positioning.interactionPrompt.yOffset, 
-      '', 
-      {
-        fontSize: UI_CONFIG.fonts.promptSize,
-        fontFamily: UI_CONFIG.fonts.primary,
-        fontStyle: 'bold',
-        color: UI_CONFIG.colors.prompt,
-        stroke: '#000000',
-        strokeThickness: 2,
-        backgroundColor: '#2C3E50ee',
-        padding: { x: 12, y: 6 },
-        resolution: 2
-      }
-    ).setOrigin(0.5).setVisible(false)
+    this.interactionPrompt = this.scene.add
+      .text(
+        this.scene.scale.width / 2,
+        this.scene.scale.height - UI_CONFIG.positioning.interactionPrompt.yOffset,
+        "",
+        {
+          fontSize: UI_CONFIG.fonts.promptSize,
+          fontFamily: UI_CONFIG.fonts.primary,
+          fontStyle: "bold",
+          color: UI_CONFIG.colors.prompt,
+          stroke: "#000000",
+          strokeThickness: 2,
+          backgroundColor: "#2C3E50ee",
+          padding: { x: 12, y: 6 },
+          resolution: 2,
+        },
+      )
+      .setOrigin(0.5)
+      .setVisible(false);
   }
 
   private setupNavigationHints(): void {
-    this.scene.add.text(20, this.scene.scale.height - UI_CONFIG.positioning.navigationHints.yOffset, 'WASD/Arrows: Navigate | SPACE: Fire lasers | D: Dock/Undock/Interact', {
-      fontSize: UI_CONFIG.fonts.hintsSize,
-      color: UI_CONFIG.colors.hints
-    })
+    this.scene.add.text(
+      20,
+      this.scene.scale.height - UI_CONFIG.positioning.navigationHints.yOffset,
+      "WASD/Arrows: Navigate | SPACE: Fire lasers | D: Dock/Undock | H: Home",
+      {
+        fontSize: UI_CONFIG.fonts.hintsSize,
+        color: UI_CONFIG.colors.hints,
+      },
+    );
   }
 
   private setupHealthDisplay(playerHealth: number, maxPlayerHealth: number): void {
-    this.healthText = this.scene.add.text(UI_CONFIG.positioning.healthDisplay.x, UI_CONFIG.positioning.healthDisplay.y, '', {
-      fontSize: UI_CONFIG.fonts.healthSize,
-      fontFamily: UI_CONFIG.fonts.primary,
-      fontStyle: 'bold',
-      color: UI_CONFIG.colors.health,
-      stroke: '#000000',
-      strokeThickness: 3
-    }).setDepth(100)
-    
-    this.updateHealth(playerHealth, maxPlayerHealth)
+    this.healthText = this.scene.add
+      .text(UI_CONFIG.positioning.healthDisplay.x, UI_CONFIG.positioning.healthDisplay.y, "", {
+        fontSize: UI_CONFIG.fonts.healthSize,
+        fontFamily: UI_CONFIG.fonts.primary,
+        fontStyle: "bold",
+        color: UI_CONFIG.colors.health,
+        stroke: "#000000",
+        strokeThickness: 3,
+      })
+      .setDepth(100);
+
+    this.updateHealth(playerHealth, maxPlayerHealth);
   }
 
   private setupXpDisplay(): void {
-    this.xpText = this.scene.add.text(UI_CONFIG.positioning.xpDisplay.x, UI_CONFIG.positioning.xpDisplay.y, 'XP: 0', {
-      fontSize: UI_CONFIG.fonts.xpSize,
-      fontFamily: UI_CONFIG.fonts.primary,
-      fontStyle: 'bold',
-      color: UI_CONFIG.colors.xp,
-      stroke: '#000000',
-      strokeThickness: 3
-    }).setDepth(100)
+    this.xpText = this.scene.add
+      .text(UI_CONFIG.positioning.xpDisplay.x, UI_CONFIG.positioning.xpDisplay.y, "XP: 0", {
+        fontSize: UI_CONFIG.fonts.xpSize,
+        fontFamily: UI_CONFIG.fonts.primary,
+        fontStyle: "bold",
+        color: UI_CONFIG.colors.xp,
+        stroke: "#000000",
+        strokeThickness: 3,
+      })
+      .setDepth(100);
   }
 }

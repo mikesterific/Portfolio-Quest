@@ -4,6 +4,8 @@
 
     <!-- UI Overlay -->
     <div class="museum-ui-overlay">
+      <button class="museum-back-button" @click.stop="exitMuseum" type="button">Back Home</button>
+
       <!-- Crosshair -->
       <div class="crosshair">
         <div class="crosshair-dot"></div>
@@ -1687,6 +1689,9 @@ export default defineComponent({
 
     // Exit museum - emit event instead of using game bridge
     const exitMuseum = (): void => {
+      if (state.isPointerLocked) {
+        document.exitPointerLock();
+      }
       emit("exit-museum");
     };
 
@@ -2193,6 +2198,7 @@ export default defineComponent({
       musicEnabled,
       toggleSettings,
       saveSettings,
+      exitMuseum,
     };
   },
 });
@@ -2221,6 +2227,28 @@ export default defineComponent({
   height: 100%;
   pointer-events: none;
   z-index: 10;
+}
+
+.museum-back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 20;
+  pointer-events: auto;
+  background: rgba(52, 73, 94, 0.9);
+  border: 2px solid #3498db;
+  border-radius: 8px;
+  color: #ecf0f1;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.museum-back-button:hover {
+  background: rgba(52, 152, 219, 0.9);
+  transform: translateY(-2px);
 }
 
 .crosshair {

@@ -1,6 +1,17 @@
 # Active Context - Resume Game
 
 ## Recently Completed
+- **Space Museum Back Button**: Level 1 UI navigation enhancement COMPLETE ✅
+  - Added visible `Back Home` button to the 3D Space Museum overlay.
+  - Reused existing `exit-museum` event path through `MuseumView.vue` and Vue Router.
+  - Released pointer lock before navigating home.
+  - Build verified with `npm run build`.
+- **Space Shooter Exit Removal + Home Return**: Level 2 navigation enhancement COMPLETE ✅
+  - Removed Skills space shooter edge exit portals.
+  - Added explicit Home button and `H` hotkey.
+  - Routed home navigation through Vue Router via typed `game:return-home` event.
+  - Build verified with `npm run build`.
+  - Archive: [Space Shooter Home Return](archive/archive-space-shooter-home-return.md)
 - **Portfolio Quest Phase 1**: Foundation & Setup + Creative Design phases COMPLETE ✅
 - **Archive Created**: [Phase 1 Archive](../docs/archive/archive-portfolio-quest-phase1-20250102.md)
 - **Creative Phases**: Theme selection (spaceship exploration), interactive mechanics design, style guide creation
@@ -19,7 +30,11 @@
   - Enables realistic jumping and landing on 3D objects
 
 ## Current Focus
-**SKILLS SPACE SCENE TRANSFORMATION: MISSION ACCOMPLISHED** ✅
+**READY FOR NEXT TASK** ✅
+
+The space shooter exit removal and home-return enhancement is implemented, reflected, and archived. Memory Bank is ready for the next VAN cycle.
+
+**Previous Focus**: SKILLS SPACE SCENE TRANSFORMATION: MISSION ACCOMPLISHED ✅
 
 **Task Complete**: 🚀 SKILLS SPACE SCENE TRANSFORMATION
 - **Complexity**: Level 3 (Intermediate Feature) - SUCCESSFULLY IMPLEMENTED

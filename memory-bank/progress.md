@@ -1,5 +1,43 @@
 # Progress - Resume Game Implementation
 
+## Latest Enhancement: Space Museum Back Button ✅
+
+**Date**: May 15, 2026  
+**Feature**: Added visible home navigation to the 3D Space Museum  
+**Status**: Implemented and build verified  
+
+### Technical Implementation
+- Added a `Back Home` overlay button to `SpaceMuseum.vue`.
+- Reused the existing `exit-museum` emit path so `MuseumView.vue` continues to own Vue Router navigation to `/`.
+- Updated `exitMuseum()` to release pointer lock before navigation.
+
+### Verification
+- `ReadLints`: no diagnostics for `SpaceMuseum.vue`.
+- `npm run build`: successful production build and type check.
+
+---
+
+## Latest Enhancement: Space Shooter Exit Removal + Home Return ✅
+
+**Date**: May 15, 2026  
+**Feature**: Removed Skills space shooter edge exit portals and added explicit home navigation  
+**Status**: Implemented, build verified, reflected, and archived  
+
+### Technical Implementation
+- Removed portal state, setup, proximity checks, and scene-transition handling from `SkillSpaceScene`.
+- Added typed `game:return-home` event for Phaser-to-Vue navigation intent.
+- Handled home navigation in `GameContainer.vue` with Vue Router.
+- Added a Home button and `H` hotkey in `GameUIScene`.
+- Updated control prompts so `SPACE` fires lasers, `D` handles dock/undock, and `H` returns home.
+
+### Verification
+- `ReadLints`: no new diagnostics for edited files.
+- `npm run build`: successful production build and type check.
+- Reflection document: [Space Shooter Home Return](reflection/reflection-space-shooter-home-return.md)
+- Archive document: [Space Shooter Home Return](archive/archive-space-shooter-home-return.md)
+
+---
+
 ## Latest Enhancement: Advanced Collision Detection System ✅ NEW
 
 **Date**: December 13, 2025  
