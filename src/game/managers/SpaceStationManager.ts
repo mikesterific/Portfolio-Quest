@@ -1,33 +1,33 @@
-import Phaser from 'phaser'
-import { getColorTint } from '@/assets/images/space-stations/sprite-map-config'
-import { stationColorPalette } from '@/assets/images/space-stations/station-data'
+import Phaser from "phaser";
+import { getColorTint } from "@/assets/images/space-stations/sprite-map-config";
+import { stationColorPalette } from "@/assets/images/space-stations/station-data";
 
 export interface SpaceStationData {
-  id: string
-  skillId: string
-  name: string
-  emoji: string
-  x: number
-  y: number
-  category: string
-  description?: string
-  stationType: 'A' | 'B' | 'C' | 'D' | 'E'
-  colorVariant: string
-  sector: 'development' | 'infrastructure' | 'innovation'
+  id: string;
+  skillId: string;
+  name: string;
+  emoji: string;
+  x: number;
+  y: number;
+  category: string;
+  description?: string;
+  stationType: "A" | "B" | "C" | "D" | "E";
+  colorVariant: string;
+  sector: "development" | "infrastructure" | "innovation";
 }
 
 export class SpaceStationManager {
-  private scene: Phaser.Scene
-  private stations: Phaser.GameObjects.Group | null = null
-  private stationsData: SpaceStationData[]
-  private unlockedStations: Set<string>
-  private undockSpawnedForStation: Set<string>
+  private scene: Phaser.Scene;
+  private stations: Phaser.GameObjects.Group | null = null;
+  private stationsData: SpaceStationData[];
+  private unlockedStations: Set<string>;
+  private undockSpawnedForStation: Set<string>;
 
   constructor(scene: Phaser.Scene) {
-    this.scene = scene
-    this.stationsData = this.createSpaceStationsData()
-    this.unlockedStations = new Set<string>()
-    this.undockSpawnedForStation = new Set<string>()
+    this.scene = scene;
+    this.stationsData = this.createSpaceStationsData();
+    this.unlockedStations = new Set<string>();
+    this.undockSpawnedForStation = new Set<string>();
   }
 
   /**
@@ -35,252 +35,310 @@ export class SpaceStationManager {
    */
   initialize(onInteract: (skillId: string, stationData: SpaceStationData) => void): void {
     // Create the stations group now that scene is initialized
-    this.stations = this.scene.add.group()
-    
-    this.stationsData.forEach(station => {
-      const stationObject = this.createSpaceStation(station, onInteract)
-      stationObject.setDepth(1)
-      this.stations!.add(stationObject)
-    })
+    this.stations = this.scene.add.group();
+
+    this.stationsData.forEach((station) => {
+      const stationObject = this.createSpaceStation(station, onInteract);
+      stationObject.setDepth(1);
+      this.stations!.add(stationObject);
+    });
   }
 
   /**
    * Get the stations group for physics interactions
    */
   getStationsGroup(): Phaser.GameObjects.Group | null {
-    return this.stations
+    return this.stations;
   }
 
   /**
    * Get all station data
    */
   getStationsData(): SpaceStationData[] {
-    return this.stationsData
+    return this.stationsData;
   }
 
   /**
    * Get unlocked stations set
    */
   getUnlockedStations(): Set<string> {
-    return this.unlockedStations
+    return this.unlockedStations;
   }
 
   /**
    * Get undock spawned stations set
    */
   getUndockSpawnedStations(): Set<string> {
-    return this.undockSpawnedForStation
+    return this.undockSpawnedForStation;
   }
 
   /**
    * Get total station count
    */
   getTotalStationCount(): number {
-    return this.stationsData.length
+    return this.stationsData.length;
   }
 
   /**
    * Mark a station as unlocked
    */
   unlockStation(stationId: string): void {
-    this.unlockedStations.add(stationId)
+    this.unlockedStations.add(stationId);
   }
 
   /**
    * Mark that enemies have been spawned for this station's undock
    */
   markUndockSpawned(stationId: string): void {
-    this.undockSpawnedForStation.add(stationId)
+    this.undockSpawnedForStation.add(stationId);
   }
 
   /**
    * Check if enemies have been spawned for this station's undock
    */
   hasUndockSpawned(stationId: string): boolean {
-    return this.undockSpawnedForStation.has(stationId)
+    return this.undockSpawnedForStation.has(stationId);
   }
 
   private createSpaceStationsData(): SpaceStationData[] {
     return [
       // DEVELOPMENT SECTOR (Western Quadrant)
-      { 
-        id: 'frontend-station', 
-        skillId: 'frontend',
-        name: 'Frontend Development\nStation', 
-        emoji: '👨‍💻', 
-        x: 1650, 
-        y: 250, 
-        category: 'frontend',
-        stationType: 'A',
-        colorVariant: 'blue',
-        sector: 'development',
-        description: 'Deep mastery of Vue.js, React, Angular. CSS3, HTML5, TailwindCSS wizard. Performance optimization expert.'
+      {
+        id: "frontend-station",
+        skillId: "frontend",
+        name: "Frontend Development\nStation",
+        emoji: "💻",
+        x: 1650,
+        y: 250,
+        category: "frontend",
+        stationType: "A",
+        colorVariant: "blue",
+        sector: "development",
+        description:
+          "High-performance modern UI focused on responsiveness, usability, scalability, and exceptional user experience.",
       },
-      { 
-        id: 'testing-station', 
-        skillId: 'testing',
-        name: 'Testing Systems\nPlatform', 
-        emoji: '🧪', 
-        x: 320, 
-        y: 780, 
-        category: 'testing',
-        stationType: 'A',
-        colorVariant: 'green',
-        sector: 'development',
-        description: 'Cypress ninja, Jest, Mocha, Chai master. Writes resilient full-coverage tests.'
+      {
+        id: "testing-station",
+        skillId: "testing",
+        name: "Testing Systems\nPlatform",
+        emoji: "🧪",
+        x: 320,
+        y: 780,
+        category: "testing",
+        stationType: "A",
+        colorVariant: "green",
+        sector: "development",
+        description:
+          "Scalable testing strategies and automated validation systems for enterprise and real-time architectures.",
       },
-      { 
-        id: 'architecture-station', 
-        skillId: 'architecture',
-        name: 'Architecture\nHub', 
-        emoji: '📦', 
-        x: 1420, 
-        y: 880, 
-        category: 'architecture',
-        stationType: 'B',
-        colorVariant: 'orange',
-        sector: 'development',
-        description: 'Vuex wizard, Supabase integration. Large-scale app architecture at EA, Dell, RentPath.'
+      {
+        id: "architecture-station",
+        skillId: "architecture",
+        name: "Architecture\nHub",
+        emoji: "🏗",
+        x: 1420,
+        y: 880,
+        category: "architecture",
+        stationType: "B",
+        colorVariant: "orange",
+        sector: "development",
+        description:
+          "High-performance scalable systems across front-end architecture, real-time infrastructure, and modernization.",
       },
-      
+
       // INFRASTRUCTURE SECTOR (Eastern Quadrant)
-      { 
-        id: 'tooling-station', 
-        skillId: 'tooling',
-        name: 'Tooling\nPlatform', 
-        emoji: '⚙️', 
-        x: 220, 
-        y: 380, 
-        category: 'tooling',
-        stationType: 'C',
-        colorVariant: 'purple',
-        sector: 'infrastructure',
-        description: 'Vite, Webpack, TypeScript expert. Custom component libraries and mono repos.'
+      {
+        id: "tooling-station",
+        skillId: "tooling",
+        name: "Tooling\nPlatform",
+        emoji: "🛠",
+        x: 220,
+        y: 380,
+        category: "tooling",
+        stationType: "C",
+        colorVariant: "purple",
+        sector: "infrastructure",
+        description:
+          "Internal tooling, developer workflows, automation, testing, and scalable development operations.",
       },
-      { 
-        id: 'security-station', 
-        skillId: 'security',
-        name: 'Security\nFortress', 
-        emoji: '🔒', 
-        x: 850, 
-        y: 520, 
-        category: 'security',
-        stationType: 'B',
-        colorVariant: 'gray',
-        sector: 'infrastructure',
-        description: 'Linux Foundation certified (LFD121). Security and accessibility by design, not bolted on.'
+      {
+        id: "security-station",
+        skillId: "security",
+        name: "Security\nFortress",
+        emoji: "🛡",
+        x: 850,
+        y: 520,
+        category: "security",
+        stationType: "B",
+        colorVariant: "gray",
+        sector: "infrastructure",
+        description:
+          "Secure enterprise web architecture with safe data handling and hardened front-end/backend systems.",
       },
-      
+
       // INNOVATION HUB (Northern Command Center)
-      { 
-        id: 'ai-station', 
-        skillId: 'ai',
-        name: 'AI Research\nStation', 
-        emoji: '🧠', 
-        x: 580, 
-        y: 320, 
-        category: 'ai',
-        stationType: 'D',
-        colorVariant: 'cyan',
-        sector: 'innovation',
-        description: 'Custom RAG systems with similarity search. LLM integration in production workflows.'
+      {
+        id: "ai-station",
+        skillId: "ai",
+        name: "AI Research\nStation",
+        emoji: "🤖",
+        x: 580,
+        y: 320,
+        category: "ai",
+        stationType: "D",
+        colorVariant: "cyan",
+        sector: "innovation",
+        description:
+          "Practical LLM applications, agentic workflows, memory systems, and AI-enhanced development.",
       },
-      { 
-        id: 'leadership-station', 
-        skillId: 'leadership',
-        name: 'Leadership\nCenter', 
-        emoji: '🎤', 
-        x: 1120, 
-        y: 300, 
-        category: 'leadership',
-        stationType: 'C',
-        colorVariant: 'gold',
-        sector: 'innovation',
-        description: 'Google Tech Talk speaker. Published "Pro HTML5 Performance" by Apress. UI badass.'
-      }
-    ]
+      {
+        id: "leadership-station",
+        skillId: "leadership",
+        name: "Leadership\nCenter",
+        emoji: "🎤",
+        x: 1120,
+        y: 300,
+        category: "leadership",
+        stationType: "C",
+        colorVariant: "gold",
+        sector: "innovation",
+        description:
+          "Architecture initiatives, engineering mentorship, and technical strategy across enterprise organizations.",
+      },
+    ];
   }
 
   private getStarbaseImage(skillId: string): string {
     const starbaseMapping: Record<string, string> = {
-      'frontend': 'starbase1',
-      'testing': 'starbase2', 
-      'architecture': 'starbase3',
-      'tooling': 'starbase4',
-      'security': 'starbase6',
-      'ai': 'starbase7',
-      'leadership': 'starbase8'
-    }
-    
-    return starbaseMapping[skillId] || 'starbase1' // Default fallback
+      frontend: "starbase1",
+      testing: "starbase2",
+      architecture: "starbase3",
+      tooling: "starbase4",
+      security: "starbase6",
+      ai: "starbase7",
+      leadership: "starbase8",
+    };
+
+    return starbaseMapping[skillId] || "starbase1"; // Default fallback
   }
 
   private createSpaceStation(
-    station: SpaceStationData, 
-    onInteract: (skillId: string, stationData: SpaceStationData) => void
+    station: SpaceStationData,
+    onInteract: (skillId: string, stationData: SpaceStationData) => void,
   ): Phaser.GameObjects.Container {
-    const stationContainer = this.scene.add.container(station.x, station.y)
-    
-    let stationBody: Phaser.GameObjects.Image | Phaser.GameObjects.Shape
-    
+    const stationContainer = this.scene.add.container(station.x, station.y);
+
+    let stationBody: Phaser.GameObjects.Image | Phaser.GameObjects.Shape;
+
     // Get the appropriate starbase image for this station
-    const starbaseKey = this.getStarbaseImage(station.skillId)
-    
+    const starbaseKey = this.getStarbaseImage(station.skillId);
+
     // Use individual starbase images
     if (this.scene.textures.exists(starbaseKey)) {
       // Create sprite from individual starbase image
-      stationBody = this.scene.add.image(0, 0, starbaseKey)
-      stationBody.setDisplaySize(120, 120) // Scale to a good visible size
-      
+      stationBody = this.scene.add.image(0, 0, starbaseKey);
+      stationBody.setDisplaySize(120, 120); // Scale to a good visible size
+
       // Apply color tint for category identification
-      const colorTint = getColorTint(station.colorVariant)
-      stationBody.setTint(colorTint)
+      const colorTint = getColorTint(station.colorVariant);
+      stationBody.setTint(colorTint);
     } else {
-      // Fallback to geometric shape  
-      console.warn(`Starbase image ${starbaseKey} not found for station ${station.skillId}, using fallback`)
-      
-      const stationColor = stationColorPalette[station.colorVariant as keyof typeof stationColorPalette]
-      
+      // Fallback to geometric shape
+      console.warn(
+        `Starbase image ${starbaseKey} not found for station ${station.skillId}, using fallback`,
+      );
+
+      const stationColor =
+        stationColorPalette[station.colorVariant as keyof typeof stationColorPalette];
+
       switch (station.stationType) {
-        case 'A': // Compact research module
-          stationBody = this.scene.add.rectangle(0, 0, 70, 50, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-          break
-        case 'B': // Industrial platform  
-          stationBody = this.scene.add.rectangle(0, 0, 80, 40, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-          break
-        case 'C': // Large hub station
-          stationBody = this.scene.add.circle(0, 0, 35, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-          break
-        case 'D': // Specialized research (hexagonal)
-          stationBody = this.scene.add.polygon(0, 0, [
-            [-25, 0], [-12, -22], [12, -22], [25, 0], [12, 22], [-12, 22]
-          ], Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-          break
-        case 'E': // Command station
-          stationBody = this.scene.add.rectangle(0, 0, 75, 45, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-          break
+        case "A": // Compact research module
+          stationBody = this.scene.add.rectangle(
+            0,
+            0,
+            70,
+            50,
+            Phaser.Display.Color.HexStringToColor(stationColor).color,
+            0.9,
+          );
+          break;
+        case "B": // Industrial platform
+          stationBody = this.scene.add.rectangle(
+            0,
+            0,
+            80,
+            40,
+            Phaser.Display.Color.HexStringToColor(stationColor).color,
+            0.9,
+          );
+          break;
+        case "C": // Large hub station
+          stationBody = this.scene.add.circle(
+            0,
+            0,
+            35,
+            Phaser.Display.Color.HexStringToColor(stationColor).color,
+            0.9,
+          );
+          break;
+        case "D": // Specialized research (hexagonal)
+          stationBody = this.scene.add.polygon(
+            0,
+            0,
+            [
+              [-25, 0],
+              [-12, -22],
+              [12, -22],
+              [25, 0],
+              [12, 22],
+              [-12, 22],
+            ],
+            Phaser.Display.Color.HexStringToColor(stationColor).color,
+            0.9,
+          );
+          break;
+        case "E": // Command station
+          stationBody = this.scene.add.rectangle(
+            0,
+            0,
+            75,
+            45,
+            Phaser.Display.Color.HexStringToColor(stationColor).color,
+            0.9,
+          );
+          break;
         default:
-          stationBody = this.scene.add.rectangle(0, 0, 60, 50, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
+          stationBody = this.scene.add.rectangle(
+            0,
+            0,
+            60,
+            50,
+            Phaser.Display.Color.HexStringToColor(stationColor).color,
+            0.9,
+          );
       }
-      
-      if ('setStrokeStyle' in stationBody) {
-        stationBody.setStrokeStyle(3, 0x34495E)
+
+      if ("setStrokeStyle" in stationBody) {
+        stationBody.setStrokeStyle(3, 0x34495e);
       }
     }
-    
+
     // Station label positioned below starbase - clean, no background
-    const stationLabel = this.scene.add.text(0, 95, station.name, { 
-      fontSize: '18px', 
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-      fontStyle: 'bold',
-      color: '#FFFFFF',
-      align: 'center',
-      stroke: '#000000',
-      strokeThickness: 3
-    }).setOrigin(0.5)
+    const stationLabel = this.scene.add
+      .text(0, 95, station.name, {
+        fontSize: "18px",
+        fontFamily:
+          'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+        fontStyle: "bold",
+        color: "#FFFFFF",
+        align: "center",
+        stroke: "#000000",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5);
 
     // Status indicator - gentle pulsing effect
-    const statusIndicator = this.scene.add.circle(25, -25, 4, 0x00FF88, 0.8)
+    const statusIndicator = this.scene.add.circle(25, -25, 4, 0x00ff88, 0.8);
     this.scene.tweens.add({
       targets: statusIndicator,
       alpha: { from: 0.4, to: 1 },
@@ -288,21 +346,21 @@ export class SpaceStationManager {
       duration: 2000,
       yoyo: true,
       repeat: -1,
-      ease: 'Sine.easeInOut'
-    })
+      ease: "Sine.easeInOut",
+    });
 
     // Docking indicators (subtle industrial details)
-    const dockingPort1 = this.scene.add.rectangle(-30, 0, 6, 3, 0x95A5A6)
-    const dockingPort2 = this.scene.add.rectangle(30, 0, 6, 3, 0x95A5A6)
+    const dockingPort1 = this.scene.add.rectangle(-30, 0, 6, 3, 0x95a5a6);
+    const dockingPort2 = this.scene.add.rectangle(30, 0, 6, 3, 0x95a5a6);
 
-    stationContainer.add([stationBody, stationLabel, statusIndicator, dockingPort1, dockingPort2])
-    
-    stationContainer.setData('stationData', station)
-    stationContainer.setData('isStation', true)
-    stationContainer.setSize(80, 80)
-    stationContainer.setInteractive()
-    stationContainer.on('pointerdown', () => onInteract(station.skillId, station))
-    
-    return stationContainer
+    stationContainer.add([stationBody, stationLabel, statusIndicator, dockingPort1, dockingPort2]);
+
+    stationContainer.setData("stationData", station);
+    stationContainer.setData("isStation", true);
+    stationContainer.setSize(80, 80);
+    stationContainer.setInteractive();
+    stationContainer.on("pointerdown", () => onInteract(station.skillId, station));
+
+    return stationContainer;
   }
 }

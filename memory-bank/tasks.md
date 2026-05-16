@@ -1,5 +1,27 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## ✅ LEVEL 1 TASK: Skills Space Base Data Refresh
+
+**Complexity**: Level 1 (Content/Data Refresh)
+**Goal**: Replace each Skills Space base's current game data with the station content from `docs/skills-list.md`.
+
+### Status
+- [x] VAN analysis complete
+- [x] Update `portfolioData.skills` with station names, mission overviews, core skills, technologies, highlights, and flavor text
+- [x] Update in-world Skills Space station labels/descriptions
+- [x] Render expanded station details in the docking modal
+- [x] Refine modal layout to use one scroll area with radar animation at the top
+- [x] Validate lints/build
+
+### Implementation Notes
+- `docs/skills-list.md` is the content source for the refreshed station data.
+- `SkillData` now supports optional station-detail fields used by `SkillModal.vue`.
+- `SkillModal.vue` uses a single outer scroll container; radar/telemetry sit in the top scan panel and the station card scrolls with the modal content.
+
+### Verification
+- `ReadLints`: no diagnostics for edited game/data files.
+- `npm run build`: successful production build and type check.
+
 ## ✅ LEVEL 1 TASK: Space Museum Back Button
 
 **Complexity**: Level 1 (Quick UI Navigation Enhancement)

@@ -4,19 +4,21 @@
       <button class="close-button" @click="$emit('close')">&times;</button>
 
       <div class="hud-container">
-        <!-- Radar -->
-        <RadarScreen :blips="radarBlips" />
+        <div class="radar-panel">
+          <!-- Radar -->
+          <RadarScreen :blips="radarBlips" />
 
-        <!-- Telemetry -->
-        <div class="telemetry">
-                  <div class="telemetry-box">
-          <span class="label">VECTOR</span>
-          <span class="value">{{ (radarTelemetry.vector ?? 0).toFixed(1) }} m/s</span>
-        </div>
-        <div class="telemetry-box">
-          <span class="label">STATION HEALTH</span>
-          <span class="value">{{ radarTelemetry.stationHealth }}%</span>
-        </div>
+          <!-- Telemetry -->
+          <div class="telemetry">
+            <div class="telemetry-box">
+              <span class="label">VECTOR</span>
+              <span class="value">{{ (radarTelemetry.vector ?? 0).toFixed(1) }} m/s</span>
+            </div>
+            <div class="telemetry-box">
+              <span class="label">STATION HEALTH</span>
+              <span class="value">{{ radarTelemetry.stationHealth }}%</span>
+            </div>
+          </div>
         </div>
 
         <!-- Station/Skill Info -->
@@ -43,8 +45,30 @@
           </div>
 
           <div class="tags" v-if="getTechnologiesForSkill(skill).length">
-            <span v-for="tag in getTechnologiesForSkill(skill)" :key="tag" class="tag">{{ tag }}</span>
+            <span v-for="tag in getTechnologiesForSkill(skill)" :key="tag" class="tag">{{
+              tag
+            }}</span>
           </div>
+
+          <div v-if="skill?.coreSkills?.length" class="detail-section">
+            <h3>Core Skills</h3>
+            <div class="tags">
+              <span v-for="coreSkill in skill.coreSkills" :key="coreSkill" class="tag">{{
+                coreSkill
+              }}</span>
+            </div>
+          </div>
+
+          <div v-if="skill?.careerHighlights?.length" class="detail-section">
+            <h3>Career Highlights</h3>
+            <ul class="highlight-list">
+              <li v-for="highlight in skill.careerHighlights" :key="highlight">{{ highlight }}</li>
+            </ul>
+          </div>
+
+          <blockquote v-if="skill?.flavorText" class="flavor-text">
+            {{ skill.flavorText }}
+          </blockquote>
 
           <div class="projects" v-if="getRelatedProjects(skill?.category).length">
             <div
@@ -58,54 +82,58 @@
             </div>
           </div>
 
-          <button class="dock-btn" @click="$emit('close')">
-            BACK TO GAME
-          </button>
+          <button class="dock-btn" @click="$emit('close')">BACK TO GAME</button>
         </div>
       </div>
     </div>
   </div>
-  
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
-import type { SkillData, ProjectData, RadarBlip } from '@/types/game'
-import { portfolioData } from '@/data/portfolio'
-import RadarScreen from '@/components/portfolio/RadarScreen.vue'
-import { gameEventBridge } from '@/game/GameEventBridge'
+import { defineComponent } from "vue";
+import type { SkillData, ProjectData, RadarBlip } from "@/types/game";
+import { portfolioData } from "@/data/portfolio";
+import RadarScreen from "@/components/portfolio/RadarScreen.vue";
+import { gameEventBridge } from "@/game/GameEventBridge";
 
 // Category to project mapping for related projects lookup
 const CATEGORY_PROJECT_MAP: Record<string, string[]> = {
-  frontend: ['portfolio-quest', 'dell-xps-poc', 'dell-xps-landing', 'dell-home-poc', 'dell-home-live', 'ea-support-site'],
-  testing: ['portfolio-quest'],
-  architecture: ['dell-home-live', 'ea-support-site', 'portfolio-quest'],
-  tooling: ['portfolio-quest'],
+  frontend: [
+    "portfolio-quest",
+    "dell-xps-poc",
+    "dell-xps-landing",
+    "dell-home-poc",
+    "dell-home-live",
+    "ea-support-site",
+  ],
+  testing: ["portfolio-quest"],
+  architecture: ["dell-home-live", "ea-support-site", "portfolio-quest"],
+  tooling: ["portfolio-quest"],
   ai: [],
   security: [],
-  leadership: ['dell-home-live', 'ea-support-site'],
-}
+  leadership: ["dell-home-live", "ea-support-site"],
+};
 
 export default defineComponent({
-  name: 'SkillModal',
+  name: "SkillModal",
   props: {
     skill: { type: Object as () => SkillData | null, default: null },
   },
-  emits: ['close'],
+  emits: ["close"],
   components: { RadarScreen },
   data() {
     return {
       radarTelemetry: {
         vector: 0.2,
         stationHealth: 92,
-      }
-    }
+      },
+    };
   },
   computed: {
     radarBlips(): RadarBlip[] {
       // No enemy blips - just empty array for clean radar animation
-      return []
-    }
+      return [];
+    },
   },
 
   mounted() {
@@ -115,62 +143,61 @@ export default defineComponent({
     // No event listeners to clean up
   },
   methods: {
-
-
     getRelatedProjects(category?: string): ProjectData[] {
-      if (!category) return []
-      const projectIds = CATEGORY_PROJECT_MAP[category] || []
-      return portfolioData.projects.filter((p) => projectIds.includes(p.id))
+      if (!category) return [];
+      const projectIds = CATEGORY_PROJECT_MAP[category] || [];
+      return portfolioData.projects.filter((p) => projectIds.includes(p.id));
     },
 
     getTechnologiesForSkill(skill?: SkillData | null): string[] {
-      if (!skill) return []
-      const relatedProjects = this.getRelatedProjects(skill.category)
-      const technologies = relatedProjects.flatMap(p => p.technologies)
-      return Array.from(new Set(technologies)).slice(0, 10) // Dedupe and limit to 10
+      if (!skill) return [];
+      if (skill.technologies?.length) return skill.technologies;
+      const relatedProjects = this.getRelatedProjects(skill.category);
+      const technologies = relatedProjects.flatMap((p) => p.technologies);
+      return Array.from(new Set(technologies)).slice(0, 10); // Dedupe and limit to 10
     },
 
     formatCategory(category?: string): string {
-      if (!category) return ''
+      if (!category) return "";
       const categoryMap: Record<string, string> = {
-        frontend: 'Front-End Development',
-        testing: 'Testing & Quality Assurance',
-        architecture: 'Architecture & State Management',
-        tooling: 'Build Tools & Development',
-        ai: 'AI & Machine Learning',
-        security: 'Security & Accessibility',
-        leadership: 'Thought Leadership',
-      }
-      return categoryMap[category] || category
+        frontend: "Front-End Development",
+        testing: "Testing & Quality Assurance",
+        architecture: "Architecture & State Management",
+        tooling: "Build Tools & Development",
+        ai: "AI & Machine Learning",
+        security: "Security & Accessibility",
+        leadership: "Thought Leadership",
+      };
+      return categoryMap[category] || category;
     },
 
     getLevelText(level?: number): string {
-      if (!level) return 'Beginner'
+      if (!level) return "Beginner";
       const levelMap: Record<number, string> = {
-        1: 'Beginner',
-        2: 'Novice',
-        3: 'Intermediate',
-        4: 'Advanced',
-        5: 'Expert',
-      }
-      return levelMap[level] || 'Beginner'
+        1: "Beginner",
+        2: "Novice",
+        3: "Intermediate",
+        4: "Advanced",
+        5: "Expert",
+      };
+      return levelMap[level] || "Beginner";
     },
 
     formatProjectType(type: string): string {
       const typeMap: Record<string, string> = {
-        web: 'Web App',
-        mobile: 'Mobile App',
-        game: 'Game',
-        library: 'Library',
-      }
-      return typeMap[type] || type
+        web: "Web App",
+        mobile: "Mobile App",
+        game: "Game",
+        library: "Library",
+      };
+      return typeMap[type] || type;
     },
 
     openProject(projectId: string): void {
-      gameEventBridge.emitGameEvent('game:project-selected', { projectId })
-    }
-  }
-})
+      gameEventBridge.emitGameEvent("game:project-selected", { projectId });
+    },
+  },
+});
 </script>
 
 <style scoped>
@@ -188,7 +215,6 @@ export default defineComponent({
   animation: fadeIn 0.3s ease-out;
 }
 
-
 .modal-content.hud-modal {
   position: relative;
   background: radial-gradient(circle at center, #0a0f1c, #000);
@@ -198,11 +224,12 @@ export default defineComponent({
   max-width: 980px;
   width: 95%;
   max-height: 85vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 24px;
   animation: slideIn 0.3s ease-out;
   color: #9efcff;
-  font-family: 'Orbitron', sans-serif;
+  font-family: "Orbitron", sans-serif;
 }
 
 .close-button {
@@ -231,9 +258,20 @@ export default defineComponent({
 /* HUD container (from Screen.vue) */
 .hud-container {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 2rem;
   padding: 0.5rem;
   color: #9efcff;
+}
+
+.radar-panel {
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-bottom: 1.5rem;
 }
 
 /* Radar */
@@ -247,15 +285,11 @@ export default defineComponent({
 }
 
 .radar::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    rgba(0, 255, 255, 0.18),
-    rgba(0, 255, 255, 0.0) 35%
-  );
+  background: conic-gradient(from 0deg, rgba(0, 255, 255, 0.18), rgba(0, 255, 255, 0) 35%);
   animation: radar-rotate 3s linear infinite;
 }
 
@@ -265,18 +299,48 @@ export default defineComponent({
   border-radius: 50%;
 }
 
-.circle1 { width: 100%; height: 100%; top: 0; left: 0; }
-.circle2 { width: 75%; height: 75%; top: 12.5%; left: 12.5%; }
-.circle3 { width: 50%; height: 50%; top: 25%; left: 25%; }
-.circle4 { width: 25%; height: 25%; top: 37.5%; left: 37.5%; }
+.circle1 {
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+.circle2 {
+  width: 75%;
+  height: 75%;
+  top: 12.5%;
+  left: 12.5%;
+}
+.circle3 {
+  width: 50%;
+  height: 50%;
+  top: 25%;
+  left: 25%;
+}
+.circle4 {
+  width: 25%;
+  height: 25%;
+  top: 37.5%;
+  left: 37.5%;
+}
 
 .crosshair {
   position: absolute;
   background: rgba(0, 255, 255, 0.3);
 }
 
-.crosshair.vertical { width: 1px; height: 100%; left: 50%; top: 0; }
-.crosshair.horizontal { width: 100%; height: 1px; top: 50%; left: 0; }
+.crosshair.vertical {
+  width: 1px;
+  height: 100%;
+  left: 50%;
+  top: 0;
+}
+.crosshair.horizontal {
+  width: 100%;
+  height: 1px;
+  top: 50%;
+  left: 0;
+}
 
 .blip {
   position: absolute;
@@ -284,17 +348,18 @@ export default defineComponent({
   height: 6px;
   background: #00ffff;
   border-radius: 50%;
-  box-shadow: 0 0 6px rgba(0, 255, 255, 0.8), 0 0 12px rgba(0, 255, 255, 0.4);
+  box-shadow:
+    0 0 6px rgba(0, 255, 255, 0.8),
+    0 0 12px rgba(0, 255, 255, 0.4);
   animation: blipPulse 1.6s ease-in-out infinite;
 }
 
 /* Telemetry */
 .telemetry {
-  position: absolute;
-  left: 24px;
-  top: 290px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem;
 }
 
@@ -319,7 +384,8 @@ export default defineComponent({
   background: rgba(0, 20, 40, 0.8);
   border: 1px solid rgba(0, 255, 255, 0.3);
   padding: 1rem;
-  width: 420px;
+  flex: none;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -384,6 +450,40 @@ export default defineComponent({
   padding: 0.2rem 0.4rem;
 }
 
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-section h3 {
+  color: #ffb347;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.highlight-list {
+  color: #d7f8ff;
+  line-height: 1.4;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.highlight-list li + li {
+  margin-top: 0.35rem;
+}
+
+.flavor-text {
+  border-left: 3px solid #00ff99;
+  color: #bdefff;
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0;
+  padding-left: 0.75rem;
+}
+
 .projects {
   display: flex;
   gap: 0.5rem;
@@ -410,40 +510,46 @@ export default defineComponent({
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(-20px);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes radar-rotate {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes blipPulse {
-  0%, 100% { opacity: 0.3; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1); }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-@media (max-width: 768px) {
-  .hud-container {
-    flex-direction: column;
-    align-items: center;
-  }
-
+@media (max-width: 900px) {
   .telemetry {
-    position: static;
     width: 100%;
-    flex-direction: row;
   }
 
   .station-card {

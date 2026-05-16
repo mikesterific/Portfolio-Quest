@@ -17,6 +17,10 @@ export interface SkillData {
   level: 1 | 2 | 3 | 4 | 5;
   icon?: string;
   description?: string;
+  coreSkills?: string[];
+  technologies?: string[];
+  careerHighlights?: string[];
+  flavorText?: string;
 }
 
 export interface ResumeData {
