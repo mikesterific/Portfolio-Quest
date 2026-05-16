@@ -60,8 +60,8 @@ export const UI_CONFIG: UIConfigInterface = {
     portalDetectionDistance: 100
   },
   positioning: {
-    healthDisplay: { x: 24, y: 24 },
-    xpDisplay: { x: 24, y: 60 },
+    healthDisplay: { x: 24, y: 60 },
+    xpDisplay: { x: 24, y: 94 },
     interactionPrompt: { yOffset: 80 },
     navigationHints: { yOffset: 60 }
   },

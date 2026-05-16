@@ -7,7 +7,7 @@ import gameEventBridge from "../GameEventBridge";
  */
 export class GameUIScene extends Phaser.Scene {
   private soundButton!: Phaser.GameObjects.Text;
-  private skipButton!: Phaser.GameObjects.Text;
+  private homeButtonBg!: Phaser.GameObjects.Graphics;
   private homeButton!: Phaser.GameObjects.Text;
   private currentSceneText!: Phaser.GameObjects.Text;
   private combatButton!: Phaser.GameObjects.Text;
@@ -102,39 +102,52 @@ export class GameUIScene extends Phaser.Scene {
   private setupUI(): void {
     const { width, height } = this.scale;
 
-    // Skip Game button (top-right)
-    this.skipButton = this.add
-      .text(width - 20, 20, "Skip Game", {
-        fontSize: "16px",
-        color: "#ffffff",
-        backgroundColor: "#34495e",
-        padding: { x: 10, y: 5 },
-      })
-      .setOrigin(1, 0)
-      .setInteractive({ useHandCursor: true })
-      .on("pointerdown", () => {
-        gameEventBridge.emitGameEvent("ui:modal-opened", { type: "traditional-portfolio" });
-      })
-      .on("pointerover", () => this.skipButton.setScale(1.1))
-      .on("pointerout", () => this.skipButton.setScale(1));
+    // Home button (top-right)
+    const homeX = width - 20;
+    const homeY = 20;
+    const homeWidth = 116;
+    const homeHeight = 42;
+    const drawHomeButtonBackground = (hovered = false) => {
+      this.homeButtonBg.clear();
+      this.homeButtonBg.fillStyle(hovered ? 0x0f3b53 : 0x071923, hovered ? 0.95 : 0.86);
+      this.homeButtonBg.fillRoundedRect(homeX - homeWidth, homeY, homeWidth, homeHeight, 12);
+      this.homeButtonBg.lineStyle(2, hovered ? 0x7df9ff : 0x00d9ff, hovered ? 1 : 0.72);
+      this.homeButtonBg.strokeRoundedRect(homeX - homeWidth, homeY, homeWidth, homeHeight, 12);
+    };
 
-    // Home button (top-right, below combat toggle)
+    this.homeButtonBg = this.add.graphics();
+    drawHomeButtonBackground();
+
     this.homeButton = this.add
-      .text(width - 20, 130, "Home", {
-        fontSize: "16px",
-        color: "#ffffff",
-        backgroundColor: "#2c3e50",
-        padding: { x: 10, y: 5 },
+      .text(homeX - homeWidth / 2, homeY + homeHeight / 2, "⌂ HOME", {
+        fontSize: "18px",
+        fontStyle: "bold",
+        color: "#e8fdff",
+        stroke: "#001f2b",
+        strokeThickness: 3,
+        shadow: {
+          offsetX: 0,
+          offsetY: 0,
+          color: "#00d9ff",
+          blur: 8,
+          fill: true,
+        },
       })
-      .setOrigin(1, 0)
+      .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", () => {
         gameEventBridge.emitGameEvent("game:return-home", undefined);
       })
-      .on("pointerover", () => this.homeButton.setScale(1.1))
-      .on("pointerout", () => this.homeButton.setScale(1));
+      .on("pointerover", () => {
+        drawHomeButtonBackground(true);
+        this.homeButton.setScale(1.04);
+      })
+      .on("pointerout", () => {
+        drawHomeButtonBackground();
+        this.homeButton.setScale(1);
+      });
 
-    // Combat Toggle button (top-right, below Skip Game)
+    // Combat Toggle button (top-right, below Home)
     try {
       this.combatToggleButton = this.add
         .text(width - 20, 70, this.getCombatButtonText(), {
@@ -194,7 +207,7 @@ export class GameUIScene extends Phaser.Scene {
       .setOrigin(0.5, 1);
 
     // Make UI elements stay in fixed positions
-    this.skipButton.setScrollFactor(0).setDepth(10000);
+    this.homeButtonBg.setScrollFactor(0).setDepth(9999);
     this.homeButton.setScrollFactor(0).setDepth(10000);
     this.combatToggleButton.setScrollFactor(0).setDepth(10000);
     this.soundButton.setScrollFactor(0).setDepth(10000);
