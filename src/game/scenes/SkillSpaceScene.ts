@@ -591,14 +591,41 @@ export class SkillSpaceScene extends Phaser.Scene {
     });
   };
 
+  private findShieldContainerForStation(stationId: string): Phaser.GameObjects.Container | null {
+    if (!this.state.shields) return null;
+    for (const obj of this.state.shields.getChildren()) {
+      const shield = obj as Phaser.GameObjects.Container;
+      const cfg = shield.getData("shieldConfig") as ShieldConfig | undefined;
+      if (cfg?.stationId === stationId) return shield;
+    }
+    return null;
+  }
+
+  // Undock: drop this station's shield so the player can exit the docking zone (same regen path as laser destruction).
   private undockFromStation = (): void => {
     if (!this.state.player || !this.state.isDocked) return;
+
+    const dockedStation = this.state.dockedStation;
 
     this.state.isDocked = false;
     this.state.dockedStation = null;
 
-    const body = this.state.player.body as Phaser.Physics.Arcade.Body;
-    body.setVelocity(0, 0);
+    const body = this.state.player.body as Phaser.Physics.Arcade.Body | undefined;
+    body?.setVelocity(0, 0);
+
+    if (dockedStation) {
+      const stationData = dockedStation.getData("stationData") as { id?: string } | undefined;
+      const stationId = stationData?.id;
+      if (stationId) {
+        const shield = this.findShieldContainerForStation(stationId);
+        if (shield) {
+          const cfg = shield.getData("shieldConfig") as ShieldConfig | undefined;
+          if (cfg?.isActive) {
+            this.damageShield(shield, cfg.maxHealth);
+          }
+        }
+      }
+    }
 
     if (this.state.interactionPrompt) {
       this.state.interactionPrompt.setVisible(false);

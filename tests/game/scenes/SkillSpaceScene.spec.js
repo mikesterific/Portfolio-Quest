@@ -733,7 +733,7 @@ describe("SkillSpaceScene", () => {
   test("dockWithStation awards XP and emits events", () => {
     scene.create();
     // Prepare state
-    scene["state"].player = { x: 0, y: 0 };
+    scene["state"].player = { x: 0, y: 0, body: { setVelocity: jest.fn() } };
     scene["state"].isDocking = false;
     const station = scene.add.container(120, 130);
     // Add mock station data that the docking method expects
@@ -966,7 +966,7 @@ describe("SkillSpaceScene", () => {
     // totalStationCount is set at init based on created stations; ensure unlocked set starts empty
     scene["state"].unlockedStations = new Set();
     scene["state"].totalStationCount = 1;
-    scene["state"].player = { x: 0, y: 0 };
+    scene["state"].player = { x: 0, y: 0, body: { setVelocity: jest.fn() } };
     scene["state"].isDocking = false;
 
     scene["dockWithStation"](station, "frontend");
@@ -995,7 +995,7 @@ describe("SkillSpaceScene", () => {
     const spawnSpy = jest.spyOn(scene["state"].enemyAI, "spawnFromOutsideRandom");
 
     // Prepare state: not docked, player ready to dock
-    scene["state"].player = { x: 300, y: 320 };
+    scene["state"].player = { x: 300, y: 320, body: { setVelocity: jest.fn() } };
     scene["state"].isDocked = false;
     scene["state"].isDocking = false;
 
