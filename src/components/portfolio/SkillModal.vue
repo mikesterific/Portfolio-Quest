@@ -215,9 +215,11 @@ export default defineComponent({
   align-items: center;
   border-bottom: 1px solid rgba(0, 255, 255, 0.18);
   display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  padding-bottom: 1.5rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1.25rem 1.5rem;
+  justify-content: center;
+  padding-bottom: 1.25rem;
 }
 
 /* Radar */
@@ -300,19 +302,20 @@ export default defineComponent({
   animation: blipPulse 1.6s ease-in-out infinite;
 }
 
-/* Telemetry */
+/* Telemetry — column to the right of radar so station card shows sooner below */
 .telemetry {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  flex: 0 0 auto;
   gap: 0.75rem;
+  justify-content: center;
 }
 
 .telemetry-box {
   border: 1px solid rgba(0, 255, 255, 0.3);
   padding: 0.5rem 0.75rem;
   background: rgba(0, 20, 40, 0.6);
+  min-width: 148px;
 }
 
 .label {
@@ -476,8 +479,16 @@ export default defineComponent({
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 700px) {
+  .radar-panel {
+    flex-direction: column;
+    align-items: center;
+  }
+
   .telemetry {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
     width: 100%;
   }
 
