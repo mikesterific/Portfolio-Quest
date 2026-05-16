@@ -545,7 +545,7 @@ export class SkillSpaceScene extends Phaser.Scene {
             }
 
             if (this.state.interactionPrompt) {
-              this.state.interactionPrompt.setText("Docked! Press D to undock");
+              this.state.interactionPrompt.setText("Docked! Press E to undock");
               this.state.interactionPrompt.setVisible(true);
             }
 
@@ -619,7 +619,7 @@ export class SkillSpaceScene extends Phaser.Scene {
   private setupControls(): void {
     this.state.cursors = this.input.keyboard!.createCursorKeys();
 
-    const keyD = this.input.keyboard!.addKey("D");
+    const keyE = this.input.keyboard!.addKey("E");
     const keySpace = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // Laser hold-to-fire: SPACE down starts repeat; up stops
@@ -643,8 +643,8 @@ export class SkillSpaceScene extends Phaser.Scene {
       }
     });
 
-    // D for docking/interaction
-    keyD.on("down", () => {
+    // E for docking/interaction
+    keyE.on("down", () => {
       // Priority 1: Close modal and undock if modal is open
       if (this.state.isModalOpen) {
         gameEventBridge.emitGameEvent("ui:setting-changed", { key: "closeModal", value: true });
@@ -799,7 +799,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       if (this.state.nearestStation) {
         const stationData = this.state.nearestStation.getData("stationData");
         this.state.interactionPrompt.setText(
-          `Press D to dock with ${stationData.name.replace("\n", " ")}`,
+          `Press E to dock with ${stationData.name.replace("\n", " ")}`,
         );
         this.state.interactionPrompt.setVisible(true);
       } else {

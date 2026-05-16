@@ -547,9 +547,8 @@ describe("SkillSpaceScene", () => {
 
   // Note: helper factory functions are module-internal; we cover their branches indirectly via scene.create()
 
-  test("setupControls covers SPACE and D key branches", () => {
+  test("setupControls covers SPACE and E key branches", () => {
     // Stub keyboard to capture handlers
-    const recordedKeys = [];
     scene.input.keyboard.addKey = jest.fn(() => {
       const handlers = {};
       return {
@@ -560,7 +559,8 @@ describe("SkillSpaceScene", () => {
       };
     });
     scene.create();
-    const [dKey, spaceKey] = scene.input.keyboard.addKey.mock.results.map((r) => r.value);
+    expect(scene.input.keyboard.addKey).toHaveBeenCalledWith("E");
+    const [dockKey, spaceKey] = scene.input.keyboard.addKey.mock.results.map((r) => r.value);
 
     // SPACE down: starts timer and fires
     const fireSpy = jest.spyOn(scene, "fireLasersAtEnemy");
@@ -586,36 +586,36 @@ describe("SkillSpaceScene", () => {
     expect(removeSpy).toHaveBeenCalledWith(false);
     expect(scene["state"].laserTimer).toBeNull();
 
-    // D with modal open, not docked: closes modal
+    // E with modal open, not docked: closes modal
     const emitSpy = jest.spyOn(gameEventBridge, "emitGameEvent");
     scene["state"].isModalOpen = true;
     scene["state"].isDocked = false;
-    dKey.handlers.down();
+    dockKey.handlers.down();
     expect(emitSpy).toHaveBeenCalledWith("ui:setting-changed", { key: "closeModal", value: true });
 
-    // D with modal open and docked: also undocks
+    // E with modal open and docked: also undocks
     const undockSpy = jest.spyOn(scene, "undockFromStation");
     scene["state"].isModalOpen = true;
     scene["state"].isDocked = true;
-    dKey.handlers.down();
+    dockKey.handlers.down();
     expect(undockSpy).toHaveBeenCalled();
 
-    // D while docking: early return
+    // E while docking: early return
     emitSpy.mockClear();
     undockSpy.mockClear();
     scene["state"].isModalOpen = false;
     scene["state"].isDocking = true;
-    dKey.handlers.down();
+    dockKey.handlers.down();
     expect(emitSpy).not.toHaveBeenCalled();
     expect(undockSpy).not.toHaveBeenCalled();
 
-    // D when docked (not modal): undocks
+    // E when docked (not modal): undocks
     scene["state"].isDocking = false;
     scene["state"].isDocked = true;
-    dKey.handlers.down();
+    dockKey.handlers.down();
     expect(undockSpy).toHaveBeenCalled();
 
-    // D near station with shields up: shows message and returns
+    // E near station with shields up: shows message and returns
     const setTextSpy = jest.spyOn(scene["state"].interactionPrompt, "setText");
     const setVisibleSpy = jest.spyOn(scene["state"].interactionPrompt, "setVisible");
     scene["state"].isDocked = false;
@@ -625,14 +625,14 @@ describe("SkillSpaceScene", () => {
     const sm = new (require("@/game/systems/ShieldMappingSystem").ShieldMapManager)();
     sm.map.set("s1", { isActive: true });
     scene["state"].shieldMapManager = sm;
-    dKey.handlers.down();
+    dockKey.handlers.down();
     expect(setTextSpy).toHaveBeenCalledWith("Shields up — docking disabled");
     expect(setVisibleSpy).toHaveBeenCalledWith(true);
 
-    // D near station with shields down: docks
+    // E near station with shields down: docks
     const dockSpy = jest.spyOn(scene, "dockWithStation");
     sm.map.set("s1", { isActive: false });
-    dKey.handlers.down();
+    dockKey.handlers.down();
     expect(dockSpy).toHaveBeenCalled();
   });
 
@@ -717,7 +717,7 @@ describe("SkillSpaceScene", () => {
     const playerSystem = require("@/game/systems/PlayerSystem");
     playerSystem.findNearestObject.mockReturnValue(station);
     scene["updateStationProximity"]();
-    expect(setTextSpy).toHaveBeenCalledWith("Press D to dock with Frontend Station");
+    expect(setTextSpy).toHaveBeenCalledWith("Press E to dock with Frontend Station");
   });
 
   test("setupModalEventListeners toggles modal state and combat", () => {

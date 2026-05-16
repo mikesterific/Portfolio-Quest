@@ -92,7 +92,7 @@ export class UIManager {
    */
   showStationPrompt(stationName: string): void {
     if (this.interactionPrompt) {
-      this.interactionPrompt.setText(`Press D to dock with ${stationName.replace("\n", " ")}`);
+      this.interactionPrompt.setText(`Press E to dock with ${stationName.replace("\n", " ")}`);
       this.interactionPrompt.setVisible(true);
     }
   }
@@ -112,7 +112,7 @@ export class UIManager {
    */
   showDockedPrompt(): void {
     if (this.interactionPrompt) {
-      this.interactionPrompt.setText("Docked! Press D to undock");
+      this.interactionPrompt.setText("Docked! Press E to undock");
       this.interactionPrompt.setVisible(true);
     }
   }
@@ -162,7 +162,7 @@ export class UIManager {
     this.scene.add.text(
       20,
       this.scene.scale.height - UI_CONFIG.positioning.navigationHints.yOffset,
-      "WASD/Arrows: Navigate | SPACE: Fire lasers | D: Dock/Undock | H: Home",
+      "WASD/Arrows: Navigate | SPACE: Fire lasers | E: Dock/Undock | H: Home",
       {
         fontSize: UI_CONFIG.fonts.hintsSize,
         color: UI_CONFIG.colors.hints,

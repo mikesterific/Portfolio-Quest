@@ -68,7 +68,7 @@ describe("UIManager", () => {
       expect(textSpy).toHaveBeenCalledWith(
         20,
         540, // y: height-60
-        "WASD/Arrows: Navigate | SPACE: Fire lasers | D: Dock/Undock | H: Home",
+        "WASD/Arrows: Navigate | SPACE: Fire lasers | E: Dock/Undock | H: Home",
         expect.objectContaining({
           fontSize: "16px",
           color: "#95A5A6",
@@ -202,7 +202,7 @@ describe("UIManager", () => {
       manager.showStationPrompt("Frontend Development\nStation");
 
       expect(mockPrompt.setText).toHaveBeenCalledWith(
-        "Press D to dock with Frontend Development Station",
+        "Press E to dock with Frontend Development Station",
       );
       expect(mockPrompt.setVisible).toHaveBeenCalledWith(true);
     });
@@ -217,7 +217,7 @@ describe("UIManager", () => {
     test("showDockedPrompt displays docked message", () => {
       manager.showDockedPrompt();
 
-      expect(mockPrompt.setText).toHaveBeenCalledWith("Docked! Press D to undock");
+      expect(mockPrompt.setText).toHaveBeenCalledWith("Docked! Press E to undock");
       expect(mockPrompt.setVisible).toHaveBeenCalledWith(true);
     });
 
