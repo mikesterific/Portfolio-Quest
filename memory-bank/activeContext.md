@@ -1,6 +1,19 @@
 # Active Context - Resume Game
 
 ## Recently Completed
+- **Skills list sync + undock stability**: Level 1 content + bugfix COMPLETE ✅
+  - `portfolio.ts` / `SpaceStationManager` aligned with `docs/skills-list.md`; undock jitter fixed (velocity + Q/R rotation); inaccurate Companies UI removed.
+  - Build verified with `npm run build`.
+  - Archive: [Skills list sync + undock stability](archive/archive-skills-list-undock-sync.md)
+- **Skills Space Base Data Refresh**: Level 1 content and station-modal UX COMPLETE ✅
+  - Skills data synced with `docs/skills-list.md`; `SkillData` extended for HUD sections.
+  - `SkillModal` scroll/layout fixes; radar panel first in normal document flow.
+  - Company names removed from the station modal path (no related project pills; Leadership copy adjusted).
+  - Build verified with `npm run build`.
+  - Archive: [Skills Space Base Refresh](archive/archive-skills-space-base-refresh.md)
+- **Subfolder Deep-Link Routing**: Level 2 deployment fix COMPLETE ✅
+  - Vite `/portfolio-quest/` base + static-host rewrite helpers; Space Museum typings fixed for builds.
+  - Archive: [Subfolder Deep-Link Routing](archive/archive-deep-link-subfolder-routing.md)
 - **Space Museum Back Button**: Level 1 UI navigation enhancement COMPLETE ✅
   - Added visible `Back Home` button to the 3D Space Museum overlay.
   - Reused existing `exit-museum` event path through `MuseumView.vue` and Vue Router.
@@ -32,9 +45,7 @@
 ## Current Focus
 **READY FOR NEXT TASK** ✅
 
-The space shooter exit removal and home-return enhancement is implemented, reflected, and archived. Memory Bank is ready for the next VAN cycle.
-
-**Previous Focus**: SKILLS SPACE SCENE TRANSFORMATION: MISSION ACCOMPLISHED ✅
+Skills list source sync, undock stability, and Companies revert are **implemented, reflected, and archived** (2026-05-16). Start the next initiative in **VAN** mode when ready.
 
 **Task Complete**: 🚀 SKILLS SPACE SCENE TRANSFORMATION
 - **Complexity**: Level 3 (Intermediate Feature) - SUCCESSFULLY IMPLEMENTED

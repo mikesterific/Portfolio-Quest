@@ -1,5 +1,33 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## ✅ LEVEL 1 TASK: Skills list source sync + undock ship stability
+
+**Complexity**: Level 1 (content + bugfix)
+**Goal**: Align space bases and `portfolioData.skills` with `docs/skills-list.md`; stop camera/ship jitter after undocking.
+
+### Status
+- [x] Match station blurbs in `SpaceStationManager` to mission copy; leadership emoji 🏛
+- [x] Portfolio: OpenAI APIs, AI platforms line, security flavor, leadership highlights
+- [x] Undock shake: zero velocity at dock/undock; manual rotate `R` (not `E`) to avoid dock key conflict
+- [x] `npm run build`
+- [x] Removed inaccurate Leadership `companies` field + modal section (user request)
+- [x] Reflection complete
+- [x] Archiving complete
+
+### Notes
+- E was both dock/undock and rotate-right; residual E caused rotation after undock. Q/R rotation; hint text updated in `UIManager`.
+
+### Reflection Highlights
+- **What Went Well**: Clear root cause for jitter (key clash + physics velocity); copy aligned between `portfolio.ts` and `SpaceStationManager`; build stayed green.
+- **Challenges**: `companies` data was wrong and removed; `PlayerSystem` is shared so R-for-rotate affects non–Skills Space scenes while hints are shooter-specific.
+- **Lessons Learned**: Do not bind dock and yaw to the same key; zero velocity after dock tweens; validate sensitive structured content before new `SkillData` fields.
+- **Reflection Document**: [Skills list sync + undock stability](reflection/reflection-skills-list-undock-sync.md)
+
+### Archive
+- **Date**: 2026-05-16
+- **Archive Document**: [Skills list sync + undock stability](archive/archive-skills-list-undock-sync.md)
+- **Status**: COMPLETED
+
 ## ✅ LEVEL 1 TASK: Skills Space Base Data Refresh
 
 **Complexity**: Level 1 (Content/Data Refresh)
@@ -11,16 +39,31 @@
 - [x] Update in-world Skills Space station labels/descriptions
 - [x] Render expanded station details in the docking modal
 - [x] Refine modal layout to use one scroll area with radar animation at the top
+- [x] Remove company-name mentions from the Skills Space station modal experience
 - [x] Validate lints/build
+- [x] Reflection complete
+- [x] Archiving complete
 
 ### Implementation Notes
 - `docs/skills-list.md` is the content source for the refreshed station data.
 - `SkillData` now supports optional station-detail fields used by `SkillModal.vue`.
 - `SkillModal.vue` uses a single outer scroll container; radar/telemetry sit in the top scan panel and the station card scrolls with the modal content.
+- Related project cards were removed from `SkillModal.vue` so company-branded project names do not appear inside space stations.
 
 ### Verification
 - `ReadLints`: no diagnostics for edited game/data files.
 - `npm run build`: successful production build and type check.
+
+### Reflection Highlights
+- **What Went Well**: Clear split between Vue portfolio data for copy and Phaser managers for stations; extending `SkillData` with optional fields kept the schema backward-friendly.
+- **Challenges**: Modal layout needed several passes—clipping looked like “missing content,” nested scroll duplicated scrollbars, and sticky radar briefly conflicted with the desired natural scroll-away behavior.
+- **Lessons Learned**: Overlay modals should have one vertical scroll owner; any “neutral station” requirement must cover derived UI (projects, inferred tags), not only static blurbs.
+- **Reflection Document**: [Skills Space Base Refresh](reflection/reflection-skills-space-base-refresh.md)
+
+### Archive
+- **Date**: 2026-05-16
+- **Archive Document**: [Skills Space Base Refresh](archive/archive-skills-space-base-refresh.md)
+- **Status**: COMPLETED
 
 ## ✅ LEVEL 1 TASK: Space Museum Back Button
 
@@ -70,7 +113,7 @@
 - **Archive Document**: [Space Shooter Home Return](archive/archive-space-shooter-home-return.md)
 - **Status**: COMPLETED
 
-## ✅ LEVEL 2 TASK: Subfolder Deep-Link Routing - REFLECTION COMPLETE
+## ✅ LEVEL 2 TASK: Subfolder Deep-Link Routing
 
 **Complexity**: Level 2 (Simple Enhancement / Deployment Fix)
 **Goal**: Ensure direct refreshes and shared links to `/portfolio-quest/game` and `/portfolio-quest/museum` work when deployed under a server subfolder.
@@ -79,7 +122,7 @@
 - [x] Implementation complete
 - [x] User validation complete
 - [x] Reflection complete
-- [ ] Archiving
+- [x] Archiving complete
 
 ### Implementation Summary
 - Set the Vite base path for `/portfolio-quest/` subfolder deployment.
@@ -91,6 +134,11 @@
 - **Challenges**: The first fallback assumption targeted GitHub Pages, but the app is deployed on a non-GitHub static host.
 - **Lessons Learned**: Static SPA deep links need both correct Vite asset base paths and server rewrites to the SPA entrypoint.
 - **Reflection Document**: [Subfolder Deep-Link Routing](reflection/reflection-deep-link-subfolder-routing.md)
+
+### Archive
+- **Date**: 2026-05-16
+- **Archive Document**: [Subfolder Deep-Link Routing](archive/archive-deep-link-subfolder-routing.md)
+- **Status**: COMPLETED
 
 ## IMPLEMENTATION ROADMAP - PORTFOLIO QUEST
 

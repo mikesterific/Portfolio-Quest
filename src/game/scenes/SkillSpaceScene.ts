@@ -483,6 +483,9 @@ export class SkillSpaceScene extends Phaser.Scene {
 
     this.state.isDocking = true;
 
+    const playerBody = this.state.player.body as Phaser.Physics.Arcade.Body;
+    playerBody.setVelocity(0, 0);
+
     // Get station position
     const stationX = (station as any).x;
     const stationY = (station as any).y;
@@ -500,6 +503,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       duration: 800,
       ease: "Power2.easeInOut",
       onComplete: () => {
+        playerBody.setVelocity(0, 0);
         // Station docking animation
         this.tweens.add({
           targets: station,
@@ -509,6 +513,7 @@ export class SkillSpaceScene extends Phaser.Scene {
           yoyo: true,
           ease: "Power2",
           onComplete: () => {
+            playerBody.setVelocity(0, 0);
             // Complete docking sequence
             this.state.isDocking = false;
             this.state.isDocked = true;
@@ -591,6 +596,9 @@ export class SkillSpaceScene extends Phaser.Scene {
 
     this.state.isDocked = false;
     this.state.dockedStation = null;
+
+    const body = this.state.player.body as Phaser.Physics.Arcade.Body;
+    body.setVelocity(0, 0);
 
     if (this.state.interactionPrompt) {
       this.state.interactionPrompt.setVisible(false);

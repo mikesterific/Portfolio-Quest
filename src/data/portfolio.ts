@@ -318,7 +318,7 @@ export const portfolioData = {
         "Built architectures designed to reduce attack surfaces and improve resilience",
       ],
       flavorText:
-        "The best security systems are invisible when they work... and catastrophic when they do not.",
+        "The best security systems are invisible when they work… and catastrophic when they don't.",
     },
     {
       id: "leadership",
@@ -338,11 +338,10 @@ export const portfolioData = {
         "Greenfield architecture",
         "Technical decision-making",
       ],
-      technologies: ["Dell", "Microsoft", "EA", "Scale Computing"],
       careerHighlights: [
         "Led major front-end architecture initiatives at Dell",
         "Directed enterprise modernization efforts",
-        "Improved Lighthouse performance from 41 to 98",
+        "Improved Lighthouse performance from 41 → 98",
         "Engineered systems delivering 400% performance improvements",
         "Drove reusable architecture and micro front-end strategies",
         "Mentored engineers and influenced engineering standards",

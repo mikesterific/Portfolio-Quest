@@ -162,7 +162,7 @@ export class UIManager {
     this.scene.add.text(
       20,
       this.scene.scale.height - UI_CONFIG.positioning.navigationHints.yOffset,
-      "WASD/Arrows: Navigate | SPACE: Fire lasers | E: Dock/Undock | H: Home",
+      "WASD/Arrows: Navigate | Q/R: Rotate | SPACE: Fire lasers | E: Dock/Undock | H: Home",
       {
         fontSize: UI_CONFIG.fonts.hintsSize,
         color: UI_CONFIG.colors.hints,

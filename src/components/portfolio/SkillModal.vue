@@ -70,18 +70,6 @@
             {{ skill.flavorText }}
           </blockquote>
 
-          <div class="projects" v-if="getRelatedProjects(skill?.category).length">
-            <div
-              v-for="project in getRelatedProjects(skill?.category)"
-              :key="project.id"
-              class="project"
-              @click="openProject(project.id)"
-            >
-              <strong>{{ project.title }}</strong>
-              <span>{{ formatProjectType(project.type) }}</span>
-            </div>
-          </div>
-
           <button class="dock-btn" @click="$emit('close')">BACK TO GAME</button>
         </div>
       </div>
@@ -91,28 +79,8 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import type { SkillData, ProjectData, RadarBlip } from "@/types/game";
-import { portfolioData } from "@/data/portfolio";
+import type { SkillData, RadarBlip } from "@/types/game";
 import RadarScreen from "@/components/portfolio/RadarScreen.vue";
-import { gameEventBridge } from "@/game/GameEventBridge";
-
-// Category to project mapping for related projects lookup
-const CATEGORY_PROJECT_MAP: Record<string, string[]> = {
-  frontend: [
-    "portfolio-quest",
-    "dell-xps-poc",
-    "dell-xps-landing",
-    "dell-home-poc",
-    "dell-home-live",
-    "ea-support-site",
-  ],
-  testing: ["portfolio-quest"],
-  architecture: ["dell-home-live", "ea-support-site", "portfolio-quest"],
-  tooling: ["portfolio-quest"],
-  ai: [],
-  security: [],
-  leadership: ["dell-home-live", "ea-support-site"],
-};
 
 export default defineComponent({
   name: "SkillModal",
@@ -143,18 +111,10 @@ export default defineComponent({
     // No event listeners to clean up
   },
   methods: {
-    getRelatedProjects(category?: string): ProjectData[] {
-      if (!category) return [];
-      const projectIds = CATEGORY_PROJECT_MAP[category] || [];
-      return portfolioData.projects.filter((p) => projectIds.includes(p.id));
-    },
-
     getTechnologiesForSkill(skill?: SkillData | null): string[] {
       if (!skill) return [];
       if (skill.technologies?.length) return skill.technologies;
-      const relatedProjects = this.getRelatedProjects(skill.category);
-      const technologies = relatedProjects.flatMap((p) => p.technologies);
-      return Array.from(new Set(technologies)).slice(0, 10); // Dedupe and limit to 10
+      return [];
     },
 
     formatCategory(category?: string): string {
@@ -181,20 +141,6 @@ export default defineComponent({
         5: "Expert",
       };
       return levelMap[level] || "Beginner";
-    },
-
-    formatProjectType(type: string): string {
-      const typeMap: Record<string, string> = {
-        web: "Web App",
-        mobile: "Mobile App",
-        game: "Game",
-        library: "Library",
-      };
-      return typeMap[type] || type;
-    },
-
-    openProject(projectId: string): void {
-      gameEventBridge.emitGameEvent("game:project-selected", { projectId });
     },
   },
 });
@@ -482,23 +428,6 @@ export default defineComponent({
   line-height: 1.5;
   margin: 0;
   padding-left: 0.75rem;
-}
-
-.projects {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.project {
-  background: rgba(0, 255, 255, 0.05);
-  padding: 0.4rem 0.5rem;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  cursor: pointer;
-}
-
-.project:hover {
-  background: rgba(0, 255, 255, 0.1);
 }
 
 .dock-btn {

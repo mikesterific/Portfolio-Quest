@@ -115,7 +115,7 @@ export class SpaceStationManager {
         colorVariant: "blue",
         sector: "development",
         description:
-          "High-performance modern UI focused on responsiveness, usability, scalability, and exceptional user experience.",
+          "Building high-performance modern user interfaces focused on responsiveness, usability, scalability, and exceptional user experience.",
       },
       {
         id: "testing-station",
@@ -129,7 +129,7 @@ export class SpaceStationManager {
         colorVariant: "green",
         sector: "development",
         description:
-          "Scalable testing strategies and automated validation systems for enterprise and real-time architectures.",
+          "Built scalable testing strategies and automated validation systems for enterprise applications and real-time architectures.",
       },
       {
         id: "architecture-station",
@@ -143,7 +143,7 @@ export class SpaceStationManager {
         colorVariant: "orange",
         sector: "development",
         description:
-          "High-performance scalable systems across front-end architecture, real-time infrastructure, and modernization.",
+          "Designed high-performance scalable systems spanning front-end architecture, real-time infrastructure, performance engineering, and enterprise platform modernization.",
       },
 
       // INFRASTRUCTURE SECTOR (Eastern Quadrant)
@@ -159,7 +159,7 @@ export class SpaceStationManager {
         colorVariant: "purple",
         sector: "infrastructure",
         description:
-          "Internal tooling, developer workflows, automation, testing, and scalable development operations.",
+          "Built internal tooling, developer workflows, and engineering systems focused on productivity, automation, testing, and scalable development operations.",
       },
       {
         id: "security-station",
@@ -173,7 +173,7 @@ export class SpaceStationManager {
         colorVariant: "gray",
         sector: "infrastructure",
         description:
-          "Secure enterprise web architecture with safe data handling and hardened front-end/backend systems.",
+          "Designed and maintained secure enterprise-grade web architectures with continuous focus on application security, safe data handling, and hardened front-end/backend systems.",
       },
 
       // INNOVATION HUB (Northern Command Center)
@@ -189,13 +189,13 @@ export class SpaceStationManager {
         colorVariant: "cyan",
         sector: "innovation",
         description:
-          "Practical LLM applications, agentic workflows, memory systems, and AI-enhanced development.",
+          "Exploring practical applications of Large Language Models, agentic workflows, memory systems, and AI-enhanced development.",
       },
       {
         id: "leadership-station",
         skillId: "leadership",
         name: "Leadership\nCenter",
-        emoji: "🎤",
+        emoji: "🏛",
         x: 1120,
         y: 300,
         category: "leadership",
@@ -203,7 +203,7 @@ export class SpaceStationManager {
         colorVariant: "gold",
         sector: "innovation",
         description:
-          "Architecture initiatives, engineering mentorship, and technical strategy across enterprise organizations.",
+          "Led architecture initiatives, mentored engineering teams, and drove technical strategy across enterprise-scale organizations.",
       },
     ];
   }

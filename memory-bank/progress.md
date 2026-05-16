@@ -1,5 +1,67 @@
 # Progress - Resume Game Implementation
 
+## Latest Enhancement: Skills list sync + undock stability ✅
+
+**Date**: May 16, 2026  
+**Feature**: Portfolio/Phaser copy parity with `docs/skills-list.md`; undock ship stability; Companies UI reverted  
+**Status**: Reflected and archived  
+
+### Technical Implementation
+- Matched `SpaceStationManager` station descriptions to `portfolioData.skills` mission copy; leadership emoji 🏛.
+- Portfolio tweaks: OpenAI APIs line, AI platform highlights, security flavor punctuation, Lighthouse arrow in leadership highlights.
+- `SkillSpaceScene`: `setVelocity(0,0)` when docking/undocking; dock tween milestones clear velocity.
+- `PlayerSystem`: clockwise yaw on **R** instead of **E** to avoid clash with dock/undock; `UIManager` hint updated.
+- Removed inaccurate `companies` / Companies modal section from types, data, and `SkillModal.vue`.
+
+### Verification
+- `ReadLints`: clean on touched files.
+- `npm run build`: successful production build and type check.
+
+### Documentation
+- Reflection: [Skills list sync + undock stability](reflection/reflection-skills-list-undock-sync.md)
+- Archive: [Skills list sync + undock stability](archive/archive-skills-list-undock-sync.md)
+
+---
+
+## Completed: Skills Space Base Data Refresh ✅
+
+**Date**: May 16, 2026  
+**Feature**: Aligned Skills Space station copy with `docs/skills-list.md`, HUD modal polish, and station-neutral content in the docking flow  
+**Status**: Implemented, reflected, and archived (superseded for “latest” by Skills list sync + undock archive above)  
+
+### Technical Implementation
+- Extended `SkillData` with optional station fields and populated `portfolioData.skills`.
+- Updated `SpaceStationManager` station labels/descriptions for in-world parity.
+- Reworked `SkillModal.vue` into a single-scroll column layout (radar panel first, telemetry row, station card flows beneath).
+- Removed related project pills from station modals and de-branded Leadership tags/highlights to avoid company names inside the shooter experience.
+
+### Verification
+- `ReadLints`: clean on touched files during implementation.
+- `npm run build`: successful production build and type check.
+
+### Documentation
+- Reflection: [Skills Space Base Refresh](reflection/reflection-skills-space-base-refresh.md)
+- Archive: [Skills Space Base Refresh](archive/archive-skills-space-base-refresh.md)
+
+---
+
+## Completed: Subfolder Deep-Link Routing ✅
+
+**Date**: May 16, 2026  
+**Feature**: SPA deep-link and refresh reliability under `/portfolio-quest/` on static hosts  
+**Status**: Reflected and archived  
+
+### Technical Implementation
+- Vite `base` defaults to `/portfolio-quest/` with optional `VITE_BASE_PATH`.
+- Deploy artifacts: `public/.htaccess` and `public/_redirects` for server fallbacks.
+- `SpaceMuseum.vue` TypeScript physics state aligned for clean `npm run build`.
+
+### Documentation
+- Reflection: [Subfolder Deep-Link Routing](reflection/reflection-deep-link-subfolder-routing.md)
+- Archive: [Subfolder Deep-Link Routing](archive/archive-deep-link-subfolder-routing.md)
+
+---
+
 ## Latest Enhancement: Space Museum Back Button ✅
 
 **Date**: May 15, 2026  
