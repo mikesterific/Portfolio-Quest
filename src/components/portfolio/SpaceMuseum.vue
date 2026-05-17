@@ -128,6 +128,7 @@ interface MuseumState {
   mouse: THREE.Vector2 | null;
   portfolioFrames: Array<{
     mesh: THREE.Mesh;
+    hitArea: THREE.Mesh;
     projectData: ProjectData;
   }>;
   // 3D Models
@@ -481,26 +482,21 @@ export default defineComponent({
       // the cursor and reopen the modal.
       if (!state.isPointerLocked) return;
 
-      if (!state.raycaster || !state.camera || !state.mouse || !museumContainer.value) return;
+      if (!state.raycaster || !state.camera || !state.mouse) return;
 
-      // Update mouse coordinates for raycasting
-      const rect = museumContainer.value.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / rect.width;
-      const y = (event.clientY - rect.top) / rect.height;
-
-      state.mouse.x = x * 2 - 1;
-      state.mouse.y = -(y * 2) + 1;
+      // Pointer lock hides the cursor; interactions should come from the center crosshair.
+      state.mouse.set(0, 0);
 
       state.raycaster.setFromCamera(state.mouse, state.camera);
 
       // Check for portfolio frame interactions first
       const portfolioIntersects = state.raycaster.intersectObjects(
-        state.portfolioFrames.map((frame) => frame.mesh),
+        state.portfolioFrames.map((frame) => frame.hitArea),
       );
 
       if (portfolioIntersects.length > 0) {
         const clickedFrame = state.portfolioFrames.find(
-          (frame) => frame.mesh === portfolioIntersects[0].object,
+          (frame) => frame.hitArea === portfolioIntersects[0].object,
         );
 
         if (clickedFrame) {
@@ -1538,10 +1534,25 @@ export default defineComponent({
       glowMesh.position.z -= 0.01; // Slightly behind the frame
       glowMesh.rotation.y = position.rotation;
 
+      // Invisible interaction plane sized to the full artwork, so every visible pixel is clickable.
+      const hitAreaGeometry = new THREE.PlaneGeometry(frameWidth, frameHeight);
+      const hitAreaMaterial = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+      const hitAreaMesh = new THREE.Mesh(hitAreaGeometry, hitAreaMaterial);
+      hitAreaMesh.position.copy(frameMesh.position);
+      hitAreaMesh.rotation.y = position.rotation;
+      hitAreaMesh.name = `portfolio-hit-area-${project.id}`;
+
       state.scene.add(glowMesh);
       state.scene.add(frameMesh);
+      state.scene.add(hitAreaMesh);
       state.portfolioFrames.push({
         mesh: frameMesh,
+        hitArea: hitAreaMesh,
         projectData: project,
       });
     };

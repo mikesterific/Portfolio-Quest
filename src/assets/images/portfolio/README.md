@@ -43,7 +43,7 @@ Place your portfolio images in this directory with these exact names:
 - `ea-support-site.jpg` - EA Support Site
 - `citi-flash-ux.jpg` - Citi Flash + UX Work
 - `bcbs-data-ux.jpg` - BCBS Data UX Redesign
-- `vsi-concept-content.jpg` - VSI Concept & Content
+- `vsi-full.jpg` - VSI Concept & Content
 - `joe-parker-guitars.jpg` - Joe Parker Guitars Website
 - `decision-tree-logo.jpg` - Decision Tree Logo Design
 - `bizatomic-logo.jpg` - BizAtomic Logo Design

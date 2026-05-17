@@ -7,9 +7,10 @@
 
       <div class="project-artwork">
         <img
-          v-if="project?.image"
+          v-if="project?.image && !imageFailed"
           :src="project.image"
           :alt="project?.title ? `${project.title} artwork` : 'Project artwork'"
+          @error="imageFailed = true"
         />
         <div v-else class="project-artwork-fallback">
           <span>{{ project?.title }}</span>
@@ -71,16 +72,26 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from "vue";
 import type { ProjectData } from "@/types/game";
 
 interface Props {
   project: ProjectData | null;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 defineEmits<{
   close: [];
 }>();
+
+const imageFailed = ref(false);
+
+watch(
+  () => props.project?.image,
+  () => {
+    imageFailed.value = false;
+  },
+);
 
 function formatProjectType(type: string | undefined): string {
   if (!type) return "";

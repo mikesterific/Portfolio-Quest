@@ -96,7 +96,7 @@ export const portfolioData = {
         "Stepped beyond the usual hats to own concept and storytelling for this experience—hands-on narrative and IA, not only UI.",
       technologies: ["Content Strategy", "UX Writing", "Web"],
       type: "web" as const,
-      image: "assets/images/portfolio/vsi.jpg",
+      image: "assets/images/portfolio/vsi-full.jpg",
     },
     {
       id: "joe-parker-guitars",
