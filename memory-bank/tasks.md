@@ -1,5 +1,16 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## Level 1 — Keyboard / mouse gate (COMPLETE)
+
+**Date**: 2026-05-17  
+**Goal**: Detect touch-first devices and block the SPA with an apology directing users to desktop + keyboard + mouse/trackpad.
+
+- [x] `src/utils/requiresKeyboardAndMouse.ts` — layered phone/tablet detection via pointer/hover media queries, `maxTouchPoints`, user-agent hints, iPad desktop-mode detection, and small touch viewport fallback
+- [x] `App.vue` — full-screen themed overlay + `pointer-events: none` on main shell while blocked
+- [x] Build: `npm run build` ✅; stricter follow-up type-check: `npm run type-check` ✅
+
+---
+
 ## 💥 LEVEL 2 TASK: Hero hull death + respawn blink
 
 **Complexity**: Level 2 (Simple Gameplay Enhancement)  
