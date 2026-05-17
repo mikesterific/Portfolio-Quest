@@ -1,6 +1,9 @@
 # Active Context - Resume Game
 
 ## Recently Completed
+- **Enemy LOS stealth + horizontal flyby**: Level 2 combat/AI COMPLETE ✅
+  - Awareness requires range, FOV, and LOS; stations block sight; brief last-seen investigation; undock enemy opens with a horizontal flyby and despawns if it exits unengaged.
+  - Archive: [Enemy LOS stealth + horizontal flyby](archive/archive-enemy-los-stealth.md)
 - **Skills list sync + undock stability**: Level 1 content + bugfix COMPLETE ✅
   - `portfolio.ts` / `SpaceStationManager` aligned with `docs/skills-list.md`; undock jitter fixed (velocity + Q/R rotation); inaccurate Companies UI removed.
   - Build verified with `npm run build`.
@@ -43,9 +46,11 @@
   - Enables realistic jumping and landing on 3D objects
 
 ## Current Focus
-**Hero Shields - implementation complete** 🛡️
+**Enemy LOS / flyby task** — archived; Memory Bank ledger updated.
 
-Hero shields now absorb 3 enemy shots before health damage, visually drain intensity around the ship, and regenerate after 10 seconds without shield hits. Build verified with `npm run build`.
+**Hero Shields** 🛡️ — implementation complete; reflection done, **archiving still open** on `tasks.md` if you want the same reflect→archive pass.
+
+Hero shields absorb 3 enemy shots before health damage, show draining intensity, and regenerate after 10 seconds without shield hits.
 
 **Task Complete**: 🚀 SKILLS SPACE SCENE TRANSFORMATION
 - **Complexity**: Level 3 (Intermediate Feature) - SUCCESSFULLY IMPLEMENTED

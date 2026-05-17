@@ -1,5 +1,40 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## 🔧 LEVEL 2 TASK: Enemy LOS Awareness + Stealth
+
+**Complexity**: Level 2 (Simple Gameplay Enhancement)
+**Goal**: Prevent the single enemy from becoming aware of the hero until line of sight is reached, with space stations blocking LOS so the player can choose stealthy routes.
+
+### Status
+- [x] VAN analysis complete
+- [x] Plan implementation against existing `SkillSpaceScene`, `EnemyAISystem`, and station/shield collision systems
+- [x] Gate enemy awareness/engagement behind hero line of sight
+- [x] Treat space stations as LOS blockers
+- [x] Preserve single-enemy undock spawn behavior and speed scaling
+- [x] Tune stealth reacquisition/lost-sight behavior
+- [x] Validate lints/build
+- [x] Reflection complete
+- [x] Archiving complete
+
+### Notes
+- Current combat already uses one enemy spawned on undock from the opposite horizontal side and scales speed by explored bases; this task should preserve that encounter framing.
+- Existing Memory Bank lessons mention shield-aware LOS sampling and enemy perception, but the requested behavior changes the enemy from immediately hunting to only becoming aware after station-blocked line of sight is established.
+- Space stations should act as stealth cover. Prefer reusing existing station positions/radii or shield map geometry rather than introducing a separate collision representation.
+- Implemented in `EnemyAISystem`: awareness now requires range + FOV + LOS, station occluders participate in LOS checks, blind chasing/firing is blocked, and enemies briefly investigate the last seen position before returning to patrol.
+- Follow-up flyby behavior: the single undock-spawned enemy now starts as an unengaged horizontal pass across the screen, switches into normal combat only after spotting the hero, and despawns after crossing the far side without engagement.
+- Verification: `ReadLints` clean on touched files; focused `EnemyAISystem` spec passed without coverage; `npm run build` passed.
+
+### Reflection Highlights
+- **What Went Well**: Central `canSeePlayer` gating; reuse of station occluders and existing spawn path; flyby as explicit agent phase with clean despawn.
+- **Challenges**: Removing blind SEEK; aligning tests with throttled LOS and scene geometry; coverage-enabled single-file test run quirk.
+- **Lessons Learned**: Define awareness once for both movement and firing; vision occlusion may need hull proxies beyond laser-only shield rules.
+- **Reflection Document**: [Enemy LOS Stealth + Flyby](reflection/reflection-enemy-los-stealth.md)
+
+### Archive
+- **Date**: 2026-05-16
+- **Archive Document**: [Enemy LOS stealth + horizontal flyby](archive/archive-enemy-los-stealth.md)
+- **Status**: COMPLETED
+
 ## 🛡️ LEVEL 2 TASK: Hero Shields
 
 **Complexity**: Level 2 (Simple Gameplay Enhancement)
@@ -14,7 +49,7 @@
 - [x] Regenerate shields after 10 seconds without shield damage
 - [x] Update HUD/feedback as needed
 - [x] Validate lints/build
-- [ ] Reflection complete
+- [x] Reflection complete
 - [ ] Archiving complete
 
 ### Notes
@@ -24,6 +59,12 @@
 - Avoid reintroducing undock shake: any shield visual should follow the player without influencing physics velocity or collision.
 - Implemented as non-physics Phaser graphics around the hero; enemy lasers now drain shields first, then health once shields are down.
 - Verification: `ReadLints` clean on touched game files; `npm run build` passed.
+
+### Reflection Highlights
+- **What Went Well**: The enemy laser collision path gave a clean interception point; config/UI patterns extended predictably; the non-physics visual avoided movement side effects.
+- **Challenges**: Hero shields needed to stay distinct from station shield mechanics, and regeneration semantics needed a clear full-after-delay interpretation.
+- **Lessons Learned**: Player defense belongs at the damage boundary, and player-attached visuals should stay cosmetic unless they truly need collision behavior.
+- **Reflection Document**: [Hero Shields](reflection/reflection-hero-shields.md)
 
 ## 🔧 LEVEL 2 TASK: Single Enemy Undock Spawn + Scaling Speed
 

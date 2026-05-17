@@ -1,5 +1,26 @@
 # Progress - Resume Game Implementation
 
+## Latest Enhancement: Enemy LOS stealth + horizontal flyby ✅
+
+**Date**: May 16, 2026  
+**Feature**: Stealth-aware enemy perception (range + FOV + LOS with station occluders); last-seen investigation; initial flyby with despawn if unengaged at far edge  
+**Status**: Reflected and archived  
+
+### Technical Implementation
+- `EnemyAISystem`: `canSeePlayer` gating for movement and firing; LOS sampling includes `ShieldMapManager.isLineBlockedByStationsWithSamples`; investigation window toward `lastSeenAt`; `flyby` phase on `spawnSingleOppositeHorizontalSide` with offscreen despawn when never engaged.
+- `tests/game/systems/EnemyAISystem.spec.js`: stealth, investigation, flyby, and handoff tests.
+
+### Verification
+- `ReadLints`: clean on touched files.
+- Focused `EnemyAISystem` Jest (no coverage): pass.
+- `npm run build`: successful production build and type check.
+
+### Documentation
+- Reflection: [Enemy LOS Stealth + Flyby](reflection/reflection-enemy-los-stealth.md)
+- Archive: [Enemy LOS stealth + horizontal flyby](archive/archive-enemy-los-stealth.md)
+
+---
+
 ## Latest Enhancement: Skills list sync + undock stability ✅
 
 **Date**: May 16, 2026  

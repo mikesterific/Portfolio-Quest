@@ -42,6 +42,7 @@ const mockEnemyAI = {
   spawnFromLeft: jest.fn(),
   spawnFromOutsideRandom: jest.fn(),
   spawnWave: jest.fn(),
+  spawnSingleOppositeHorizontalSide: jest.fn(),
   despawnAll: jest.fn(),
   updateAll: jest.fn(),
   getActiveAgents: jest.fn(() => []),
@@ -334,11 +335,12 @@ describe("SkillSpaceScene", () => {
     expect(laser2.active).toBe(false);
   });
 
-  test("handleEnemyLaserHitPlayer destroys laser and damages player", () => {
+  test("handleEnemyLaserHitPlayer destroys laser and damages hull when shields are down", () => {
     scene.create();
     const enemyLaser = { destroy: jest.fn(), active: true };
     const player = {};
     scene["state"].player = player;
+    scene["state"].playerShields = 0;
     const damageSpy = jest.spyOn(scene, "damagePlayer");
     scene["handleEnemyLaserHitPlayer"](enemyLaser, player);
     expect(enemyLaser.destroy).toHaveBeenCalled();
@@ -466,10 +468,11 @@ describe("SkillSpaceScene", () => {
     scene.create();
     scene["state"].player = { x: 0, y: 0 };
     const delayedSpy = jest.spyOn(scene.time, "delayedCall").mockImplementation((ms, cb) => {
-      cb();
-      return {};
+      if (typeof cb === "function") cb();
+      return { remove: jest.fn() };
     });
     scene["state"].isPlayerInvulnerable = false;
+    scene["state"].playerHealth = 3;
     scene["damagePlayer"](1);
     expect(scene["state"].isPlayerInvulnerable).toBe(false);
     delayedSpy.mockRestore();
@@ -481,7 +484,7 @@ describe("SkillSpaceScene", () => {
     const particlesSpy = jest.spyOn(scene.add, "particles").mockReturnValue(particleObj);
     const delayedSpy = jest.spyOn(scene.time, "delayedCall").mockImplementation((ms, cb) => {
       cb();
-      return {};
+      return { remove: jest.fn() };
     });
     scene["effectsManager"]["createShieldHitEffect"](10, 20, 0x00aaff);
     scene["effectsManager"]["createShieldDestructionEffect"](10, 20, 0x00aaff);
@@ -864,11 +867,12 @@ describe("SkillSpaceScene", () => {
     expect(laser.destroy).not.toHaveBeenCalled();
   });
 
-  test("handleEnemyLaserHitPlayer still damages when laser inactive", () => {
+  test("handleEnemyLaserHitPlayer still damages hull when laser inactive and shields down", () => {
     scene.create();
     const enemyLaser = { destroy: jest.fn(), active: false };
     const player = {};
     scene["state"].player = player;
+    scene["state"].playerShields = 0;
     const damageSpy = jest.spyOn(scene, "damagePlayer");
     scene["handleEnemyLaserHitPlayer"](enemyLaser, player);
     expect(damageSpy).toHaveBeenCalledWith(1);
@@ -941,19 +945,45 @@ describe("SkillSpaceScene", () => {
     expect(delayedSpy).not.toHaveBeenCalled();
   });
 
-  test("damagePlayer executes health<=0 branch without errors", () => {
+  test("damagePlayer with zero amount does nothing", () => {
     scene.create();
     scene["state"].player = { x: 0, y: 0 };
     scene["state"].playerHealth = 0;
     scene["state"].isPlayerInvulnerable = false;
     const heroExplodeSpy = jest.spyOn(scene["effectsManager"], "spawnHeroExplosionAt");
+    const deathExplodeSpy = jest.spyOn(scene["effectsManager"], "spawnHeroDeathExplosionAt");
+    scene["damagePlayer"](0);
+    expect(heroExplodeSpy).not.toHaveBeenCalled();
+    expect(deathExplodeSpy).not.toHaveBeenCalled();
+  });
+
+  test("damagePlayer lethal hull hit uses death explosion and respawns at spawn with blink", () => {
+    scene.create();
     const delayedSpy = jest.spyOn(scene.time, "delayedCall").mockImplementation((ms, cb) => {
-      cb();
-      return {};
+      if (typeof cb === "function") cb();
+      return { remove: jest.fn() };
     });
-    // Use zero damage so health stays at 0 and enters the branch
-    expect(() => scene["damagePlayer"](0)).not.toThrow();
-    expect(heroExplodeSpy).toHaveBeenCalled();
+    const player = scene["state"].player;
+    player.setPosition = jest.fn();
+    player.setVisible = jest.fn();
+    player.setRotation = jest.fn();
+    player.setTexture = jest.fn();
+    player.setData = jest.fn();
+    player.body = { setVelocity: jest.fn(), enable: true };
+
+    const deathSpy = jest.spyOn(scene["effectsManager"], "spawnHeroDeathExplosionAt");
+    const hitSpy = jest.spyOn(scene["effectsManager"], "spawnHeroExplosionAt");
+
+    scene["state"].playerHealth = 1;
+    scene["damagePlayer"](1);
+
+    expect(deathSpy).toHaveBeenCalled();
+    expect(hitSpy).not.toHaveBeenCalled();
+    expect(scene["state"].playerHealth).toBe(scene["state"].maxPlayerHealth);
+    expect(scene["state"].playerShields).toBe(scene["state"].maxPlayerShields);
+    expect(scene["state"].isPlayerRespawning).toBe(false);
+    expect(player.setVisible).toHaveBeenCalledWith(true);
+
     delayedSpy.mockRestore();
   });
 
@@ -981,25 +1011,16 @@ describe("SkillSpaceScene", () => {
     expect(completionCall).toBeTruthy();
   });
 
-  test("docking spawns a wave only once per unlocked station", () => {
+  test("undock spawns a single enemy when combat is enabled", () => {
     scene.create();
-    // Enable combat for spawning to work
     scene["state"].combatEnabled = true;
 
-    // Setup enemy AI system
-    scene["state"].enemyAI = require("@/game/systems/EnemyAISystem").EnemyAISystem();
+    const spawnSpy = jest.spyOn(scene["state"].enemyAI, "spawnSingleOppositeHorizontalSide");
 
-    // Initialize the spawn tracking set
-    scene["state"].dockSpawnedForStation = new Set();
-
-    const spawnSpy = jest.spyOn(scene["state"].enemyAI, "spawnFromOutsideRandom");
-
-    // Prepare state: not docked, player ready to dock
     scene["state"].player = { x: 300, y: 320, body: { setVelocity: jest.fn() } };
     scene["state"].isDocked = false;
     scene["state"].isDocking = false;
 
-    // Create a station to dock with
     const station = scene.add.container(300, 320);
     station.setData("stationData", {
       id: "s-testing",
@@ -1007,21 +1028,16 @@ describe("SkillSpaceScene", () => {
       skillId: "testing",
     });
 
-    // First dock -> should spawn (enemies spawn on dock now, not undock)
     scene["dockWithStation"](station, "testing");
+    expect(scene["state"].isDocked).toBe(true);
+    expect(spawnSpy).not.toHaveBeenCalled();
 
-    // Wait for the docking animation to complete (which triggers the spawn)
-    // In the test environment, tweens complete synchronously
-    expect(spawnSpy).toHaveBeenCalledWith(3);
+    scene["undockFromStation"]();
+    expect(spawnSpy).toHaveBeenCalledTimes(1);
 
-    // Reset for second dock attempt
     spawnSpy.mockClear();
-    scene["state"].isDocked = false;
-    scene["state"].isDocking = false;
-    scene["state"].dockedStation = null;
-
-    // Second dock at same station -> should NOT spawn again
     scene["dockWithStation"](station, "testing");
-    expect(spawnSpy).not.toHaveBeenCalled(); // Should not spawn again for same station
+    scene["undockFromStation"]();
+    expect(spawnSpy).toHaveBeenCalledTimes(1);
   });
 });

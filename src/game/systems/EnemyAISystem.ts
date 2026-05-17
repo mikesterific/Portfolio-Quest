@@ -37,6 +37,7 @@ export interface EnemyConfig {
   strafeSpeed: number;
   losSampleCount: number;
   perceptionRecheckMs: number;
+  investigationMemoryMs: number;
 }
 
 // Enemy agent state
@@ -57,6 +58,12 @@ export interface EnemyAgent {
     inRange: boolean;
     lastSeenAt: Phaser.Math.Vector2 | null;
     lastSeenTime: number;
+  };
+  flyby: {
+    isActive: boolean;
+    hasEngaged: boolean;
+    direction: 1 | -1;
+    exitPadding: number;
   };
   orbit: {
     direction: 1 | -1;
@@ -99,6 +106,7 @@ const DEFAULT_ENEMY_CONFIG: EnemyConfig = {
   strafeSpeed: 100,
   losSampleCount: 6,
   perceptionRecheckMs: 120,
+  investigationMemoryMs: 1800,
 };
 
 /**
@@ -274,6 +282,12 @@ export class EnemyAISystem {
         lastSeenAt: null,
         lastSeenTime: 0,
       },
+      flyby: {
+        isActive: false,
+        hasEngaged: false,
+        direction: 1,
+        exitPadding: 50,
+      },
       orbit: { direction: Math.random() > 0.5 ? 1 : -1, lastFlipTime: 0 },
       health: enemyConfig.health,
       isActive: true,
@@ -321,9 +335,15 @@ export class EnemyAISystem {
       h - padding,
     );
     const agent = this.createEnemy(x, y, config);
-    const angleToPlayer = Phaser.Math.Angle.Between(x, y, target.x, target.y);
+    const direction: 1 | -1 = edge === "left" ? 1 : -1;
 
-    agent.sprite.setRotation(angleToPlayer + Math.PI / 2);
+    agent.flyby = {
+      isActive: true,
+      hasEngaged: false,
+      direction,
+      exitPadding: padding,
+    };
+    agent.sprite.setRotation(direction === 1 ? Math.PI / 2 : -Math.PI / 2);
     return agent;
   }
 
@@ -434,8 +454,11 @@ export class EnemyAISystem {
     // Refresh perception periodically
     this.updatePerception(agent, time);
 
+    const flybyVelocity = this.updateFlyby(agent, position);
+    if (flybyVelocity === null) return;
+
     // Update behavior based on current state
-    let desiredVelocity = this.updateBehavior(agent, position, time, delta);
+    let desiredVelocity = flybyVelocity ?? this.updateBehavior(agent, position, time, delta);
 
     // Apply shield avoidance if needed
     if (this.state.shieldManager && time - agent.lastAvoidanceTime > 200) {
@@ -475,24 +498,29 @@ export class EnemyAISystem {
   private updateBehavior(
     agent: EnemyAgent,
     position: Phaser.Math.Vector2,
-    _time: number,
+    time: number,
     delta: number,
   ): Phaser.Math.Vector2 {
     if (!this.state.playerTarget) return new Phaser.Math.Vector2(0, 0);
 
     const playerPos = new Phaser.Math.Vector2(this.state.playerTarget.x, this.state.playerTarget.y);
     const distanceToPlayer = position.distance(playerPos);
+    const canSeePlayer = this.canSeePlayer(agent);
+    const isInvestigating = !canSeePlayer && this.isInvestigatingLastSeenPosition(agent, time);
+    const investigationTarget = isInvestigating ? agent.perception.lastSeenAt : null;
 
     // State transitions
-    if (distanceToPlayer < agent.config.minDistance) {
+    if (!canSeePlayer && !investigationTarget) {
+      agent.behavior = BehaviorState.PATROL;
+    } else if (canSeePlayer && distanceToPlayer < agent.config.minDistance) {
       agent.behavior = BehaviorState.EVADE;
     } else if (
-      agent.perception.hasLOS &&
+      canSeePlayer &&
       distanceToPlayer >= agent.config.minDistance &&
       distanceToPlayer <= agent.config.maxDistance
     ) {
       agent.behavior = BehaviorState.STRAFE;
-    } else if (distanceToPlayer > agent.config.maxDistance) {
+    } else if (canSeePlayer || investigationTarget) {
       agent.behavior = BehaviorState.SEEK;
     } else {
       agent.behavior = BehaviorState.PATROL;
@@ -511,6 +539,15 @@ export class EnemyAISystem {
       }
 
       case BehaviorState.SEEK: {
+        if (investigationTarget) {
+          return SteeringHelpers.arrive(
+            position,
+            investigationTarget,
+            agent.config.speed * 0.75,
+            80,
+          );
+        }
+
         // Predictive pursuit
         const pv = new Phaser.Math.Vector2(
           (this.state.playerTarget?.body as Phaser.Physics.Arcade.Body)?.velocity.x || 0,
@@ -592,8 +629,8 @@ export class EnemyAISystem {
     // Only fire if within engagement range
     if (distance > agent.config.engagementDistance) return;
 
-    // Require LOS from perception
-    if (!agent.perception.hasLOS) return;
+    // Require full awareness so enemies cannot fire through cover or behind themselves.
+    if (!this.canSeePlayer(agent)) return;
 
     this.fireAtTarget(agent, playerPos, time);
   }
@@ -682,13 +719,17 @@ export class EnemyAISystem {
 
     // FOV
     const toPlayer = playerPos.clone().subtract(enemyPos);
-    const facing = new Phaser.Math.Vector2(
-      Math.sin(agent.sprite.rotation),
-      -Math.cos(agent.sprite.rotation),
-    );
-    const cosAngle = Phaser.Math.Clamp(facing.dot(toPlayer.clone().normalize()), -1, 1);
-    const angleDeg = Phaser.Math.RadToDeg(Math.acos(cosAngle));
-    agent.perception.inFOV = angleDeg <= cfg.fovDegrees * 0.5;
+    if (toPlayer.length() < 1) {
+      agent.perception.inFOV = true;
+    } else {
+      const facing = new Phaser.Math.Vector2(
+        Math.sin(agent.sprite.rotation),
+        -Math.cos(agent.sprite.rotation),
+      );
+      const cosAngle = Phaser.Math.Clamp(facing.dot(toPlayer.clone().normalize()), -1, 1);
+      const angleDeg = Phaser.Math.RadToDeg(Math.acos(cosAngle));
+      agent.perception.inFOV = angleDeg <= cfg.fovDegrees * 0.5;
+    }
 
     // Throttle LOS checks
     const needsLOS = time - agent.lastPerceptionCheck >= cfg.perceptionRecheckMs;
@@ -706,7 +747,7 @@ export class EnemyAISystem {
       }
     }
 
-    if (agent.perception.hasLOS) {
+    if (this.canSeePlayer(agent)) {
       agent.perception.lastSeenAt = playerPos;
       agent.perception.lastSeenTime = time;
     }
@@ -719,6 +760,10 @@ export class EnemyAISystem {
   ): boolean {
     if (!this.state.shieldManager) return false;
     const count = Math.max(3, samples);
+    if (this.state.shieldManager.isLineBlockedByStationsWithSamples(from, to, count)) {
+      return true;
+    }
+
     for (let i = 1; i < count; i++) {
       const t = i / count;
       const p = from.clone().lerp(to, t);
@@ -729,6 +774,41 @@ export class EnemyAISystem {
       if (collision && collision.zone === "BARRIER") return true;
     }
     return false;
+  }
+
+  private canSeePlayer(agent: EnemyAgent): boolean {
+    return agent.perception.inRange && agent.perception.inFOV && agent.perception.hasLOS;
+  }
+
+  private isInvestigatingLastSeenPosition(agent: EnemyAgent, time: number): boolean {
+    return (
+      agent.perception.lastSeenAt !== null &&
+      time - agent.perception.lastSeenTime <= agent.config.investigationMemoryMs
+    );
+  }
+
+  private updateFlyby(
+    agent: EnemyAgent,
+    position: Phaser.Math.Vector2,
+  ): Phaser.Math.Vector2 | null | undefined {
+    if (!agent.flyby.isActive || agent.flyby.hasEngaged) return undefined;
+
+    if (this.canSeePlayer(agent)) {
+      agent.flyby.hasEngaged = true;
+      agent.flyby.isActive = false;
+      return undefined;
+    }
+
+    const width = this.state.scene.scale.width;
+    const pastLeftEdge = agent.flyby.direction === -1 && position.x < -agent.flyby.exitPadding;
+    const pastRightEdge =
+      agent.flyby.direction === 1 && position.x > width + agent.flyby.exitPadding;
+    if (pastLeftEdge || pastRightEdge) {
+      this.removeEnemy(agent.id);
+      return null;
+    }
+
+    return new Phaser.Math.Vector2(agent.flyby.direction * agent.config.speed, 0);
   }
 
   private computeOrbitVelocity(

@@ -48,6 +48,7 @@ interface SceneState {
   lastPlayerShieldHitTime: number;
   playerShieldVisual: Phaser.GameObjects.Graphics | null;
   isPlayerInvulnerable: boolean;
+  isPlayerRespawning: boolean;
   shields: Phaser.GameObjects.Group | null;
   shieldMapManager: ShieldMapManager | null;
   enemyAI: EnemyAISystem | null;
@@ -91,6 +92,9 @@ const HERO_SHIELD_VISUAL_CONFIG = {
   criticalColor: 0xffaa00,
   lineWidth: 3,
 };
+
+const PLAYER_DEATH_RESPAWN_DELAY_MS = 780;
+const PLAYER_RESPAWN_BLINK_INTERVAL_MS = 130;
 
 // Functions moved to respective managers
 
@@ -223,6 +227,7 @@ export class SkillSpaceScene extends Phaser.Scene {
   private effectsManager: EffectsManager;
   private uiManager: UIManager;
   private sceneConfigManager: SceneConfigManager;
+  private playerInvulnerabilityTimer: Phaser.Time.TimerEvent | null = null;
 
   private state: SceneState = {
     player: null,
@@ -245,6 +250,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     lastPlayerShieldHitTime: 0,
     playerShieldVisual: null,
     isPlayerInvulnerable: false,
+    isPlayerRespawning: false,
     shields: null,
     shieldMapManager: null,
     enemyAI: null,
@@ -339,7 +345,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.sceneConfigManager.ensureEnemyLaserTexture();
 
     // Create player - start on right side, vertically centered
-    this.state.player = createPlayer(this, width - 150, height / 2);
+    this.state.player = createPlayer(this, this.getPlayerSpawnX(width), height / 2);
     // Set player depth to appear above other objects
     this.state.player.setDepth(10);
     // Set collision layer for player
@@ -852,6 +858,18 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.state.laserTimer.remove(false);
       this.state.laserTimer = null;
     }
+    this.clearPlayerInvulnerabilityTimer();
+  }
+
+  private getPlayerSpawnX(sceneWidth: number): number {
+    return sceneWidth - 150;
+  }
+
+  private clearPlayerInvulnerabilityTimer(): void {
+    if (this.playerInvulnerabilityTimer) {
+      this.playerInvulnerabilityTimer.remove(false);
+      this.playerInvulnerabilityTimer = null;
+    }
   }
 
   // setupUI method removed - now handled by UIManager
@@ -860,7 +878,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (!this.state.player || !this.state.cursors) return;
 
     // Only allow movement if not docking or docked
-    if (!this.state.isDocking && !this.state.isDocked) {
+    if (!this.state.isDocking && !this.state.isDocked && !this.state.isPlayerRespawning) {
       // Handle player movement using functional approach
       updatePlayerVelocity(this.state.player, this.state.cursors, this.input.keyboard!);
 
@@ -945,7 +963,7 @@ export class SkillSpaceScene extends Phaser.Scene {
   }
 
   private fireLasersAtEnemy = (): void => {
-    if (!this.state.player) return;
+    if (!this.state.player || this.state.isPlayerRespawning) return;
 
     const player = this.state.player;
 
@@ -1032,6 +1050,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (laser && laser.active) laser.destroy();
     const player = playerObj as Phaser.GameObjects.Sprite;
     if (!player) return;
+    if (this.state.isPlayerRespawning) return;
     if (this.damagePlayerShields(1, impactX, impactY)) return;
     this.damagePlayer(1);
   };
@@ -1056,22 +1075,110 @@ export class SkillSpaceScene extends Phaser.Scene {
 
   private damagePlayer(amount: number): void {
     if (!this.state.player) return;
+    if (this.state.isPlayerRespawning) return;
+    if (amount <= 0) return;
     if (this.state.isPlayerInvulnerable) return;
 
     this.state.playerHealth = Math.max(0, this.state.playerHealth - amount);
     this.updateHealthUI();
 
-    // Feedback: explosion and invulnerability window (no flash)
-    this.effectsManager.spawnHeroExplosionAt(this.state.player.x, this.state.player.y);
-    this.state.isPlayerInvulnerable = true;
-    this.time.delayedCall(PLAYER_CONFIG.health.invulnerabilityDurationMs, () => {
-      this.state.isPlayerInvulnerable = false;
-    });
-
-    // If health depleted, soften controls feedback (no hard game over yet)
     if (this.state.playerHealth <= 0) {
-      // Optional: further feedback; currently just ensures invulnerability window
+      this.beginPlayerDeathRespawn();
+      return;
     }
+
+    this.effectsManager.spawnHeroExplosionAt(this.state.player.x, this.state.player.y);
+    this.clearPlayerInvulnerabilityTimer();
+    this.state.isPlayerInvulnerable = true;
+    this.playerInvulnerabilityTimer = this.time.delayedCall(
+      PLAYER_CONFIG.health.invulnerabilityDurationMs,
+      () => {
+        this.state.isPlayerInvulnerable = false;
+        this.playerInvulnerabilityTimer = null;
+      },
+    );
+  }
+
+  private beginPlayerDeathRespawn(): void {
+    if (!this.state.player || this.state.isPlayerRespawning) return;
+
+    this.state.isPlayerRespawning = true;
+    this.clearPlayerInvulnerabilityTimer();
+    this.state.isPlayerInvulnerable = false;
+
+    const player = this.state.player;
+    const px = player.x;
+    const py = player.y;
+
+    this.effectsManager.spawnHeroDeathExplosionAt(px, py);
+
+    player.setVisible(false);
+    const body = player.body as Phaser.Physics.Arcade.Body | undefined;
+    body?.setVelocity(0, 0);
+    if (body) {
+      body.enable = false;
+    }
+
+    this.time.delayedCall(PLAYER_DEATH_RESPAWN_DELAY_MS, () => {
+      this.applyPlayerRespawnAtSpawn();
+    });
+  }
+
+  private applyPlayerRespawnAtSpawn(): void {
+    const player = this.state.player;
+    if (!player) {
+      this.state.isPlayerRespawning = false;
+      return;
+    }
+
+    const { width, height } = this.scale;
+    player.setPosition(this.getPlayerSpawnX(width), height / 2);
+    player.setRotation((3 * Math.PI) / 2);
+    player.setTexture("hero-spaceship-off");
+    player.setData("enginesOn", false);
+
+    const body = player.body as Phaser.Physics.Arcade.Body | undefined;
+    if (body) {
+      body.enable = true;
+      body.setVelocity(0, 0);
+    }
+
+    this.state.playerHealth = this.state.maxPlayerHealth;
+    this.state.playerShields = this.state.maxPlayerShields;
+    this.state.lastPlayerShieldHitTime = 0;
+    this.updateHealthUI();
+    this.updatePlayerShieldUI();
+    this.updatePlayerShieldVisuals();
+
+    player.setVisible(false);
+    this.runPlayerRespawnBlink(() => {
+      this.state.isPlayerRespawning = false;
+    });
+  }
+
+  /** Ship hidden at spawn; flashes visible three times then stays on. */
+  private runPlayerRespawnBlink(onComplete: () => void): void {
+    const player = this.state.player;
+    if (!player) {
+      onComplete();
+      return;
+    }
+
+    let blinksCompleted = 0;
+    const flashOn = (): void => {
+      player.setVisible(true);
+      blinksCompleted++;
+      if (blinksCompleted >= 3) {
+        onComplete();
+        return;
+      }
+      this.time.delayedCall(PLAYER_RESPAWN_BLINK_INTERVAL_MS, () => {
+        player.setVisible(false);
+        this.time.delayedCall(PLAYER_RESPAWN_BLINK_INTERVAL_MS, flashOn);
+      });
+    };
+
+    this.time.delayedCall(PLAYER_RESPAWN_BLINK_INTERVAL_MS, flashOn);
   }
 
   private damagePlayerShields(amount: number, impactX: number, impactY: number): boolean {
