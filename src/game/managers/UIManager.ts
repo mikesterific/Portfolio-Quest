@@ -5,6 +5,7 @@ export class UIManager {
   private scene: Phaser.Scene;
   private interactionPrompt: Phaser.GameObjects.Text | null = null;
   private healthText: Phaser.GameObjects.Text | null = null;
+  private shieldText: Phaser.GameObjects.Text | null = null;
   private xpText: Phaser.GameObjects.Text | null = null;
   private xpTotal: number = 0;
 
@@ -15,10 +16,16 @@ export class UIManager {
   /**
    * Initialize all UI elements
    */
-  initialize(playerHealth: number, maxPlayerHealth: number): void {
+  initialize(
+    playerHealth: number,
+    maxPlayerHealth: number,
+    playerShields: number = 0,
+    maxPlayerShields: number = 0,
+  ): void {
     this.setupInteractionPrompt();
     this.setupNavigationHints();
     this.setupHealthDisplay(playerHealth, maxPlayerHealth);
+    this.setupShieldDisplay(playerShields, maxPlayerShields);
     this.setupXpDisplay();
   }
 
@@ -44,11 +51,27 @@ export class UIManager {
   }
 
   /**
+   * Get the shield text object
+   */
+  getShieldText(): Phaser.GameObjects.Text | null {
+    return this.shieldText;
+  }
+
+  /**
    * Update health display
    */
   updateHealth(currentHealth: number, maxHealth: number): void {
     if (this.healthText) {
       this.healthText.setText(`Health: ${currentHealth}/${maxHealth}`);
+    }
+  }
+
+  /**
+   * Update shield display
+   */
+  updateShields(currentShields: number, maxShields: number): void {
+    if (this.shieldText) {
+      this.shieldText.setText(`Shields: ${currentShields}/${maxShields}`);
     }
   }
 
@@ -183,6 +206,21 @@ export class UIManager {
       .setDepth(100);
 
     this.updateHealth(playerHealth, maxPlayerHealth);
+  }
+
+  private setupShieldDisplay(playerShields: number, maxPlayerShields: number): void {
+    this.shieldText = this.scene.add
+      .text(UI_CONFIG.positioning.shieldDisplay.x, UI_CONFIG.positioning.shieldDisplay.y, "", {
+        fontSize: UI_CONFIG.fonts.shieldSize,
+        fontFamily: UI_CONFIG.fonts.primary,
+        fontStyle: "bold",
+        color: UI_CONFIG.colors.shields,
+        stroke: "#000000",
+        strokeThickness: 3,
+      })
+      .setDepth(100);
+
+    this.updateShields(playerShields, maxPlayerShields);
   }
 
   private setupXpDisplay(): void {

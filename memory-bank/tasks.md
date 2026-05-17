@@ -1,5 +1,30 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## 🛡️ LEVEL 2 TASK: Hero Shields
+
+**Complexity**: Level 2 (Simple Gameplay Enhancement)
+**Goal**: Add a visible regenerating shield system for the hero ship. Enemy shots should drain shields before health; shields take 3 hits to drop, visually lose intensity as they are damaged, and begin regenerating after 10 seconds.
+
+### Status
+- [x] VAN analysis complete
+- [x] Plan implementation against existing `SkillSpaceScene`, `PlayerSystem`, and UI systems
+- [x] Add hero shield state/config with 3-hit capacity
+- [x] Route enemy laser hits through shields before player health damage
+- [x] Add shield visual around the hero with intensity tied to remaining charge
+- [x] Regenerate shields after 10 seconds without shield damage
+- [x] Update HUD/feedback as needed
+- [x] Validate lints/build
+- [ ] Reflection complete
+- [ ] Archiving complete
+
+### Notes
+- Existing station shield regeneration uses a 10s delay and per-tick recovery; reuse the proven timing pattern, but keep hero shields separate from station shields.
+- Current player health is 3 with an 800ms invulnerability window; hero shields should absorb enemy shots before `damagePlayer(1)` reduces health.
+- The visual should be attached to the hero ship, above the ship but below combat/readability-critical UI, and its alpha/tint/scale should communicate 3/3, 2/3, 1/3, and down states.
+- Avoid reintroducing undock shake: any shield visual should follow the player without influencing physics velocity or collision.
+- Implemented as non-physics Phaser graphics around the hero; enemy lasers now drain shields first, then health once shields are down.
+- Verification: `ReadLints` clean on touched game files; `npm run build` passed.
+
 ## 🔧 LEVEL 2 TASK: Single Enemy Undock Spawn + Scaling Speed
 
 **Complexity**: Level 2 (Simple Gameplay Enhancement)
@@ -13,11 +38,19 @@
 - [x] Enforce only one active enemy
 - [x] Start enemy very slow and scale speed with explored bases
 - [x] Validate lints/build
+- [x] Reflection complete
+- [ ] Archiving complete
 
 ### Notes
 - Existing memory-bank lessons mention edge spawning and enemy AI tuning; reuse those patterns where possible.
 - Need to preserve docking stability fixes from the previous task: undocking should not reintroduce ship/camera shake.
 - Implemented by replacing the old dock-time three-enemy wave with a single undock-triggered enemy. Speed scales from unique unlocked station count with a slow base and capped growth.
+
+### Reflection Highlights
+- **What Went Well**: Existing unlocked-station state and per-spawn enemy config made the behavior change small and targeted.
+- **Challenges**: Active dock-time wave spawning coexisted with older spawn-tracking helpers, so the implementation needed to replace current behavior without broad cleanup.
+- **Lessons Learned**: Keep encounter timing in the scene, but enforce enemy-count and spawn geometry invariants inside `EnemyAISystem`.
+- **Reflection Document**: [Single Enemy Undock Spawn](reflection/reflection-enemy-undock-spawn.md)
 
 ## ✅ LEVEL 1 TASK: Skills list source sync + undock ship stability
 

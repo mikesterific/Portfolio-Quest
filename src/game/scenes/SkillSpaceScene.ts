@@ -43,6 +43,10 @@ interface SceneState {
   enemyLasers: Phaser.GameObjects.Group | null;
   playerHealth: number;
   maxPlayerHealth: number;
+  playerShields: number;
+  maxPlayerShields: number;
+  lastPlayerShieldHitTime: number;
+  playerShieldVisual: Phaser.GameObjects.Graphics | null;
   isPlayerInvulnerable: boolean;
   shields: Phaser.GameObjects.Group | null;
   shieldMapManager: ShieldMapManager | null;
@@ -79,6 +83,13 @@ const UNDOCK_ENEMY_SPEED_CONFIG = {
   baseStrafeSpeed: 35,
   strafeSpeedPerExploredStation: 10,
   maxStrafeSpeed: 120,
+};
+
+const HERO_SHIELD_VISUAL_CONFIG = {
+  radius: 78,
+  color: 0x00aaff,
+  criticalColor: 0xffaa00,
+  lineWidth: 3,
 };
 
 // Functions moved to respective managers
@@ -229,6 +240,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     enemyLasers: null,
     playerHealth: PLAYER_CONFIG.health.max,
     maxPlayerHealth: PLAYER_CONFIG.health.max,
+    playerShields: PLAYER_CONFIG.shields.max,
+    maxPlayerShields: PLAYER_CONFIG.shields.max,
+    lastPlayerShieldHitTime: 0,
+    playerShieldVisual: null,
     isPlayerInvulnerable: false,
     shields: null,
     shieldMapManager: null,
@@ -335,7 +350,13 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.enemyLasers = this.add.group();
 
     // Initialize UI Manager
-    this.uiManager.initialize(this.state.playerHealth, this.state.maxPlayerHealth);
+    this.uiManager.initialize(
+      this.state.playerHealth,
+      this.state.maxPlayerHealth,
+      this.state.playerShields,
+      this.state.maxPlayerShields,
+    );
+    this.createPlayerShieldVisual();
 
     // Get UI element references from manager
     this.state.interactionPrompt = this.uiManager.getInteractionPrompt();
@@ -483,6 +504,57 @@ export class SkillSpaceScene extends Phaser.Scene {
         this.state.enemyLaserSound.play();
       } catch (error) {
         console.warn("[SkillSpaceScene] Error playing enemy laser sound:", error);
+      }
+    }
+  }
+
+  private createPlayerShieldVisual(): void {
+    if (!this.state.player) return;
+
+    const shieldVisual = this.add.graphics();
+    shieldVisual.setDepth(11);
+    shieldVisual.setBlendMode(Phaser.BlendModes.ADD);
+    this.state.playerShieldVisual = shieldVisual;
+    this.updatePlayerShieldVisuals();
+  }
+
+  private updatePlayerShieldVisualPosition(): void {
+    if (!this.state.player || !this.state.playerShieldVisual) return;
+    this.state.playerShieldVisual.setPosition(this.state.player.x, this.state.player.y);
+  }
+
+  private updatePlayerShieldVisuals(): void {
+    const shieldVisual = this.state.playerShieldVisual;
+    if (!this.state.player || !shieldVisual) return;
+
+    this.updatePlayerShieldVisualPosition();
+    shieldVisual.clear();
+
+    if (this.state.playerShields <= 0) {
+      shieldVisual.setVisible(false);
+      return;
+    }
+
+    const shieldPercent = this.state.playerShields / this.state.maxPlayerShields;
+    const color =
+      this.state.playerShields === 1
+        ? HERO_SHIELD_VISUAL_CONFIG.criticalColor
+        : HERO_SHIELD_VISUAL_CONFIG.color;
+    const fillAlpha = 0.08 + shieldPercent * 0.18;
+    const lineAlpha = 0.25 + shieldPercent * 0.5;
+    const radius = HERO_SHIELD_VISUAL_CONFIG.radius + (1 - shieldPercent) * 6;
+
+    shieldVisual.setVisible(true);
+    shieldVisual.fillStyle(color, fillAlpha);
+    shieldVisual.fillCircle(0, 0, radius);
+    shieldVisual.lineStyle(HERO_SHIELD_VISUAL_CONFIG.lineWidth, color, lineAlpha);
+    shieldVisual.strokeCircle(0, 0, radius);
+
+    for (let i = 0; i < this.state.playerShields; i++) {
+      const ringRadius = radius - 12 - i * 10;
+      if (ringRadius > 0) {
+        shieldVisual.lineStyle(1, color, lineAlpha * 0.8);
+        shieldVisual.strokeCircle(0, 0, ringRadius);
       }
     }
   }
@@ -804,6 +876,8 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.state.enemyAI.updateAll(this.time.now, this.game.loop.delta);
     }
 
+    this.updatePlayerShieldVisualPosition();
+
     // Cleanup lasers after lifetime
     if (this.state.lasers) {
       const now = this.time.now;
@@ -830,6 +904,7 @@ export class SkillSpaceScene extends Phaser.Scene {
 
     // Regenerate shields
     this.regenerateShields();
+    this.regeneratePlayerShields();
   }
 
   private updateStationProximity(): void {
@@ -952,9 +1027,12 @@ export class SkillSpaceScene extends Phaser.Scene {
     playerObj: Phaser.GameObjects.GameObject,
   ): void => {
     const laser = enemyLaserObj as Phaser.GameObjects.Sprite;
+    const impactX = laser?.x ?? (playerObj as Phaser.GameObjects.Sprite).x;
+    const impactY = laser?.y ?? (playerObj as Phaser.GameObjects.Sprite).y;
     if (laser && laser.active) laser.destroy();
     const player = playerObj as Phaser.GameObjects.Sprite;
     if (!player) return;
+    if (this.damagePlayerShields(1, impactX, impactY)) return;
     this.damagePlayer(1);
   };
 
@@ -963,6 +1041,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.healthText.setText(
       `Health: ${this.state.playerHealth}/${this.state.maxPlayerHealth}`,
     );
+  }
+
+  private updatePlayerShieldUI(): void {
+    this.uiManager.updateShields(this.state.playerShields, this.state.maxPlayerShields);
   }
 
   // private updateXpUI(): void {
@@ -990,6 +1072,26 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (this.state.playerHealth <= 0) {
       // Optional: further feedback; currently just ensures invulnerability window
     }
+  }
+
+  private damagePlayerShields(amount: number, impactX: number, impactY: number): boolean {
+    if (this.state.playerShields <= 0) return false;
+
+    this.state.playerShields = Math.max(0, this.state.playerShields - amount);
+    this.state.lastPlayerShieldHitTime = this.time.now;
+    this.updatePlayerShieldUI();
+    this.updatePlayerShieldVisuals();
+    this.effectsManager.createShieldHitEffect(impactX, impactY, HERO_SHIELD_VISUAL_CONFIG.color);
+
+    if (this.state.playerShields <= 0 && this.state.player) {
+      this.effectsManager.createShieldDestructionEffect(
+        this.state.player.x,
+        this.state.player.y,
+        HERO_SHIELD_VISUAL_CONFIG.color,
+      );
+    }
+
+    return true;
   }
 
   private handleLaserShieldHit = (
@@ -1122,6 +1224,27 @@ export class SkillSpaceScene extends Phaser.Scene {
       }
       return null;
     }, this);
+  }
+
+  private regeneratePlayerShields(): void {
+    if (this.state.playerShields >= this.state.maxPlayerShields) return;
+    if (this.state.lastPlayerShieldHitTime <= 0) return;
+
+    const timeSinceLastHit = this.time.now - this.state.lastPlayerShieldHitTime;
+    if (timeSinceLastHit < PLAYER_CONFIG.shields.regenerationDelayMs) return;
+
+    this.state.playerShields = this.state.maxPlayerShields;
+    this.state.lastPlayerShieldHitTime = 0;
+    this.updatePlayerShieldUI();
+    this.updatePlayerShieldVisuals();
+
+    if (this.state.player) {
+      this.effectsManager.createShieldReactivationEffect(
+        this.state.player.x,
+        this.state.player.y,
+        HERO_SHIELD_VISUAL_CONFIG.color,
+      );
+    }
   }
 
   // Shield effect methods moved to EffectsManager
