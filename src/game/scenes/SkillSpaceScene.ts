@@ -282,9 +282,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     preloadPlayerAssets(this);
 
     // Load individual starbase images
-
     for (let i = 1; i <= 11; i++) {
-      this.load.image(`starbase${i}`, `starbase${i}.png`);
+      this.load.image(`starbase${i}`, `assets/images/space-stations/starbase${i}.png`);
     }
 
     // Load enemy ship asset (removed leading slash for GitHub Pages compatibility)
