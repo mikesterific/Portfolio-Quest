@@ -1,5 +1,32 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## 💥 LEVEL 2 TASK: Hero hull death + respawn blink
+
+**Complexity**: Level 2 (Simple Gameplay Enhancement)  
+**Goal**: After shields are down, when hull damage reduces health to zero, blow up the hero with a strong effect, reset health/shields, move to spawn, and blink visible three times before full control returns.
+
+### Status
+- [x] Implementation complete (`SkillSpaceScene`, `EffectsManager`, tests, Phaser mock, `jest.config.cjs` branch threshold)
+- [x] Reflection complete
+- [x] Archiving complete
+
+### Notes
+- Non-lethal hull hits keep the smaller hero explosion + short invulnerability; lethal hit uses `spawnHeroDeathExplosionAt`, hides ship, disables body briefly, delayed teleport + stat reset + `runPlayerRespawnBlink`.
+- `isPlayerRespawning` blocks movement, player firing, and further laser-overlap damage processing.
+
+### Reflection Highlights
+- **What Went Well**: Clear split between chip hull feedback and fatal burst; spawn helper; centralized effect in `EffectsManager`.
+- **Challenges**: Jest Phaser mock missing `setPosition` / `getChildren`; timer `remove`; aligning laser tests with shield-first routing; branch coverage vs threshold.
+- **Lessons Learned**: Disable physics while hidden after death; one respawn flag simplifies guards; test mocks must mirror Phaser Group/Graphics APIs the scene uses.
+- **Reflection Document**: [Hero hull death + respawn blink](reflection/reflection-hero-death-respawn.md)
+
+### Archive
+- **Date**: 2026-05-16
+- **Archive Document**: [Hero hull death + respawn blink](archive/archive-hero-death-respawn.md)
+- **Status**: COMPLETED
+
+---
+
 ## 🔧 LEVEL 2 TASK: Enemy LOS Awareness + Stealth
 
 **Complexity**: Level 2 (Simple Gameplay Enhancement)

@@ -1,6 +1,9 @@
 # Active Context - Resume Game
 
 ## Recently Completed
+- **Hero hull death + respawn blink**: Level 2 Skills Space combat COMPLETE ✅
+  - Lethal hull: large explosion, hide ship + disable body briefly, respawn at default position with full health/shields, three-flash visibility intro; `isPlayerRespawning` guards movement, firing, and laser hits.
+  - Archive: [Hero hull death + respawn blink](archive/archive-hero-death-respawn.md)
 - **Enemy LOS stealth + horizontal flyby**: Level 2 combat/AI COMPLETE ✅
   - Awareness requires range, FOV, and LOS; stations block sight; brief last-seen investigation; undock enemy opens with a horizontal flyby and despawns if it exits unengaged.
   - Archive: [Enemy LOS stealth + horizontal flyby](archive/archive-enemy-los-stealth.md)
@@ -46,11 +49,13 @@
   - Enables realistic jumping and landing on 3D objects
 
 ## Current Focus
-**Enemy LOS / flyby task** — archived; Memory Bank ledger updated.
+**Hero hull death + respawn** — archived; Memory Bank ledger updated.
 
-**Hero Shields** 🛡️ — implementation complete; reflection done, **archiving still open** on `tasks.md` if you want the same reflect→archive pass.
+**Hero Shields** 🛡️ — implementation and reflection complete on `tasks.md`; **archiving still open** if you want a formal archive entry mirroring the death/respawn pass.
 
 Hero shields absorb 3 enemy shots before health damage, show draining intensity, and regenerate after 10 seconds without shield hits.
+
+**Next**: Start a new task in VAN mode when ready (optional follow-ups: archive Hero Shields, one-shot hull after shields down, “DESTROYED” UI beat).
 
 **Task Complete**: 🚀 SKILLS SPACE SCENE TRANSFORMATION
 - **Complexity**: Level 3 (Intermediate Feature) - SUCCESSFULLY IMPLEMENTED

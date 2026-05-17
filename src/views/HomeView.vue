@@ -204,7 +204,9 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
   font-family: "Orbitron", sans-serif;
   font-size: clamp(2.75rem, 6.5vw, 5.75rem);
   font-weight: 700;
-  letter-spacing: -0.065em;
+  font-kerning: normal;
+  font-feature-settings: "kern" 1;
+  letter-spacing: -0.028em;
   line-height: 0.96;
 }
 
@@ -474,7 +476,7 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
 
 @media (max-width: 768px) {
   .hero-title {
-    letter-spacing: -0.06em;
+    letter-spacing: -0.022em;
   }
 
   .experience-options {

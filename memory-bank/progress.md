@@ -1,5 +1,21 @@
 # Progress - Resume Game Implementation
 
+## Latest Enhancement: Hero hull death + respawn blink ✅
+
+**Date**: May 16, 2026  
+**Feature**: Lethal hull hit plays large explosion; respawn at default spawn with full health/shields; three-flash blink; `isPlayerRespawning` gates input and hits  
+**Status**: Reflected and archived  
+
+### Technical Implementation
+- `EffectsManager.spawnHeroDeathExplosionAt`; `SkillSpaceScene`: `beginPlayerDeathRespawn`, `applyPlayerRespawnAtSpawn`, `runPlayerRespawnBlink`, invuln timer cleanup, `getPlayerSpawnX`.
+- Tests: laser hull cases with `playerShields = 0`; undock spawn spy; Phaser mock `setPosition`, `Group.getChildren`, `delayedCall.remove`; `jest.config.cjs` SkillSpaceScene branches 79.
+
+### Documentation
+- Reflection: [Hero hull death + respawn blink](reflection/reflection-hero-death-respawn.md)
+- Archive: [Hero hull death + respawn blink](archive/archive-hero-death-respawn.md)
+
+---
+
 ## Latest Enhancement: Enemy LOS stealth + horizontal flyby ✅
 
 **Date**: May 16, 2026  
