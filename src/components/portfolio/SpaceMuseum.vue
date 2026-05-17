@@ -1605,6 +1605,8 @@ export default defineComponent({
       );
     };
 
+    const keyboardListenerOptions: AddEventListenerOptions = { capture: true };
+
     // Setup event listeners
     const setupEventListeners = (): void => {
       if (!museumContainer.value) return;
@@ -1622,40 +1624,66 @@ export default defineComponent({
         console.warn("Pointer lock failed");
       });
 
-      // Keyboard controls
-      document.addEventListener("keydown", onKeyDown);
-      document.addEventListener("keyup", onKeyUp);
+      // Capture phase so movement keys are handled before Firefox "find as you type" / Quick Find
+      document.addEventListener("keydown", onKeyDown, keyboardListenerOptions);
+      document.addEventListener("keyup", onKeyUp, keyboardListenerOptions);
 
       // Mouse controls for interaction
       document.addEventListener("click", onMouseClick);
       document.addEventListener("mousemove", onMouseMove);
+    };
 
-      // ESC to exit
-      document.addEventListener("keydown", (event) => {
-        if (event.code === "Escape" && state.isPointerLocked) {
-          exitMuseum();
-        }
-      });
+    /** Avoid stealing keys while typing in modals or museum settings inputs */
+    const isKeyboardFocusInEditableField = (event: KeyboardEvent): boolean => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return false;
+      if (target.isContentEditable) return true;
+      const tag = target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      return target.closest('[contenteditable="true"]') !== null;
+    };
+
+    const shouldCaptureMuseumMovementKeys = (event: KeyboardEvent): boolean => {
+      if (props.modalOpen) return false;
+      return !isKeyboardFocusInEditableField(event);
     };
 
     // Keyboard event handlers
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.code === "Escape" && state.isPointerLocked) {
+        event.preventDefault();
+        exitMuseum();
+        return;
+      }
+
       switch (event.code) {
         case "ArrowUp":
         case "KeyW":
-          state.moveForward = true;
+          if (shouldCaptureMuseumMovementKeys(event)) {
+            event.preventDefault();
+            state.moveForward = true;
+          }
           break;
         case "ArrowLeft":
         case "KeyA":
-          state.moveLeft = true;
+          if (shouldCaptureMuseumMovementKeys(event)) {
+            event.preventDefault();
+            state.moveLeft = true;
+          }
           break;
         case "ArrowDown":
         case "KeyS":
-          state.moveBackward = true;
+          if (shouldCaptureMuseumMovementKeys(event)) {
+            event.preventDefault();
+            state.moveBackward = true;
+          }
           break;
         case "ArrowRight":
         case "KeyD":
-          state.moveRight = true;
+          if (shouldCaptureMuseumMovementKeys(event)) {
+            event.preventDefault();
+            state.moveRight = true;
+          }
           break;
         case "Space":
           event.preventDefault(); // Prevent page scroll
@@ -2027,8 +2055,8 @@ export default defineComponent({
 
     // Cleanup
     const cleanup = (): void => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("keyup", onKeyUp);
+      document.removeEventListener("keydown", onKeyDown, keyboardListenerOptions);
+      document.removeEventListener("keyup", onKeyUp, keyboardListenerOptions);
       document.removeEventListener("click", onMouseClick);
       document.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("resize", handleResize);
