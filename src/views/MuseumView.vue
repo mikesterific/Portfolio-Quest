@@ -109,7 +109,9 @@ export default defineComponent({
   height: 100vh;
   z-index: 9999 !important;
   pointer-events: all !important;
-  background: rgba(0, 0, 0, 0.8) !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(96, 165, 250, 0.18), transparent 36rem),
+    rgba(3, 7, 18, 0.82) !important;
 }
 
 .museum-view :deep(.modal-content) {
