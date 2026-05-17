@@ -1,90 +1,95 @@
 <template>
   <div class="museum-view">
     <!-- Always show museum, but pass modal state -->
-    <SpaceMuseum 
+    <SpaceMuseum
+      ref="spaceMuseumRef"
       :modal-open="!!selectedProject || isClosing"
       @project-selected="handleProjectSelected"
       @exit-museum="handleExitMuseum"
     />
-    
+
     <!-- Show project modal when a project is selected -->
-    <ProjectModal
-      v-if="selectedProject"
-      :project="selectedProject"
-      @close="handleCloseProject"
-    />
+    <ProjectModal v-if="selectedProject" :project="selectedProject" @close="handleCloseProject" />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import SpaceMuseum from '@/components/portfolio/SpaceMuseum.vue'
-import ProjectModal from '@/components/portfolio/ProjectModal.vue'
-import { getProjectById } from '@/data/portfolio'
-import type { ProjectData } from '@/types/game'
+import { defineComponent, ref, onMounted, onUnmounted } from "vue";
+import type { ComponentPublicInstance } from "vue";
+import { useRouter } from "vue-router";
+import SpaceMuseum from "@/components/portfolio/SpaceMuseum.vue";
+import ProjectModal from "@/components/portfolio/ProjectModal.vue";
+import { getProjectById } from "@/data/portfolio";
+import type { ProjectData } from "@/types/game";
 
 export default defineComponent({
-  name: 'MuseumView',
+  name: "MuseumView",
   components: {
     SpaceMuseum,
-    ProjectModal
+    ProjectModal,
   },
   setup() {
-    const router = useRouter()
-    const selectedProject = ref<ProjectData | null>(null)
-    const isClosing = ref(false)
+    const router = useRouter();
+    const selectedProject = ref<ProjectData | null>(null);
+    const isClosing = ref(false);
+    const spaceMuseumRef = ref<
+      (ComponentPublicInstance & { resumeMuseumPointerLock?: () => void }) | null
+    >(null);
 
     const handleProjectSelected = (event: { projectId: string }) => {
       // Don't open if we're in the process of closing
-      if (isClosing.value) return
-      
-      const project = getProjectById(event.projectId)
+      if (isClosing.value) return;
+
+      const project = getProjectById(event.projectId);
       if (project) {
-        selectedProject.value = project
+        selectedProject.value = project;
       }
-    }
+    };
 
     const handleCloseProject = () => {
-      console.log('Closing project modal')
-      isClosing.value = true
-      selectedProject.value = null
-      
+      console.log("Closing project modal");
+      isClosing.value = true;
+      selectedProject.value = null;
+
+      // Same user gesture as close: restore keyboard focus + pointer lock without an extra click.
+      spaceMuseumRef.value?.resumeMuseumPointerLock?.();
+
       // Reset the closing flag after a short delay
       setTimeout(() => {
-        isClosing.value = false
-      }, 300)
-    }
+        isClosing.value = false;
+      }, 300);
+    };
 
     const handleExitMuseum = () => {
       // Navigate back to home or wherever you want
-      router.push('/')
-    }
+      router.push("/");
+    };
 
     // Handle ESC key to close modal
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'Escape' && selectedProject.value) {
-        handleCloseProject()
+      if (event.code === "Escape" && selectedProject.value) {
+        handleCloseProject();
       }
-    }
+    };
 
     onMounted(() => {
-      document.addEventListener('keydown', handleKeyDown)
-    })
+      document.addEventListener("keydown", handleKeyDown);
+    });
 
     onUnmounted(() => {
-      document.removeEventListener('keydown', handleKeyDown)
-    })
+      document.removeEventListener("keydown", handleKeyDown);
+    });
 
     return {
       selectedProject,
       isClosing,
+      spaceMuseumRef,
       handleProjectSelected,
       handleCloseProject,
-      handleExitMuseum
-    }
-  }
-})
+      handleExitMuseum,
+    };
+  },
+});
 </script>
 
 <style scoped>

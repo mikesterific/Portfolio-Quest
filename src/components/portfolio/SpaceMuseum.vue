@@ -1,6 +1,11 @@
 <template>
   <div ref="museumContainer" class="space-museum-container">
-    <canvas ref="museumCanvas" class="museum-canvas"></canvas>
+    <canvas
+      ref="museumCanvas"
+      class="museum-canvas"
+      tabindex="-1"
+      aria-label="Space museum view"
+    ></canvas>
 
     <!-- UI Overlay -->
     <div class="museum-ui-overlay">
@@ -470,6 +475,11 @@ export default defineComponent({
     const onMouseClick = (event: MouseEvent): void => {
       // Don't handle clicks if modal is open
       if (props.modalOpen) return;
+
+      // Only raycast while pointer lock is active. Otherwise the same click that calls
+      // requestPointerLock() (e.g. after closing the project modal) would hit art beneath
+      // the cursor and reopen the modal.
+      if (!state.isPointerLocked) return;
 
       if (!state.raycaster || !state.camera || !state.mouse || !museumContainer.value) return;
 
@@ -1607,6 +1617,16 @@ export default defineComponent({
 
     const keyboardListenerOptions: AddEventListenerOptions = { capture: true };
 
+    /** Call synchronously from modal close (same user gesture) so pointer lock is allowed. */
+    const resumeMuseumPointerLock = (): void => {
+      const canvas = museumCanvas.value;
+      if (!canvas) return;
+      canvas.focus({ preventScroll: true });
+      if (!state.isPointerLocked) {
+        canvas.requestPointerLock();
+      }
+    };
+
     // Setup event listeners
     const setupEventListeners = (): void => {
       if (!museumContainer.value) return;
@@ -2257,6 +2277,7 @@ export default defineComponent({
       toggleSettings,
       saveSettings,
       exitMuseum,
+      resumeMuseumPointerLock,
     };
   },
 });
