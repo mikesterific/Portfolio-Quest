@@ -5,7 +5,7 @@
         <h2>{{ project?.title }}</h2>
         <button class="close-button" @click="$emit('close')">&times;</button>
       </div>
-      
+
       <div class="modal-body">
         <div class="project-info">
           <div class="project-type">
@@ -13,34 +13,37 @@
               {{ formatProjectType(project?.type) }}
             </span>
           </div>
-          
+
+          <div v-if="project?.roles?.length" class="project-roles">
+            <h3>Roles</h3>
+            <div class="roles-list">
+              <span v-for="role in project.roles" :key="role" class="role-tag">{{ role }}</span>
+            </div>
+          </div>
+
           <p class="project-description">{{ project?.description }}</p>
-          
+
           <div class="technologies">
             <h3>Technologies Used</h3>
             <div class="tech-list">
-              <span 
-                v-for="tech in project?.technologies" 
-                :key="tech"
-                class="tech-tag"
-              >
+              <span v-for="tech in project?.technologies" :key="tech" class="tech-tag">
                 {{ tech }}
               </span>
             </div>
           </div>
-          
+
           <div class="project-links">
-            <a 
-              v-if="project?.demoUrl && project.demoUrl !== '#'" 
-              :href="project.demoUrl" 
+            <a
+              v-if="project?.demoUrl && project.demoUrl !== '#'"
+              :href="project.demoUrl"
               target="_blank"
               class="project-link demo-link"
             >
               🌐 View Demo
             </a>
-            <a 
-              v-if="project?.githubUrl" 
-              :href="project.githubUrl" 
+            <a
+              v-if="project?.githubUrl"
+              :href="project.githubUrl"
               target="_blank"
               class="project-link github-link"
             >
@@ -49,39 +52,37 @@
           </div>
         </div>
       </div>
-      
+
       <div class="modal-footer">
-        <button class="btn btn-primary" @click="$emit('close')">
-          Back to Game
-        </button>
+        <button class="btn btn-primary" @click="$emit('close')">Back to Game</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { ProjectData } from '@/types/game'
+import type { ProjectData } from "@/types/game";
 
 interface Props {
-  project: ProjectData | null
+  project: ProjectData | null;
 }
 
-defineProps<Props>()
+defineProps<Props>();
 defineEmits<{
-  close: []
-}>()
+  close: [];
+}>();
 
 function formatProjectType(type: string | undefined): string {
-  if (!type) return ''
-  
+  if (!type) return "";
+
   const typeMap: Record<string, string> = {
-    'web': 'Web Application',
-    'mobile': 'Mobile App', 
-    'game': 'Game',
-    'library': 'Library/Framework'
-  }
-  
-  return typeMap[type] || type
+    web: "Web Application",
+    mobile: "Mobile App",
+    game: "Game",
+    library: "Library/Framework",
+  };
+
+  return typeMap[type] || type;
 }
 </script>
 
@@ -163,10 +164,48 @@ function formatProjectType(type: string | undefined): string {
   letter-spacing: 0.5px;
 }
 
-.type-web { background: #e3f2fd; color: #1976d2; }
-.type-mobile { background: #f3e5f5; color: #7b1fa2; }
-.type-game { background: #fff3e0; color: #f57c00; }
-.type-library { background: #e8f5e8; color: #388e3c; }
+.type-web {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+.type-mobile {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+.type-game {
+  background: #fff3e0;
+  color: #f57c00;
+}
+.type-library {
+  background: #e8f5e8;
+  color: #388e3c;
+}
+
+.project-roles {
+  margin-bottom: 16px;
+}
+
+.project-roles h3 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.roles-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.role-tag {
+  background: #e8f4fc;
+  color: #1a5276;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #d4e6f1;
+}
 
 .project-description {
   font-size: 1rem;
@@ -262,16 +301,20 @@ function formatProjectType(type: string | undefined): string {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(-20px);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateY(0);
   }
@@ -282,11 +325,11 @@ function formatProjectType(type: string | undefined): string {
     width: 95%;
     margin: 20px;
   }
-  
+
   .project-links {
     flex-direction: column;
   }
-  
+
   .project-link {
     justify-content: center;
   }

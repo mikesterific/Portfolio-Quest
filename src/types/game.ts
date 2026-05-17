@@ -2,6 +2,8 @@
 export interface ProjectData {
   id: string;
   title: string;
+  /** Professional hats played on this work (shown in Space Museum frames + modal) */
+  roles?: string[];
   description: string;
   technologies: string[];
   image?: string;

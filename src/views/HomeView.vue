@@ -45,9 +45,10 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
       </section>
 
       <section class="experience-options" aria-label="Choose an experience">
-        <article
+        <router-link
           v-for="experience in experiences"
           :key="experience.to"
+          :to="experience.to"
           class="experience-card"
           :class="`accent-${experience.accent}`"
         >
@@ -84,11 +85,11 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
           </div>
           <h2>{{ experience.title }}</h2>
           <p>{{ experience.description }}</p>
-          <router-link :to="experience.to" class="experience-button">
+          <span class="experience-button">
             {{ experience.cta }}
             <span aria-hidden="true">→</span>
-          </router-link>
-        </article>
+          </span>
+        </router-link>
       </section>
 
       <footer class="home-footer">
@@ -254,9 +255,13 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
 }
 
 .primary-action:focus-visible,
-.experience-button:focus-visible {
+.experience-card:focus-visible {
   outline: 3px solid oklch(84% 0.15 205 / 0.55);
   outline-offset: 4px;
+}
+
+.accent-violet.experience-card:focus-visible {
+  outline-color: oklch(76% 0.13 300 / 0.55);
 }
 
 .experience-options {
@@ -278,6 +283,8 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
   backdrop-filter: blur(18px);
   display: flex;
   flex-direction: column;
+  text-decoration: none;
+  color: inherit;
   transition:
     transform 0.25s ease,
     border-color 0.25s ease,

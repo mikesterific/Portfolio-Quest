@@ -1,11 +1,12 @@
 import type { ProjectData, SkillData, ResumeData } from "@/types/game";
 
-// Sample portfolio data - replace with your actual data
+// Portfolio + Space Museum exhibits — synced with https://www.theweblife.com/portfolio.html
 export const portfolioData = {
   projects: [
     {
       id: "portfolio-quest",
       title: "Portfolio Quest",
+      roles: ["Frontend Engineer", "Game Systems"],
       description:
         "Interactive 3D portfolio experience combining Vue 3, Three.js, and Phaser for an immersive space-themed showcase of skills and projects.",
       technologies: ["Vue 3", "TypeScript", "Three.js", "Phaser", "Vite", "Jest"],
@@ -14,95 +15,116 @@ export const portfolioData = {
       image: "assets/images/portfolio/portfolio-quest.jpg",
     },
     {
-      id: "ea-support-home",
-      title: "EA Support Home Page",
-      description:
-        "Clean, user-focused design for EA's support portal home page. Prioritized intuitive navigation and quick access to key support functions with a modern, game-inspired aesthetic.",
-      technologies: ["HTML5", "CSS3", "JavaScript", "UX Design", "Salesforce"],
-      type: "web" as const,
-      demoUrl: "#",
-      image: "assets/images/portfolio/ea-home.jpg",
-    },
-    {
-      id: "ea-support-site",
-      title: "EA Support Site",
-      description:
-        "Design contributions for EA's internal support site during a greenfield rebuild, alongside architectural responsibilities.",
-      technologies: ["Salesforce", "AWS", "JavaScript", "CSS3"],
-      type: "web" as const,
-      image: "assets/images/portfolio/ea-support-site.jpg", // Add your image path
-    },
-    {
-      id: "decision-tree-logo",
-      title: "Decision Tree – Logo Design",
-      description:
-        "Two-color print design that visually mimicked full-color output—economical and clever.",
-      technologies: ["Branding", "Logo Design"],
-      type: "web" as const,
-      image: "assets/images/portfolio/decision-tree-logo.jpg", // Add your image path
-    },
-    {
-      id: "dell-home-poc",
-      title: "Dell Home Proof of Concept",
-      description:
-        "Foundational POC for Dell's homepage which influenced the design and layout of the global production homepage.",
-      technologies: ["HTML5", "CSS3", "JavaScript"],
-      type: "web" as const,
-      image: "assets/images/portfolio/dell-home-poc.jpg", // Add your image path
-    },
-    {
-      id: "dell-home-live",
-      title: "Dell Home Page (Live Site)",
-      description:
-        "Greenfield architecture deployed globally in under 30 days, built collaboratively with Dell tiger teams across countries.",
-      technologies: ["AngularJS", "ASP.NET MVC", "Performance", "Micro Frontends"],
-      type: "web" as const,
-      image: "assets/images/portfolio/dell-home-live.jpg", // Add your image path
-    },
-    {
       id: "dell-xps-poc",
       title: "Dell XPS Proof of Concept",
+      roles: ["UI Developer", "UX"],
       description:
-        "Visionary UI prototype showcasing Dell's front-end capabilities. Sparked Dell's premium branding initiative and inspired a broader digital transformation.",
-      technologies: ["HTML5", "CSS3", "JavaScript", "Performance"],
+        "Showcased Dell UI development possibilities through design and architecture. Resonated with Dell leadership and led to a Premium Branding initiative—a redesign touching Home, Category, and Brand as Dell progressed through digital transformation.",
+      technologies: ["HTML5", "CSS3", "JavaScript", "Performance", "UX"],
       type: "web" as const,
-      image: "assets/images/portfolio/dell-xps-poc.jpg", // Add your image path
-    },
-    {
-      id: "citi-flash-ux",
-      title: "Citi Flash + UX Work",
-      description:
-        "Initially hired as a designer; rapidly transitioned into Flash development during the period when Flash was industry-standard.",
-      technologies: ["Flash", "ActionScript", "UX"],
-      type: "web" as const,
-      image: "assets/images/portfolio/citi-flash-ux.jpg", // Add your image path
-    },
-    {
-      id: "bcbs-data-ux",
-      title: "BCBS Data UX Redesign",
-      description:
-        "Redesign focused on simplifying complex data into digestible, intuitive UX patterns. Widely praised internally.",
-      technologies: ["JavaScript", "Data Visualization", "UX"],
-      type: "web" as const,
-      image: "assets/images/portfolio/bcbs-data-ux.jpg", // Add your image path
+      demoUrl: "https://www.theweblife.com/dell/xps/",
+      image: "assets/images/portfolio/dell-xps-poc.jpg",
     },
     {
       id: "dell-xps-landing",
       title: "Dell XPS Landing Page",
+      roles: ["Frontend Developer"],
       description:
-        "Launched after leadership buy-in from the POC. Implemented with Dell's internal design team as part of a modernized brand strategy.",
+        "Shipped by Dell design after winning leadership support from the XPS proof of concept.",
       technologies: ["HTML5", "CSS3", "JavaScript"],
       type: "web" as const,
-      image: "assets/images/portfolio/dell-xps-landing.jpg", // Add your image path
+      demoUrl: "https://www.theweblife.com/dell/franchise/",
+      image: "assets/images/portfolio/dell-xps-landing.jpg",
+    },
+    {
+      id: "dell-home-poc",
+      title: "Dell Home Proof of Concept",
+      roles: ["Frontend Developer"],
+      description:
+        "Homepage proof of concept—same vein as the XPS work—that informed what became Dell’s production home experience.",
+      technologies: ["HTML5", "CSS3", "JavaScript"],
+      type: "web" as const,
+      demoUrl: "https://www.theweblife.com/dell/home/",
+      image: "assets/images/portfolio/dell-home-poc.jpg",
+    },
+    {
+      id: "dell-home-live",
+      title: "Dell Home Page (Live)",
+      roles: ["Senior Frontend Engineer", "Tiger-team collaborator"],
+      description:
+        "Tiger-team collaboration across nearly every Dell org. Experiment in a handful of countries quickly rolled out globally—with a redesigned experience and greenfield architecture delivered in under a month.",
+      technologies: ["AngularJS", "ASP.NET MVC", "Performance", "Micro Frontends"],
+      type: "web" as const,
+      demoUrl: "https://www.dell.com/en-us/",
+      image: "assets/images/portfolio/dell-home-live.jpg",
+    },
+    {
+      id: "electronic-arts-support",
+      title: "Electronic Arts — Support Experience",
+      roles: ["Tech Lead", "UX Design", "Architecture"],
+      description:
+        "When EA Support green-lit a greenfield internal support site, partnered on design alongside architecture and tech lead responsibilities.",
+      technologies: ["HTML5", "CSS3", "JavaScript", "UX Design", "Salesforce", "AWS"],
+      type: "web" as const,
+      image: "assets/images/portfolio/ea-support-site.jpg",
+    },
+    {
+      id: "citi-flash-ux",
+      title: "Citi",
+      roles: ["Designer", "Flash Developer"],
+      description:
+        "Started at Citi as a designer—and quickly leaned into Flash work when that was still how leading experiences shipped.",
+      technologies: ["Flash", "ActionScript", "UX"],
+      type: "web" as const,
+      image: "assets/images/portfolio/citi-flash-ux.jpg",
+    },
+    {
+      id: "bcbs-data-ux",
+      title: "BCBS",
+      roles: ["UX", "Data Visualization"],
+      description:
+        "Made complex healthcare data approachable—focused on intuitively understandable visualizations rather than brute-force density.",
+      technologies: ["JavaScript", "Data Visualization", "UX"],
+      type: "web" as const,
+      image: "assets/images/portfolio/bcbs-data-ux.jpg",
+    },
+    {
+      id: "vsi-content",
+      title: "VSI",
+      roles: ["Content Strategy", "UX Writing", "IA"],
+      description:
+        "Stepped beyond the usual hats to own concept and storytelling for this experience—hands-on narrative and IA, not only UI.",
+      technologies: ["Content Strategy", "UX Writing", "Web"],
+      type: "web" as const,
+      image: "assets/images/portfolio/vsi.jpg",
+    },
+    {
+      id: "joe-parker-guitars",
+      title: "Joe Parker Guitars",
+      roles: ["Web Designer"],
+      description: "Close friend launching a brand—partnered on his very first guitar site.",
+      technologies: ["Web", "Typography", "Branding"],
+      type: "web" as const,
+      image: "assets/images/portfolio/joe-parker-guitars.jpg",
+    },
+    {
+      id: "decision-tree-logo",
+      title: "Decision Tree Logo",
+      roles: ["Graphic Designer", "Print"],
+      description:
+        "Earlier-career milestone: constrained two-plate printing that still reads rich and colorful—favorite kind of crafty constraints.",
+      technologies: ["Print", "Logo Design"],
+      type: "web" as const,
+      image: "assets/images/portfolio/decision-tree-logo.jpg",
     },
     {
       id: "bizatomic-logo",
-      title: "BizAtomic – Logo Design",
-      description:
-        "Energetic branding concept with bold lines and a tight color palette for a startup launch.",
+      title: "BizAtomic Logo",
+      roles: ["Brand Designer"],
+      description: "Another personal favorite—a bold mark that leaned into kinetic energy.",
       technologies: ["Branding", "Logo Design"],
       type: "web" as const,
-      image: "assets/images/portfolio/bizatomic-logo.jpg", // Add your image path
+      image: "assets/images/portfolio/bizatomic-logo.jpg",
     },
   ] as ProjectData[],
 

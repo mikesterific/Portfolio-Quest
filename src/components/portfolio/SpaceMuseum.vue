@@ -1276,26 +1276,28 @@ export default defineComponent({
             { x: 15, y: artworkHeight }, // Right frame - vertically centered
           ],
         },
-        // Left wall (2 frames)
+        // Left wall (3 frames — matches portfolio.html exhibit count incl. Portfolio Quest + 11 works)
         {
           wall: "left",
-          count: 2,
+          count: 3,
           baseX: -28,
           baseRotation: Math.PI / 2,
           positions: [
-            { z: -8, y: artworkHeight }, // Front frame on left wall - vertically centered
-            { z: 8, y: artworkHeight }, // Back frame on left wall - vertically centered
+            { z: -8, y: artworkHeight }, // Left wall toward front corner
+            { z: 0, y: artworkHeight }, // Left wall midpoint
+            { z: 8, y: artworkHeight }, // Left wall toward back corner
           ],
         },
-        // Right wall (2 frames)
+        // Right wall (3 frames)
         {
           wall: "right",
-          count: 2,
+          count: 3,
           baseX: 28,
           baseRotation: -Math.PI / 2,
           positions: [
-            { z: -8, y: artworkHeight }, // Front frame on right wall - vertically centered
-            { z: 8, y: artworkHeight }, // Back frame on right wall - vertically centered
+            { z: -8, y: artworkHeight }, // Right wall toward front corner
+            { z: 0, y: artworkHeight }, // Right wall midpoint
+            { z: 8, y: artworkHeight }, // Right wall toward back corner
           ],
         },
       ];
@@ -1363,12 +1365,20 @@ export default defineComponent({
         ctx.textAlign = "center";
         ctx.fillText(project.title, canvas.width / 2, 80);
 
+        let nextY = 120;
+        if (project.roles?.length) {
+          ctx.fillStyle = "#3498db";
+          ctx.font = "bold 22px Arial";
+          ctx.fillText(project.roles.join(" · "), canvas.width / 2, nextY);
+          nextY = 158;
+        }
+
         // Description with improved wrapping for wider format
         ctx.font = "18px Arial";
         ctx.fillStyle = "#bdc3c7";
         const words = project.description.split(" ");
         let line = "";
-        let y = 150;
+        let y = nextY + 20;
         const maxWidth = canvas.width - 80; // More padding for widescreen
 
         for (let n = 0; n < words.length; n++) {
@@ -1454,7 +1464,27 @@ export default defineComponent({
           ctx.globalCompositeOperation = "source-over"; // ADDED: Ensure clean pixel replacement
           ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
-          // Clean image display - overlay banners removed to eliminate flickering
+          // Roles overlay (readable on screenshots)
+          const rolesText = project.roles?.filter(Boolean).join(" · ");
+          if (rolesText) {
+            const marginX = 48;
+            ctx.textAlign = "center";
+            ctx.font = "bold 20px Arial";
+            let displayRoles = rolesText;
+            while (
+              ctx.measureText(displayRoles).width > canvas.width - marginX * 2 &&
+              displayRoles.length > 24
+            ) {
+              displayRoles = displayRoles.slice(0, -4).trim() + "…";
+            }
+            const barPadY = 14;
+            const textBlockH = 28;
+            const barTop = canvas.height - textBlockH - barPadY * 2;
+            ctx.fillStyle = "rgba(0,0,0,0.72)";
+            ctx.fillRect(0, barTop, canvas.width, canvas.height - barTop);
+            ctx.fillStyle = "#ecf0f1";
+            ctx.fillText(displayRoles, canvas.width / 2, canvas.height - barPadY - 6);
+          }
 
           // High-quality texture update for loaded images - OPTIMIZED: Consistent clean rendering
           const newTexture = new THREE.CanvasTexture(canvas);
