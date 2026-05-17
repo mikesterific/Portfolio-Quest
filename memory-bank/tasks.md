@@ -1,5 +1,24 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## 🔧 LEVEL 2 TASK: Single Enemy Undock Spawn + Scaling Speed
+
+**Complexity**: Level 2 (Simple Gameplay Enhancement)
+**Goal**: Make Skills Space combat more fun by spawning only one enemy when the hero undocks from a base, placing it on the opposite horizontal side from the hero, and increasing enemy speed as new bases are explored.
+
+### Status
+- [x] VAN analysis complete
+- [x] Plan implementation against existing `SkillSpaceScene` and `EnemyAISystem`
+- [x] Spawn enemy only after station undock
+- [x] Place enemy on the opposite horizontal side from the hero
+- [x] Enforce only one active enemy
+- [x] Start enemy very slow and scale speed with explored bases
+- [x] Validate lints/build
+
+### Notes
+- Existing memory-bank lessons mention edge spawning and enemy AI tuning; reuse those patterns where possible.
+- Need to preserve docking stability fixes from the previous task: undocking should not reintroduce ship/camera shake.
+- Implemented by replacing the old dock-time three-enemy wave with a single undock-triggered enemy. Speed scales from unique unlocked station count with a slow base and capped growth.
+
 ## ✅ LEVEL 1 TASK: Skills list source sync + undock ship stability
 
 **Complexity**: Level 1 (content + bugfix)

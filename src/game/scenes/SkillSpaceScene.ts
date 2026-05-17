@@ -12,7 +12,7 @@ import {
   CollisionLayerHelper,
 } from "../systems/ShieldMappingSystem";
 import type { ShieldZoneConfig } from "../systems/ShieldMappingSystem";
-import { EnemyAISystem } from "../systems/EnemyAISystem";
+import { EnemyAISystem, type EnemyConfig } from "../systems/EnemyAISystem";
 import { SpaceStationManager, type SpaceStationData } from "../managers/SpaceStationManager";
 import { EffectsManager } from "../managers/EffectsManager";
 import { UIManager } from "../managers/UIManager";
@@ -49,7 +49,6 @@ interface SceneState {
   enemyAI: EnemyAISystem | null;
   combatEnabled: boolean;
   unlockedStations?: Set<string>;
-  dockSpawnedForStation?: Set<string>;
   totalStationCount?: number;
   laserSound?: Phaser.Sound.BaseSound;
   enemyLaserSound?: Phaser.Sound.BaseSound;
@@ -69,6 +68,18 @@ interface ShieldConfig {
   isActive: boolean;
   stationId: string;
 }
+
+const UNDOCK_ENEMY_SPEED_CONFIG = {
+  baseSpeed: 60,
+  speedPerExploredStation: 20,
+  maxSpeed: 200,
+  baseAcceleration: 160,
+  accelerationPerExploredStation: 35,
+  maxAcceleration: 420,
+  baseStrafeSpeed: 35,
+  strafeSpeedPerExploredStation: 10,
+  maxStrafeSpeed: 120,
+};
 
 // Functions moved to respective managers
 
@@ -222,9 +233,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     shields: null,
     shieldMapManager: null,
     enemyAI: null,
-    combatEnabled: true, // Start with combat enabled so enemies spawn when docking
+    combatEnabled: true, // Start with combat enabled so enemies can spawn on undock
     unlockedStations: new Set<string>(),
-    dockSpawnedForStation: new Set<string>(),
     totalStationCount: 0,
     laserSound: undefined,
     enemyLaserSound: undefined,
@@ -570,26 +580,42 @@ export class SkillSpaceScene extends Phaser.Scene {
               skillId,
               stationData: stationDataForRadar,
             });
-
-            // Spawn enemies on dock (instead of undock) so they appear on radar while docked
-            // Spawn +3 enemies once per unlocked station upon docking (only if combat enabled)
-            if (this.state.enemyAI && this.state.combatEnabled) {
-              const alreadySpawned = stationId && this.state.dockSpawnedForStation?.has(stationId);
-              if (stationId && !alreadySpawned) {
-                // Prefer outside random spawns so ships fly in from offscreen
-                if (typeof this.state.enemyAI.spawnFromOutsideRandom === "function") {
-                  this.state.enemyAI.spawnFromOutsideRandom(3);
-                } else {
-                  this.state.enemyAI.spawnWave(3);
-                }
-                this.state.dockSpawnedForStation?.add(stationId);
-              }
-            }
           },
         });
       },
     });
   };
+
+  private getUndockEnemyConfig(): Partial<EnemyConfig> {
+    const exploredCount = Math.max(1, this.state.unlockedStations?.size ?? 1);
+    const difficultySteps = Math.max(0, exploredCount - 1);
+    const speed = Math.min(
+      UNDOCK_ENEMY_SPEED_CONFIG.baseSpeed +
+        difficultySteps * UNDOCK_ENEMY_SPEED_CONFIG.speedPerExploredStation,
+      UNDOCK_ENEMY_SPEED_CONFIG.maxSpeed,
+    );
+
+    return {
+      speed,
+      acceleration: Math.min(
+        UNDOCK_ENEMY_SPEED_CONFIG.baseAcceleration +
+          difficultySteps * UNDOCK_ENEMY_SPEED_CONFIG.accelerationPerExploredStation,
+        UNDOCK_ENEMY_SPEED_CONFIG.maxAcceleration,
+      ),
+      strafeSpeed: Math.min(
+        UNDOCK_ENEMY_SPEED_CONFIG.baseStrafeSpeed +
+          difficultySteps * UNDOCK_ENEMY_SPEED_CONFIG.strafeSpeedPerExploredStation,
+        UNDOCK_ENEMY_SPEED_CONFIG.maxStrafeSpeed,
+      ),
+    };
+  }
+
+  private spawnEnemyAfterUndock(stationId?: string): void {
+    if (!stationId || !this.state.enemyAI || !this.state.combatEnabled || !this.state.player)
+      return;
+
+    this.state.enemyAI.spawnSingleOppositeHorizontalSide(this.getUndockEnemyConfig());
+  }
 
   private findShieldContainerForStation(stationId: string): Phaser.GameObjects.Container | null {
     if (!this.state.shields) return null;
@@ -606,6 +632,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (!this.state.player || !this.state.isDocked) return;
 
     const dockedStation = this.state.dockedStation;
+    const stationData = dockedStation?.getData("stationData") as { id?: string } | undefined;
+    const stationId = stationData?.id;
 
     this.state.isDocked = false;
     this.state.dockedStation = null;
@@ -614,8 +642,6 @@ export class SkillSpaceScene extends Phaser.Scene {
     body?.setVelocity(0, 0);
 
     if (dockedStation) {
-      const stationData = dockedStation.getData("stationData") as { id?: string } | undefined;
-      const stationId = stationData?.id;
       if (stationId) {
         const shield = this.findShieldContainerForStation(stationId);
         if (shield) {
@@ -631,7 +657,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.state.interactionPrompt.setVisible(false);
     }
 
-    // Enemy spawning now happens on dock (not undock) so they appear on radar while docked
+    this.spawnEnemyAfterUndock(stationId);
   };
 
   private handleStationInteraction = (skillId: string, stationData: any): void => {
@@ -734,7 +760,7 @@ export class SkillSpaceScene extends Phaser.Scene {
           this.state.enemyAI.setCombatEnabled(newCombatState);
 
           if (newCombatState && !previousState) {
-            // Combat turned ON: enemies will spawn when docking with stations
+            // Combat turned ON: enemies will spawn after the next station undock
             // No automatic spawning here
           } else if (!newCombatState && previousState) {
             // Combat turned OFF: despawn all enemies and clear enemy lasers
