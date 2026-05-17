@@ -1,5 +1,26 @@
 # Progress - Resume Game Implementation
 
+## Latest Enhancement: Keyboard / mouse-only gate ✅
+
+**Date**: May 17, 2026  
+**Feature**: Touch-first phone/tablet visitors see a full-screen apology instead of the game; desktop/laptop users with keyboard and mouse/trackpad continue normally  
+**Status**: Reflected and archived  
+
+### Technical Implementation
+- `src/utils/requiresKeyboardAndMouse.ts`: layered detection using pointer/hover media queries, `maxTouchPoints`, mobile/tablet user-agent hints, iPad desktop-mode handling, and a small touch viewport fallback.
+- `App.vue`: full-screen keyboard/mouse requirement overlay and disabled pointer interaction on the app shell while blocked.
+
+### Verification
+- `npm run build`: successful production build and type check.
+- `npm run type-check`: successful after stricter detection follow-up.
+- `ReadLints`: clean on touched files.
+
+### Documentation
+- Reflection: [Keyboard / mouse gate](reflection/reflection-keyboard-mouse-gate.md)
+- Archive: [Keyboard / mouse gate](archive/archive-keyboard-mouse-gate.md)
+
+---
+
 ## Latest Enhancement: Hero hull death + respawn blink ✅
 
 **Date**: May 16, 2026  

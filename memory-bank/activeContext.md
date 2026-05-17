@@ -4,6 +4,7 @@
 - **Keyboard / mouse-only gate**: Level 1 UX COMPLETE ✅
   - Phones/tablets are blocked through layered detection: pointer/hover media queries, `maxTouchPoints`, mobile/tablet user-agent hints, iPad desktop-mode detection, and a small touch viewport fallback. The main app shell is non-interactive behind the apology overlay.
   - Files: `src/utils/requiresKeyboardAndMouse.ts`, `App.vue`.
+  - Archive: [Keyboard / mouse gate](archive/archive-keyboard-mouse-gate.md)
 - **Hero hull death + respawn blink**: Level 2 Skills Space combat COMPLETE ✅
   - Lethal hull: large explosion, hide ship + disable body briefly, respawn at default position with full health/shields, three-flash visibility intro; `isPlayerRespawning` guards movement, firing, and laser hits.
   - Archive: [Hero hull death + respawn blink](archive/archive-hero-death-respawn.md)

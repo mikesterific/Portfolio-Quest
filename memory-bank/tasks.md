@@ -8,6 +8,18 @@
 - [x] `src/utils/requiresKeyboardAndMouse.ts` — layered phone/tablet detection via pointer/hover media queries, `maxTouchPoints`, user-agent hints, iPad desktop-mode detection, and small touch viewport fallback
 - [x] `App.vue` — full-screen themed overlay + `pointer-events: none` on main shell while blocked
 - [x] Build: `npm run build` ✅; stricter follow-up type-check: `npm run type-check` ✅
+- [x] Reflection complete
+
+### Reflection Highlights
+- **What Went Well**: The gate lives at the app shell, so it covers every route and keeps the playable app untouched behind the overlay.
+- **Challenges**: iPhone/dev testing exposed that localhost-only Vite and accidental HTTPS can look like app failures; device detection also varies across browsers.
+- **Lessons Learned**: Use layered capability, touch, UA, and viewport signals for practical phone/tablet detection; keep a desktop touchscreen escape hatch.
+- **Reflection Document**: [Keyboard / mouse gate](reflection/reflection-keyboard-mouse-gate.md)
+
+### Archive
+- **Date**: 2026-05-17
+- **Archive Document**: [Keyboard / mouse gate](archive/archive-keyboard-mouse-gate.md)
+- **Status**: COMPLETED
 
 ---
 
