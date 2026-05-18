@@ -15,8 +15,8 @@
 - [x] Add festive `You Win` Phaser presentation and cleanup
 - [x] Add/update focused tests
 - [x] Validate lints/build
-- [ ] Reflection complete
-- [ ] Archiving complete
+- [x] Reflection complete
+- [x] Archiving complete
 
 ### Notes
 - Existing progression state already tracks `unlockedStations` and `totalStationCount`, and completion is currently detected during docking.
@@ -25,6 +25,17 @@
 - Implemented in `SkillSpaceScene` with `victoryPendingStationId`, `hasShownVictory`, a centered neon `You Win` overlay, repeated particle bursts, cleanup, and a typed `game:victory` event.
 - Verification: `ReadLints` clean on touched files; focused `SkillSpaceScene` Jest spec passes with 49 tests; `npm run build` passes with the existing Phaser/Museum chunk-size warning.
 - **Creative Document**: [Skills Space Victory Sequence](creative/creative-skills-space-victory.md)
+
+### Reflection Highlights
+- **What Went Well**: Reused existing unlock/progress data; arm-on-last-dock + trigger-on-undock matched the ask; typed `game:victory` kept the bridge honest.
+- **Challenges**: Extending Phaser Jest mocks for scroll factor, scale, and timer cleanup; ensuring victory teardown does not leak timers or containers.
+- **Lessons Learned**: Prefer an explicit `victoryPendingStationId` over inferring order from sets; early return from undock is a simple way to suppress the combat spawn only for the win beat.
+- **Reflection Document**: [Skills Space Victory Sequence](reflection/reflection-skills-space-victory.md)
+
+### Archive
+- **Date**: 2026-05-17
+- **Archive Document**: [Skills Space Victory Sequence](archive/archive-skills-space-victory.md)
+- **Status**: COMPLETED
 
 ---
 

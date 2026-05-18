@@ -4,7 +4,7 @@
 
 **Date**: May 17, 2026  
 **Feature**: Final-station win celebration after undocking from the last explored Skills Space base  
-**Status**: Implemented; ready for reflection  
+**Status**: Reflected and archived  
 
 ### Technical Implementation
 - `SkillSpaceScene`: added one-time victory state (`victoryPendingStationId`, `hasShownVictory`, victory overlay/timer cleanup).
@@ -20,7 +20,8 @@
 
 ### Documentation
 - Creative: [Skills Space Victory Sequence](creative/creative-skills-space-victory.md)
-- Tasks: active Level 2 task updated in `tasks.md`.
+- Reflection: [Skills Space Victory Sequence](reflection/reflection-skills-space-victory.md)
+- Archive: [Skills Space Victory Sequence](archive/archive-skills-space-victory.md)
 
 ---
 
