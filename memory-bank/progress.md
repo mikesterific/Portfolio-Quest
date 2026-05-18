@@ -1,5 +1,29 @@
 # Progress - Resume Game Implementation
 
+## Latest Enhancement: Skills Space Victory Sequence ✅
+
+**Date**: May 17, 2026  
+**Feature**: Final-station win celebration after undocking from the last explored Skills Space base  
+**Status**: Implemented; ready for reflection  
+
+### Technical Implementation
+- `SkillSpaceScene`: added one-time victory state (`victoryPendingStationId`, `hasShownVictory`, victory overlay/timer cleanup).
+- Final docking now arms victory when `unlockedStations.size >= totalStationCount`; final undock triggers the `You Win` overlay and suppresses the normal enemy spawn.
+- Added centered neon `You Win` text, `All stations explored` subtext, repeated particle bursts, and typed `game:victory` event emission.
+- `src/types/game.ts`: added the typed `game:victory` event.
+- `tests/__mocks__/phaser.ts`: extended the Phaser mock for overlay methods used by the scene tests.
+
+### Verification
+- `ReadLints`: clean on touched files.
+- Focused Jest: `npx jest tests/game/scenes/SkillSpaceScene.spec.js --runInBand --coverage=false` passed, 49 tests.
+- `npm run build`: successful production build and type check; existing chunk-size warning remains.
+
+### Documentation
+- Creative: [Skills Space Victory Sequence](creative/creative-skills-space-victory.md)
+- Tasks: active Level 2 task updated in `tasks.md`.
+
+---
+
 ## Latest Enhancement: Keyboard / mouse-only gate ✅
 
 **Date**: May 17, 2026  

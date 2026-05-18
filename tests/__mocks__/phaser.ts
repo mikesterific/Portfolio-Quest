@@ -106,6 +106,12 @@ class GameObject {
   setAlpha() {
     return this;
   }
+  setScale() {
+    return this;
+  }
+  setScrollFactor() {
+    return this;
+  }
   setVisible() {
     return this;
   }
@@ -254,7 +260,7 @@ class Time {
   now = 0;
   addEvent(cfg: any) {
     (this as any)._lastEvent = cfg;
-    return cfg;
+    return { ...cfg, remove: jest.fn() };
   }
   delayedCall() {
     return { remove: jest.fn() };

@@ -1,5 +1,33 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## 🎉 LEVEL 2 TASK: Skills Space Victory Sequence
+
+**Date**: 2026-05-17  
+**Complexity**: Level 2 (Simple Gameplay Enhancement)  
+**Goal**: When all Skills Space base stations have been explored, show a festive `You Win` celebration after the player undocks from the final station.
+
+### Status
+- [x] VAN analysis complete
+- [x] Creative phase complete
+- [x] Implement final-station victory state in `SkillSpaceScene`
+- [x] Trigger victory after final undock, not during final dock
+- [x] Suppress normal enemy spawn on the winning undock
+- [x] Add festive `You Win` Phaser presentation and cleanup
+- [x] Add/update focused tests
+- [x] Validate lints/build
+- [ ] Reflection complete
+- [ ] Archiving complete
+
+### Notes
+- Existing progression state already tracks `unlockedStations` and `totalStationCount`, and completion is currently detected during docking.
+- The selected design arms victory when the last station is unlocked, then triggers the visual sequence in `undockFromStation` after shield/prompt cleanup.
+- Victory should be one-time only and should not alter player physics, preserving recent undock stability work.
+- Implemented in `SkillSpaceScene` with `victoryPendingStationId`, `hasShownVictory`, a centered neon `You Win` overlay, repeated particle bursts, cleanup, and a typed `game:victory` event.
+- Verification: `ReadLints` clean on touched files; focused `SkillSpaceScene` Jest spec passes with 49 tests; `npm run build` passes with the existing Phaser/Museum chunk-size warning.
+- **Creative Document**: [Skills Space Victory Sequence](creative/creative-skills-space-victory.md)
+
+---
+
 ## Level 1 — Keyboard / mouse gate (COMPLETE)
 
 **Date**: 2026-05-17  

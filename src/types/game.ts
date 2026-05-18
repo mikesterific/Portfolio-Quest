@@ -116,6 +116,7 @@ export interface GameEvents {
     totalStations: number;
   };
   "game:progress-complete": { totalStations: number };
+  "game:victory": { totalStations: number };
   "game:enemy-positions-updated": EnemyRadarData;
   "game:return-home": void;
 

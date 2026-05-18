@@ -53,13 +53,15 @@
   - Enables realistic jumping and landing on 3D objects
 
 ## Current Focus
-**Hero hull death + respawn** — archived; Memory Bank ledger updated.
+**Skills Space Victory Sequence** — implementation complete; ready for REFLECT mode.
 
-**Hero Shields** 🛡️ — implementation and reflection complete on `tasks.md`; **archiving still open** if you want a formal archive entry mirroring the death/respawn pass.
+Implemented design: victory arms when the final station is explored during docking, then triggers a one-time festive `You Win` Phaser sequence after undocking from that final station. The winning undock skips the normal enemy spawn and does not alter player physics.
 
-Hero shields absorb 3 enemy shots before health damage, show draining intensity, and regenerate after 10 seconds without shield hits.
+**Creative Document**: [Skills Space Victory Sequence](creative/creative-skills-space-victory.md)
 
-**Next**: Start a new task in VAN mode when ready (optional follow-ups: archive Hero Shields, one-shot hull after shields down, “DESTROYED” UI beat).
+**Verification**: `ReadLints` clean, focused `SkillSpaceScene` Jest spec passes with 49 tests, and `npm run build` passes.
+
+**Next**: REFLECT mode to capture lessons learned, then archive if desired.
 
 **Task Complete**: 🚀 SKILLS SPACE SCENE TRANSFORMATION
 - **Complexity**: Level 3 (Intermediate Feature) - SUCCESSFULLY IMPLEMENTED

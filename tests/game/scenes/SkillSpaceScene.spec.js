@@ -1013,6 +1013,44 @@ describe("SkillSpaceScene", () => {
 
     const completionCall = calls.find((c) => c[0] === "game:progress-complete");
     expect(completionCall).toBeTruthy();
+    expect(scene["state"].victoryPendingStationId).toBe("s-frontend");
+    expect(scene["state"].hasShownVictory).toBe(false);
+  });
+
+  test("final station undock triggers victory once and suppresses enemy spawn", () => {
+    scene.create();
+    scene["state"].combatEnabled = true;
+    scene["state"].unlockedStations = new Set();
+    scene["state"].totalStationCount = 1;
+    scene["state"].player = { x: 300, y: 320, body: { setVelocity: jest.fn() } };
+    scene["state"].isDocking = false;
+
+    const spawnSpy = jest.spyOn(scene["state"].enemyAI, "spawnSingleOppositeHorizontalSide");
+    const victorySpy = jest.spyOn(scene, "triggerVictorySequence");
+
+    const station = scene.add.container(300, 320);
+    station.setData("stationData", {
+      id: "s-final",
+      name: "Final Station",
+      skillId: "final",
+    });
+
+    scene["dockWithStation"](station, "final");
+    expect(scene["state"].victoryPendingStationId).toBe("s-final");
+    expect(scene["state"].hasShownVictory).toBe(false);
+
+    scene["undockFromStation"]();
+
+    expect(victorySpy).toHaveBeenCalledTimes(1);
+    expect(scene["state"].hasShownVictory).toBe(true);
+    expect(scene["state"].victoryPendingStationId).toBeUndefined();
+    expect(scene["state"].victoryContainer).toBeTruthy();
+    expect(spawnSpy).not.toHaveBeenCalled();
+
+    scene["state"].isDocked = true;
+    scene["state"].dockedStation = station;
+    scene["undockFromStation"]();
+    expect(victorySpy).toHaveBeenCalledTimes(1);
   });
 
   test("undock spawns a single enemy when combat is enabled", () => {

@@ -55,6 +55,10 @@ interface SceneState {
   combatEnabled: boolean;
   unlockedStations?: Set<string>;
   totalStationCount?: number;
+  victoryPendingStationId?: string;
+  hasShownVictory: boolean;
+  victoryContainer: Phaser.GameObjects.Container | null;
+  victoryBurstTimer: Phaser.Time.TimerEvent | null;
   laserSound?: Phaser.Sound.BaseSound;
   enemyLaserSound?: Phaser.Sound.BaseSound;
   soundEnabled: boolean;
@@ -257,6 +261,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     combatEnabled: true, // Start with combat enabled so enemies can spawn on undock
     unlockedStations: new Set<string>(),
     totalStationCount: 0,
+    victoryPendingStationId: undefined,
+    hasShownVictory: false,
+    victoryContainer: null,
+    victoryBurstTimer: null,
     laserSound: undefined,
     enemyLaserSound: undefined,
     soundEnabled: true,
@@ -632,6 +640,9 @@ export class SkillSpaceScene extends Phaser.Scene {
 
               // Check completion
               if (totalStations > 0 && totalUnlocked >= totalStations) {
+                if (!this.state.hasShownVictory) {
+                  this.state.victoryPendingStationId = stationId;
+                }
                 gameEventBridge.emitGameEvent("game:progress-complete", { totalStations });
               }
             }
@@ -694,6 +705,124 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.enemyAI.spawnSingleOppositeHorizontalSide(this.getUndockEnemyConfig());
   }
 
+  private shouldTriggerVictoryForUndock(stationId?: string): boolean {
+    return Boolean(
+      stationId &&
+      !this.state.hasShownVictory &&
+      this.state.victoryPendingStationId === stationId &&
+      (this.state.totalStationCount || 0) > 0 &&
+      (this.state.unlockedStations?.size || 0) >= (this.state.totalStationCount || 0),
+    );
+  }
+
+  private triggerVictorySequence(): void {
+    if (this.state.hasShownVictory) return;
+
+    this.state.hasShownVictory = true;
+    this.state.victoryPendingStationId = undefined;
+
+    const { width, height } = this.scale;
+    const victoryContainer = this.add.container(0, 0);
+    victoryContainer.setDepth(20000);
+    victoryContainer.setScrollFactor(0);
+    victoryContainer.setAlpha(0);
+
+    const backdrop = this.add.rectangle(width / 2, height / 2, width, height, 0x0a0a1f, 0.45);
+    backdrop.setScrollFactor(0);
+
+    const title = this.add
+      .text(width / 2, height / 2 - 42, "You Win", {
+        fontSize: "86px",
+        fontFamily: `Orbitron, ${UI_CONFIG.fonts.primary}`,
+        fontStyle: "bold",
+        color: "#00ffff",
+        stroke: "#001a33",
+        strokeThickness: 8,
+        resolution: 2,
+      })
+      .setOrigin(0.5)
+      .setScale(0.82)
+      .setScrollFactor(0);
+
+    const subtitle = this.add
+      .text(width / 2, height / 2 + 44, "All stations explored", {
+        fontSize: "24px",
+        fontFamily: UI_CONFIG.fonts.primary,
+        fontStyle: "bold",
+        color: "#00ff88",
+        stroke: "#001a1a",
+        strokeThickness: 3,
+        resolution: 2,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+
+    victoryContainer.add([backdrop, title, subtitle]);
+    this.state.victoryContainer = victoryContainer;
+
+    this.tweens.add({
+      targets: victoryContainer,
+      alpha: 1,
+      duration: 320,
+      ease: "Cubic.Out",
+    });
+
+    this.tweens.add({
+      targets: title,
+      scale: 1,
+      duration: 580,
+      ease: "Back.Out",
+    });
+
+    this.tweens.add({
+      targets: title,
+      alpha: { from: 0.86, to: 1 },
+      duration: 760,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.InOut",
+    });
+
+    this.spawnVictoryBurstRing();
+    this.state.victoryBurstTimer = this.time.addEvent({
+      delay: 280,
+      repeat: 5,
+      callback: () => this.spawnVictoryBurstRing(),
+    });
+
+    gameEventBridge.emitGameEvent("game:victory", {
+      totalStations: this.state.totalStationCount || 0,
+    });
+  }
+
+  private spawnVictoryBurstRing(): void {
+    const { width, height } = this.scale;
+    const burstPoints = [
+      { x: width * 0.18, y: height * 0.24, tint: 0x00ffff },
+      { x: width * 0.82, y: height * 0.24, tint: 0x00ff88 },
+      { x: width * 0.25, y: height * 0.68, tint: 0xffd166 },
+      { x: width * 0.75, y: height * 0.68, tint: 0xff7a18 },
+    ];
+
+    burstPoints.forEach(({ x, y, tint }) => {
+      const burst = this.add.particles(x, y, "laser-beam", {
+        tint,
+        speed: { min: 90, max: 260 },
+        scale: { start: 0.32, end: 0 },
+        alpha: { start: 1, end: 0 },
+        lifespan: 720,
+        quantity: 12,
+        blendMode: Phaser.BlendModes.ADD,
+      });
+      burst.setDepth(19999);
+      burst.setScrollFactor(0);
+
+      this.time.delayedCall(820, () => {
+        burst.destroy();
+      });
+    });
+  }
+
   private findShieldContainerForStation(stationId: string): Phaser.GameObjects.Container | null {
     if (!this.state.shields) return null;
     for (const obj of this.state.shields.getChildren()) {
@@ -732,6 +861,11 @@ export class SkillSpaceScene extends Phaser.Scene {
 
     if (this.state.interactionPrompt) {
       this.state.interactionPrompt.setVisible(false);
+    }
+
+    if (this.shouldTriggerVictoryForUndock(stationId)) {
+      this.triggerVictorySequence();
+      return;
     }
 
     this.spawnEnemyAfterUndock(stationId);
@@ -858,6 +992,16 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.state.laserTimer = null;
     }
     this.clearPlayerInvulnerabilityTimer();
+
+    if (this.state.victoryBurstTimer) {
+      this.state.victoryBurstTimer.remove(false);
+      this.state.victoryBurstTimer = null;
+    }
+
+    if (this.state.victoryContainer) {
+      this.state.victoryContainer.destroy();
+      this.state.victoryContainer = null;
+    }
   }
 
   private getPlayerSpawnX(sceneWidth: number): number {
