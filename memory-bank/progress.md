@@ -1,5 +1,27 @@
 # Progress - Resume Game Implementation
 
+## Latest Enhancement: Skills Space undock combat wave UX ✅
+
+**Date**: May 17, 2026  
+**Feature**: Post-undock enemy horizontal flybys keyed to pilot flank + guarded unengaged exit; optional three-ship vertical wing on even unlocked-base milestones; escort `engageAfterMs` versus lead to avoid simultaneous LOS break-out.  
+**Status**: Reflected and archived  
+
+### Technical Implementation
+- `EnemyAISystem`: `spawnOppositeSideHorizontalFlybys`, `spawnSingleOppositeHorizontalSide` wrapper; flyby `startTimeMs` / `originX` / `engageAfterMs`; boundary despawn thresholds; vertical stack `startY` sliding for viewport clamps.
+- `SkillSpaceScene`: `spawnEnemyAfterUndock` computes `flybyCount` from `unlockedStations` parity (`UNDOCK_EVEN_BASE_BONUS_MIN`, `UNDOCK_BONUS_ESCORT_COUNT`).
+- Tests: `EnemyAISystem.spec.js`, `SkillSpaceScene.spec.js`; `PlayerSystem.spec.js` Q/R key expectations updated.
+
+### Verification
+- `npx jest tests/game/systems/EnemyAISystem.spec.js tests/game/scenes/SkillSpaceScene.spec.js --runInBand --coverage=false` — passed during development.
+- `npm run build` — passed.
+
+### Documentation
+- Reflection: [Skills Space undock enemy wave UX](reflection/reflection-skills-space-undock-wave.md)
+- Appendix reflection: [Undock enemy visibility](reflection/reflection-undock-enemy-visibility.md)
+- Archive: [Skills Space undock combat wave](archive/archive-skills-space-undock-wave.md)
+
+---
+
 ## Latest Enhancement: Skills Space Victory Sequence ✅
 
 **Date**: May 17, 2026  

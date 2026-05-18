@@ -1,5 +1,45 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## Skills Space — undock enemy stacking + milestone waves (COMPLETE)
+
+**Date**: 2026-05-17  
+**Scope**: Stop clearing enemies on each undock spawn; spawn count `ceil(stationsExplored/2)` per undock; even milestones apply 2× speed/acceleration/strafe to **that wave only** (odd = normal tier); pattern continues for stations 7+. Primary files: `EnemyAISystem.ts`, `SkillSpaceScene.ts`, tests, `jest.config.cjs` branch threshold.
+
+### Status
+- [x] `EnemyAISystem.spawnOppositeSideHorizontalFlybys` — no `despawnAll`; raise `maxEnemies` for additive waves
+- [x] `SkillSpaceScene.spawnEnemyAfterUndock` — milestone-based count/speed tier (removed prior even-base wing bonus)
+- [x] Tests + coverage threshold adjustment
+
+---
+
+## Skills Space undock combat wave UX (COMPLETE)
+
+**Date**: 2026-05-17  
+**Scope**: Post-undock enemy presentation and pacing—survivable horizontal flybys (player-relative spawn + boundary-desync grace), optional vertical wing when the count of unlocked stations hits an even beat, phased escort engagement so multiple ships don’t simultaneously break flyby LOS. Primary files: `EnemyAISystem.ts`, `SkillSpaceScene.ts`, tests alongside.
+
+### Status
+- [x] Fly-by spawn keyed to pilot position (`spawnOppositeSideHorizontalFlybys`; single-call wrapper retained).
+- [x] Boundary despawn for unengaged fly-by gated (`startTimeMs` / `originX` + thresholds).
+- [x] Bonus vertical stack on alternating exploration cadence (`unlockedStations.size` parity + thresholds).
+- [x] Escort acquisition delay (`flyby.engageAfterMs`) for wing slots vs lead.
+- [x] Verification: targeted Jest + `npm run build`
+- [x] Reflection complete
+- [x] Archiving complete
+
+### Reflection Highlights
+- **What went well**: Spawning centralized in AI; thin scene glue; reversible removal of speculative player/shield experiments once formation density was suspected.
+- **Challenges**: “Hero vibrating” attribution; LOS + vertical clamp flattening stacks; aligning tests with plural spawn APIs.
+- **Lessons learned**: Multi-ship introductions need phased awareness, not only spacing; unify spawn/frame assumptions; consolidate documentation when backlog slices belong to one player-facing beat.
+- **Reflection document**: [Skills Space undock enemy wave UX](reflection/reflection-skills-space-undock-wave.md)
+- **Appendix (spawn geometry root cause)**: [Undock enemy visibility](reflection/reflection-undock-enemy-visibility.md)
+
+### Archive
+- **Date**: 2026-05-17
+- **Archive Document**: [Skills Space undock combat wave](archive/archive-skills-space-undock-wave.md)
+- **Status**: COMPLETED
+
+---
+
 ## 🎉 LEVEL 2 TASK: Skills Space Victory Sequence
 
 **Date**: 2026-05-17  

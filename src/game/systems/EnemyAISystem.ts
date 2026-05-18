@@ -64,6 +64,9 @@ export interface EnemyAgent {
     hasEngaged: boolean;
     direction: 1 | -1;
     exitPadding: number;
+    startTimeMs: number;
+    originX: number;
+    engageAfterMs: number;
   };
   orbit: {
     direction: 1 | -1;
@@ -85,6 +88,10 @@ interface EnemyAIState {
   spawnRadius: number;
   enemyLasers: Phaser.GameObjects.Group | null;
 }
+
+/** Unengaged flyby: avoid instant boundary despawn (undock anchor spawn can be closer to combat). */
+const FLYBY_UNENGAGED_BOUNDARY_EXIT_MIN_AIRBORNE_MS = 420;
+const FLYBY_UNENGAGED_BOUNDARY_EXIT_MIN_TRAVEL_PX = 170;
 
 // Default enemy configuration (rebalanced)
 const DEFAULT_ENEMY_CONFIG: EnemyConfig = {
@@ -287,6 +294,9 @@ export class EnemyAISystem {
         hasEngaged: false,
         direction: 1,
         exitPadding: 50,
+        startTimeMs: 0,
+        originX: 0,
+        engageAfterMs: 0,
       },
       orbit: { direction: Math.random() > 0.5 ? 1 : -1, lastFlipTime: 0 },
       health: enemyConfig.health,
@@ -314,37 +324,81 @@ export class EnemyAISystem {
     this.spawnFromEdge("bottom", count, padding, jitter);
   }
 
+  /**
+   * Horizontal flybys from the opposite flank vs the player's lateral bias — same spawn X with
+   * vertical spacing (stack centered on hero Y).
+   */
+  public spawnOppositeSideHorizontalFlybys(
+    config: Partial<EnemyConfig> = {},
+    verticalCount: number = 1,
+    padding: number = 50,
+    jitter: number = 20,
+  ): EnemyAgent[] {
+    if (!this.state.playerTarget || !this.state.combatEnabled || verticalCount < 1) return [];
+
+    // Do not clear existing agents — undock waves stack. Grow cap so new flybys aren't clipped.
+    this.state.maxEnemies = Math.max(this.state.maxEnemies, this.state.agents.size + verticalCount);
+
+    const w = this.state.scene.scale.width;
+    const h = this.state.scene.scale.height;
+    const target = new Phaser.Math.Vector2(this.state.playerTarget.x, this.state.playerTarget.y);
+    const entryDistance = Phaser.Math.Clamp(w * 0.42, 400, 920);
+    const minPlayerGap = Math.max(padding + 90, Math.min(260, Math.round(w * 0.12)));
+
+    let x: number;
+    let direction: 1 | -1;
+    if (target.x < w / 2) {
+      const raw = target.x + entryDistance;
+      const lowBound = Math.max(target.x + minPlayerGap, -padding);
+      x = Phaser.Math.Clamp(raw, lowBound, w + padding);
+      direction = -1;
+    } else {
+      const raw = target.x - entryDistance;
+      const highBound = Math.min(target.x - minPlayerGap, w + padding);
+      x = Phaser.Math.Clamp(raw, -padding, highBound);
+      direction = 1;
+    }
+
+    const step = Math.max(72, Math.min(138, Math.round(h * 0.1)));
+    const centerRank = (verticalCount - 1) / 2;
+    const stackHeight = step * (verticalCount - 1);
+    const minStartY = padding;
+    const maxStartY = Math.max(minStartY, h - padding - stackHeight);
+    const startY = Phaser.Math.Clamp(target.y - step * centerRank, minStartY, maxStartY);
+    const leadSlot = Math.floor(centerRank);
+    const flownow = this.state.scene.time.now;
+    const agents: EnemyAgent[] = [];
+
+    for (let slot = 0; slot < verticalCount; slot++) {
+      const y = Phaser.Math.Clamp(
+        startY + step * slot + Phaser.Math.FloatBetween(-jitter * 0.4, jitter * 0.4),
+        padding,
+        h - padding,
+      );
+      const agent = this.createEnemy(x, y, config);
+      agent.flyby = {
+        isActive: true,
+        hasEngaged: false,
+        direction,
+        exitPadding: padding,
+        startTimeMs: flownow,
+        originX: agent.sprite.x,
+        engageAfterMs: verticalCount > 1 && slot !== leadSlot ? 900 : 0,
+      };
+      agent.sprite.setRotation(direction === 1 ? Math.PI / 2 : -Math.PI / 2);
+      agents.push(agent);
+    }
+
+    return agents;
+  }
+
   public spawnSingleOppositeHorizontalSide(
     config: Partial<EnemyConfig> = {},
     padding: number = 50,
     jitter: number = 20,
   ): EnemyAgent | null {
-    if (!this.state.playerTarget || !this.state.combatEnabled) return null;
-
-    this.despawnAll();
-    this.state.maxEnemies = 1;
-
-    const w = this.state.scene.scale.width;
-    const h = this.state.scene.scale.height;
-    const target = new Phaser.Math.Vector2(this.state.playerTarget.x, this.state.playerTarget.y);
-    const edge: "left" | "right" = target.x < w / 2 ? "right" : "left";
-    const x = edge === "left" ? -padding : w + padding;
-    const y = Phaser.Math.Clamp(
-      target.y + Phaser.Math.FloatBetween(-jitter, jitter),
-      padding,
-      h - padding,
-    );
-    const agent = this.createEnemy(x, y, config);
-    const direction: 1 | -1 = edge === "left" ? 1 : -1;
-
-    agent.flyby = {
-      isActive: true,
-      hasEngaged: false,
-      direction,
-      exitPadding: padding,
-    };
-    agent.sprite.setRotation(direction === 1 ? Math.PI / 2 : -Math.PI / 2);
-    return agent;
+    const squad = this.spawnOppositeSideHorizontalFlybys(config, 1, padding, jitter);
+    return squad[0] ?? null;
   }
 
   private spawnFromEdge(
@@ -454,7 +508,7 @@ export class EnemyAISystem {
     // Refresh perception periodically
     this.updatePerception(agent, time);
 
-    const flybyVelocity = this.updateFlyby(agent, position);
+    const flybyVelocity = this.updateFlyby(agent, position, time);
     if (flybyVelocity === null) return;
 
     // Update behavior based on current state
@@ -790,10 +844,12 @@ export class EnemyAISystem {
   private updateFlyby(
     agent: EnemyAgent,
     position: Phaser.Math.Vector2,
+    time: number,
   ): Phaser.Math.Vector2 | null | undefined {
     if (!agent.flyby.isActive || agent.flyby.hasEngaged) return undefined;
 
-    if (this.canSeePlayer(agent)) {
+    const airborneMs = time - agent.flyby.startTimeMs;
+    if (airborneMs >= agent.flyby.engageAfterMs && this.canSeePlayer(agent)) {
       agent.flyby.hasEngaged = true;
       agent.flyby.isActive = false;
       return undefined;
@@ -804,8 +860,14 @@ export class EnemyAISystem {
     const pastRightEdge =
       agent.flyby.direction === 1 && position.x > width + agent.flyby.exitPadding;
     if (pastLeftEdge || pastRightEdge) {
-      this.removeEnemy(agent.id);
-      return null;
+      const traveled = Math.abs(position.x - agent.flyby.originX);
+      const canDespawnWithoutEngagement =
+        airborneMs >= FLYBY_UNENGAGED_BOUNDARY_EXIT_MIN_AIRBORNE_MS ||
+        traveled >= FLYBY_UNENGAGED_BOUNDARY_EXIT_MIN_TRAVEL_PX;
+      if (canDespawnWithoutEngagement) {
+        this.removeEnemy(agent.id);
+        return null;
+      }
     }
 
     return new Phaser.Math.Vector2(agent.flyby.direction * agent.config.speed, 0);

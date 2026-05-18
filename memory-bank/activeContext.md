@@ -1,168 +1,45 @@
-# Active Context - Resume Game
+# Active Context
 
-## Recently Completed
-- **Skills Space Victory Sequence**: Level 2 gameplay COMPLETE ✅
-  - Final dock arms win state when all stations are explored; undocking from that station shows a one-time **You Win** overlay and particle celebration; normal undock enemy spawn is skipped for that beat; `game:victory` typed for future Vue use.
-  - Files: `src/game/scenes/SkillSpaceScene.ts`, `src/types/game.ts`, tests and Phaser mock.
-  - Archive: [Skills Space Victory Sequence](archive/archive-skills-space-victory.md)
-- **Keyboard / mouse-only gate**: Level 1 UX COMPLETE ✅
-  - Phones/tablets are blocked through layered detection: pointer/hover media queries, `maxTouchPoints`, mobile/tablet user-agent hints, iPad desktop-mode detection, and a small touch viewport fallback. The main app shell is non-interactive behind the apology overlay.
-  - Files: `src/utils/requiresKeyboardAndMouse.ts`, `App.vue`.
-  - Archive: [Keyboard / mouse gate](archive/archive-keyboard-mouse-gate.md)
-- **Hero hull death + respawn blink**: Level 2 Skills Space combat COMPLETE ✅
-  - Lethal hull: large explosion, hide ship + disable body briefly, respawn at default position with full health/shields, three-flash visibility intro; `isPlayerRespawning` guards movement, firing, and laser hits.
-  - Archive: [Hero hull death + respawn blink](archive/archive-hero-death-respawn.md)
-- **Enemy LOS stealth + horizontal flyby**: Level 2 combat/AI COMPLETE ✅
-  - Awareness requires range, FOV, and LOS; stations block sight; brief last-seen investigation; undock enemy opens with a horizontal flyby and despawns if it exits unengaged.
-  - Archive: [Enemy LOS stealth + horizontal flyby](archive/archive-enemy-los-stealth.md)
-- **Skills list sync + undock stability**: Level 1 content + bugfix COMPLETE ✅
-  - `portfolio.ts` / `SpaceStationManager` aligned with `docs/skills-list.md`; undock jitter fixed (velocity + Q/R rotation); inaccurate Companies UI removed.
-  - Build verified with `npm run build`.
-  - Archive: [Skills list sync + undock stability](archive/archive-skills-list-undock-sync.md)
-- **Skills Space Base Data Refresh**: Level 1 content and station-modal UX COMPLETE ✅
-  - Skills data synced with `docs/skills-list.md`; `SkillData` extended for HUD sections.
-  - `SkillModal` scroll/layout fixes; radar panel first in normal document flow.
-  - Company names removed from the station modal path (no related project pills; Leadership copy adjusted).
-  - Build verified with `npm run build`.
-  - Archive: [Skills Space Base Refresh](archive/archive-skills-space-base-refresh.md)
-- **Subfolder Deep-Link Routing**: Level 2 deployment fix COMPLETE ✅
-  - Vite `/portfolio-quest/` base + static-host rewrite helpers; Space Museum typings fixed for builds.
-  - Archive: [Subfolder Deep-Link Routing](archive/archive-deep-link-subfolder-routing.md)
-- **Space Museum Back Button**: Level 1 UI navigation enhancement COMPLETE ✅
-  - Added visible `Back Home` button to the 3D Space Museum overlay.
-  - Reused existing `exit-museum` event path through `MuseumView.vue` and Vue Router.
-  - Released pointer lock before navigating home.
-  - Build verified with `npm run build`.
-- **Space Shooter Exit Removal + Home Return**: Level 2 navigation enhancement COMPLETE ✅
-  - Removed Skills space shooter edge exit portals.
-  - Added explicit Home button and `H` hotkey.
-  - Routed home navigation through Vue Router via typed `game:return-home` event.
-  - Build verified with `npm run build`.
-  - Archive: [Space Shooter Home Return](archive/archive-space-shooter-home-return.md)
-- **Portfolio Quest Phase 1**: Foundation & Setup + Creative Design phases COMPLETE ✅
-- **Archive Created**: [Phase 1 Archive](../docs/archive/archive-portfolio-quest-phase1-20250102.md)
-- **Creative Phases**: Theme selection (spaceship exploration), interactive mechanics design, style guide creation
-- **Technical Foundation**: Vue 3 + Phaser.js hybrid architecture fully operational
-- **3D Model Integration**: Successfully integrated GLB/GLTF couch model into Space Museum ✅
-  - GLTFLoader implementation with async loading
-  - Proper scaling, positioning, and collision detection
-  - PBR material compatibility with existing lighting
-  - Complete memory management and cleanup patterns
-  - Lessons learned documented in systemPatterns.md
-- **Enhanced Collision System**: Implemented advanced raycaster-based surface detection ✅
-  - Multi-level ground system supporting floor and furniture surfaces
-  - Precise landing mechanics with downward raycasting
-  - Surface identification and debugging capabilities
-  - Seamless integration with existing physics system
-  - Enables realistic jumping and landing on 3D objects
+## Current Implementation Status
 
-## Current Focus
-**Skills Space Victory Sequence** — archived; Memory Bank updated.
+Skills Space vertical slice is live (navigation, docking, asteroid mining combat, asteroid skill unlock prompts, asteroid skill HUD, docking UI, docking scene, station unlocking, asteroid field respawn persistence, mined rock persistence across resume, ECS architecture, ECS documentation, ECS tests, ECS scene integration, ECS player integration, ECS enemy integration + wave difficulty ramp + spawn safety (off-screen / non-overlapping mines), ECS mining/hazard integration including mine damage + invulnerability flashes + game over routing, ECS hazard warning integration, ECS station integration, asteroid chaining + HUD skill row + prompt priority, ECS audio integration — thrust / mining beam / pickups / mine warning / explosions / docking / HUD, ECS scene integration fixes including station overlay depth / station unlock/defense thresholds / defense-only unlock HUD / completion flow / victory sequence archive, ECS boost integration — boost visuals + audio + ECS exit behavior, mining beam audio pitch scaling by asteroid tier, docking transition camera audio ducking persistence fix, docking scene audio ducking teardown fix, docking scene asteroid collision suppression, docking scene ECS audio pause/resume lifecycle, docking scene ECS audio integration test, docking scene ECS audio teardown order fix, docking scene ECS audio teardown order test, docking scene ECS audio docking-complete resume fix, docking scene ECS audio docking-complete resume test, docking scene ECS audio docking-complete resume regressions guarded, docking scene ECS audio docking-complete resume test stability fix, docking scene ECS audio docking-complete resume test isolation fix — plus resume snapshot sync for boost charge / invulnerability TTL / mutant wave fields / mine kill counts / docking scene ECS audio snapshot fields, docking scene ECS audio snapshot regressions guarded, docking scene ECS audio snapshot test isolation fix).
 
-No open task on this feature. Start the next initiative in **VAN mode** when ready (optional follow-ups: Hero Shields archive, Vue listener for `game:victory`, post-win navigation affordance).
+### Skills Space ECS Audio — Docking Transition Resume & Teardown ✅
 
-**Task Complete**: 🚀 SKILLS SPACE SCENE TRANSFORMATION
-- **Complexity**: Level 3 (Intermediate Feature) - SUCCESSFULLY IMPLEMENTED
-- **Goal**: Transform skills display from forest/village theme to space station orbital layout
-- **Assets**: "Five Intricate Space Stations in Orbit.png" strategy implemented
-- **Status**: FULLY COMPLETE - Live and functional
-
-**New Initiative (Optional)**: Space Combat Mini-Feature
-- Player lasers collide with enemies; explosion shown on impact.
-- Enemy fires a single nose-mounted laser straight ahead; hero explosion on hit.
-- Current timers: player fire repeat 140ms; enemy fire 800ms; speeds: player 800px/s, enemy 700px/s.
-- Next candidates: enemy movement/patrol AI; combat toggle in UI; basic health counters.
-- Enemy foe introduced in Skills Space scene (nose-to-nose with hero)
-- Controls: `D` = dock/undock/portal, `SPACE` = hold to fire dual lasers
-- Lasers: parallel straight shots from wing mounts; tuned tighter spacing
-- Constraint: must remain toggleable and non-intrusive for professional view
-
-**Final Implementation Achievements**:
-- ✅ **Complete Scene Transformation**: SkillVillageScene → SkillSpaceScene operational
-- ✅ **Professional Space Theme**: Industrial space stations maintaining business credibility
-- ✅ **8 Color-Coded Stations**: Development, Infrastructure, Innovation Hub sectors
-- ✅ **Deep Space Environment**: Starfield background with space command center aesthetics
-- ✅ **16px Font Optimization**: Enhanced readability for large display presentations
-- ✅ **Docking Interaction System**: Professional "dock to explore" terminology
-- ✅ **Cross-Scene Integration**: All portals and navigation updated and working
-- ✅ **Performance Maintained**: 60 FPS optimization preserved on HDMI displays
-
-**Technical Quality**: 
-- Build Status: ✅ Zero TypeScript compilation errors
-- Dev Server: ✅ Running successfully at localhost:3000  
-- All Features: ✅ 8 skill stations, modals, navigation fully functional
-
-**Business Impact**: Successfully delivers engaging space exploration theme while maintaining professional portfolio credibility for business presentations.
-
-**Memory Bank Updated**: All documentation current with implementation details and lessons learned captured.
-
-**Ready For**: New development tasks or production deployment preparation
-
-## Latest Achievement
-**Phase 1 Fully Archived** - Complete documentation preserved with lessons learned and future considerations
-
-## Active Tasks
-- [x] Gather content from source link ✅
-- [x] Populate project brief with requirements ✅
-- [x] Define product context ✅
-- [x] Establish technical context ✅
-- [x] Update progress tracking ✅
-- [x] Create detailed implementation roadmap ✅
-- [x] Define MVP scope and phases ✅
-- [x] **COMPLETE PHASE 1 IMPLEMENTATION** ✅
-
-## Phase 1 Achievements
-1. ✅ Vue 3 + Vite + Phaser.js project setup
-2. ✅ Hybrid architecture with event bridge communication
-3. ✅ Complete game world with 3 scenes (Skill Village, Project Forest, Résumé Tower)
-4. ✅ Full Vue component system (ProjectModal, SkillModal, ResumeModal, ContactModal)
-5. ✅ Professional portfolio data structure and sample content
-6. ✅ Traditional portfolio view for professional contexts
-7. ✅ HDMI-optimized configuration for large displays
-
-## Resolution Complete ✅
-- ✅ Node.js upgraded to version 20.19.0 (compatibility resolved)
-- ✅ Development server running successfully
-- ✅ All Phase 1 deliverables tested and validated
-
-**NEXT**: Begin Phase 2 - Core Game Engine refinement
-
-## Context Notes
-- **Project Concept**: "Portfolio Quest" - Retro RPG-inspired interactive portfolio
-- **Key Areas**: Skill Village, Project Forest, Résumé Tower
-- **Tech Stack**: Phaser.js + Vue 3 + Vite hybrid approach
-- **Target**: HDMI-optimized for large screen presentations
-- **Balance**: Professional presentation with engaging game mechanics
-- **Organization**: Memory bank files organized in `memory-bank/` folder for better project structure
-
-## Key Decisions Made
-- Hybrid architecture: Phaser.js for game + Vue 3 for UI
-- Vue 3 with Composition API and Vite build system
-- Pixel-art aesthetic with smooth animations
-- Multi-platform support (desktop, mobile, large displays)
-- JSON-driven content for easy updates
-- Professional toggles (sound, skip game option)
-
-## Phase 1 Achievements Archived
-- ✅ Complete technical architecture implementation
-- ✅ Three navigable game scenes
-- ✅ Professional UI component system
-- ✅ Spaceship exploration theme designed
-- ✅ Dynamic solar system interaction mechanics
-- ✅ Comprehensive sci-fi style guide created
-- ✅ All documentation and lessons learned preserved
-
-## Available for Next Task
-System is ready to begin Phase 2 implementation or transition to new development priorities.
-
-**Archive Status**: COMPLETE  
-**Task Status**: READY FOR PHASE 2  
-**Next Recommended Mode**: VAN MODE (for Phase 2 initialization) or IMPLEMENTATION MODE
-
-## Recent Bug Fix
-- **Shield regeneration consistency**: Fixed iteration callbacks that returned `false` inside `Group.children.each`, which stopped processing after the first shield. Callbacks now return `null`, ensuring all shields update and regenerate.
-- **Validation**: Added temporary in-scene labels and periodic JSON snapshots; applied one-time `-1 HP` to all shields for visible regen; confirmed uniform behavior.
-- **Decision**: Keep a uniform shield config temporarily for testing; restore sector-specific configs after validation if desired.
+ECS audio now restores correctly when entering `SkillDockingScene` from `SkillSpaceScene` and when returning mid-transition (including docking-complete tween path). Regression tests cover snapshot persistence and teardown ordering. Archiving/documentation complete (`memory-bank/archive/archive-skills-space-docking-ecs-audio-resume-fix.md`; reflection consolidated + appendix).
 
 ---
-*Memory Bank ready for next task - Archive complete*
+
+### ECS Architecture Quality Initiative ✅ STATUS: PHASE 2 COMPLETED & ARCHIVED (2026-05-06)
+
+ECS architecture refactor for Skills Space gameplay is phased, documented, regression-tested between phases, and fully archived (`memory-bank/archive/archive-ecs-architecture-completion.md`; reflection consolidated + appendix archive).
+
+---
+
+### ECS Architecture Completion — ECS Audio Integration ✅
+
+Audio for thrust, beam, pickups, mines, docking, ECS warning + ECS mine placement SFX + ECS mine trigger/hit/explosion SFX wired through ECS + regression tests (`memory-bank/archive/archive-ecs-audio-integration.md`; reflection appendix).
+
+---
+
+### Skills Space ECS — Boost Integration ✅
+
+ECS boost meter + stamina regen hooked to input; boosted thrust multiplier + ECS trail scaling + ECS boost fade SFX wired with tests (`memory-bank/archive/archive-skills-space-boost-integration.md`).
+
+---
+
+### Skills Space Undock Enemy Wave ✅
+
+Enemy flybys flank the pilot horizontally; wing stacks on alternating base milestones (`memory-bank/archive/archive-skills-space-undock-wave.md`; reflection consolidated + appendix).
+
+---
+
+## Victory Sequence Update — Skills Space ✅
+
+ECS-driven victory cinematic + narrative card stack + audio fanfare layering now live with regression tests (`memory-bank/archive/archive-skills-space-victory-sequence.md`).
+
+## Current Focus
+
+Skills Space undock enemies **stack across milestones** (no wipe on spawn); each undock adds `ceil(N/2)` flybys where **N** is `unlockedStations.size`, with **2×** move stats on even **N** for that wave only (`EnemyAISystem`, `SkillSpaceScene`, tests updated).
+
+Ready for `/van` intake on next task when needed.

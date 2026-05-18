@@ -42,6 +42,7 @@ const mockEnemyAI = {
   spawnFromLeft: jest.fn(),
   spawnFromOutsideRandom: jest.fn(),
   spawnWave: jest.fn(),
+  spawnOppositeSideHorizontalFlybys: jest.fn(() => []),
   spawnSingleOppositeHorizontalSide: jest.fn(),
   despawnAll: jest.fn(),
   updateAll: jest.fn(),
@@ -1025,7 +1026,7 @@ describe("SkillSpaceScene", () => {
     scene["state"].player = { x: 300, y: 320, body: { setVelocity: jest.fn() } };
     scene["state"].isDocking = false;
 
-    const spawnSpy = jest.spyOn(scene["state"].enemyAI, "spawnSingleOppositeHorizontalSide");
+    const spawnSpy = jest.spyOn(scene["state"].enemyAI, "spawnOppositeSideHorizontalFlybys");
     const victorySpy = jest.spyOn(scene, "triggerVictorySequence");
 
     const station = scene.add.container(300, 320);
@@ -1057,7 +1058,7 @@ describe("SkillSpaceScene", () => {
     scene.create();
     scene["state"].combatEnabled = true;
 
-    const spawnSpy = jest.spyOn(scene["state"].enemyAI, "spawnSingleOppositeHorizontalSide");
+    const spawnSpy = jest.spyOn(scene["state"].enemyAI, "spawnOppositeSideHorizontalFlybys");
 
     scene["state"].player = { x: 300, y: 320, body: { setVelocity: jest.fn() } };
     scene["state"].isDocked = false;
@@ -1081,5 +1082,49 @@ describe("SkillSpaceScene", () => {
     scene["dockWithStation"](station, "testing");
     scene["undockFromStation"]();
     expect(spawnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test("undock spawn count and speed tier follow station milestone (stacking waves)", () => {
+    scene.create();
+    scene["state"].combatEnabled = true;
+    scene["state"].totalStationCount = 8;
+
+    const spawnSpy = jest.spyOn(scene["state"].enemyAI, "spawnOppositeSideHorizontalFlybys");
+
+    scene["state"].player = { x: 900, y: 500, body: { setVelocity: jest.fn() } };
+    scene["state"].isDocked = false;
+    scene["state"].isDocking = false;
+
+    const stationA = scene.add.container(280, 300);
+    stationA.setData("stationData", { id: "s-a", name: "Station A", skillId: "a" });
+    scene["dockWithStation"](stationA, "a");
+    scene["undockFromStation"]();
+    expect(spawnSpy.mock.calls[spawnSpy.mock.calls.length - 1][1]).toBe(1);
+    expect(spawnSpy.mock.calls[spawnSpy.mock.calls.length - 1][0].speed).toBe(60);
+
+    const stationB = scene.add.container(420, 400);
+    stationB.setData("stationData", { id: "s-b", name: "Station B", skillId: "b" });
+
+    spawnSpy.mockClear();
+    scene["dockWithStation"](stationB, "b");
+    scene["undockFromStation"]();
+    expect(spawnSpy.mock.calls[spawnSpy.mock.calls.length - 1][1]).toBe(1);
+    expect(spawnSpy.mock.calls[spawnSpy.mock.calls.length - 1][0].speed).toBe(160);
+
+    spawnSpy.mockClear();
+    const stationC = scene.add.container(520, 500);
+    stationC.setData("stationData", { id: "s-c", name: "Station C", skillId: "c" });
+    scene["dockWithStation"](stationC, "c");
+    scene["undockFromStation"]();
+    expect(spawnSpy.mock.calls[spawnSpy.mock.calls.length - 1][1]).toBe(2);
+    expect(spawnSpy.mock.calls[spawnSpy.mock.calls.length - 1][0].speed).toBe(100);
+
+    spawnSpy.mockClear();
+    const stationD = scene.add.container(620, 520);
+    stationD.setData("stationData", { id: "s-d", name: "Station D", skillId: "d" });
+    scene["dockWithStation"](stationD, "d");
+    scene["undockFromStation"]();
+    expect(spawnSpy.mock.calls[spawnSpy.mock.calls.length - 1][1]).toBe(2);
+    expect(spawnSpy.mock.calls[spawnSpy.mock.calls.length - 1][0].speed).toBe(240);
   });
 });

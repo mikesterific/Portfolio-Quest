@@ -64,6 +64,40 @@ describe("EnemyAISystem", () => {
     expect(agent.sprite.body.velocity.y).toBe(0);
   });
 
+  test("spawnOppositeSideHorizontalFlybys shares flank X with staggered Y", () => {
+    const ai = new EnemyAISystem(scene);
+    const lasers = scene.add.group();
+    ai.initialize(lasers);
+    const player = scene.add.sprite(1400, 540, "p");
+    player.body = { velocity: { x: 0, y: 0 } };
+    ai.setPlayerTarget(player);
+
+    const agents = ai.spawnOppositeSideHorizontalFlybys({ speed: 110 }, 3, 50, 0);
+    expect(agents.length).toBe(3);
+    const xs = new Set(agents.map((a) => Math.round(a.sprite.x)));
+    expect(xs.size).toBe(1);
+    const ys = agents.map((a) => a.sprite.y).sort((a, b) => a - b);
+    expect(ys[1] - ys[0]).toBeGreaterThanOrEqual(60);
+    expect(ys[2] - ys[1]).toBeGreaterThanOrEqual(60);
+    expect(agents[0].flyby.engageAfterMs).toBeGreaterThan(0);
+    expect(agents[1].flyby.engageAfterMs).toBe(0);
+    expect(agents[2].flyby.engageAfterMs).toBeGreaterThan(0);
+  });
+
+  test("spawnOppositeSideHorizontalFlybys stacks waves without clearing prior enemies", () => {
+    const ai = new EnemyAISystem(scene);
+    const lasers = scene.add.group();
+    ai.initialize(lasers);
+    const player = scene.add.sprite(900, 540, "p");
+    player.body = { velocity: { x: 0, y: 0 } };
+    ai.setPlayerTarget(player);
+
+    ai.spawnOppositeSideHorizontalFlybys({ speed: 80 }, 2, 50, 0);
+    expect(ai.getEnemyCount()).toBe(2);
+    ai.spawnOppositeSideHorizontalFlybys({ speed: 90 }, 1, 50, 0);
+    expect(ai.getEnemyCount()).toBe(3);
+  });
+
   test("unengaged horizontal flyby despawns after crossing the far side", () => {
     const ai = new EnemyAISystem(scene);
     const lasers = scene.add.group();

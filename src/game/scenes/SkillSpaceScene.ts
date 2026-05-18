@@ -674,9 +674,11 @@ export class SkillSpaceScene extends Phaser.Scene {
     });
   };
 
-  private getUndockEnemyConfig(): Partial<EnemyConfig> {
+  /** Odd milestones (1st, 3rd, …): normal tier multiplier; even milestones: double speed for that wave only. */
+  private getUndockEnemyConfig(speedTierMultiplier: number = 1): Partial<EnemyConfig> {
     const exploredCount = Math.max(1, this.state.unlockedStations?.size ?? 1);
     const difficultySteps = Math.max(0, exploredCount - 1);
+    const mul = speedTierMultiplier;
     const speed = Math.min(
       UNDOCK_ENEMY_SPEED_CONFIG.baseSpeed +
         difficultySteps * UNDOCK_ENEMY_SPEED_CONFIG.speedPerExploredStation,
@@ -684,17 +686,19 @@ export class SkillSpaceScene extends Phaser.Scene {
     );
 
     return {
-      speed,
-      acceleration: Math.min(
-        UNDOCK_ENEMY_SPEED_CONFIG.baseAcceleration +
-          difficultySteps * UNDOCK_ENEMY_SPEED_CONFIG.accelerationPerExploredStation,
-        UNDOCK_ENEMY_SPEED_CONFIG.maxAcceleration,
-      ),
-      strafeSpeed: Math.min(
-        UNDOCK_ENEMY_SPEED_CONFIG.baseStrafeSpeed +
-          difficultySteps * UNDOCK_ENEMY_SPEED_CONFIG.strafeSpeedPerExploredStation,
-        UNDOCK_ENEMY_SPEED_CONFIG.maxStrafeSpeed,
-      ),
+      speed: speed * mul,
+      acceleration:
+        Math.min(
+          UNDOCK_ENEMY_SPEED_CONFIG.baseAcceleration +
+            difficultySteps * UNDOCK_ENEMY_SPEED_CONFIG.accelerationPerExploredStation,
+          UNDOCK_ENEMY_SPEED_CONFIG.maxAcceleration,
+        ) * mul,
+      strafeSpeed:
+        Math.min(
+          UNDOCK_ENEMY_SPEED_CONFIG.baseStrafeSpeed +
+            difficultySteps * UNDOCK_ENEMY_SPEED_CONFIG.strafeSpeedPerExploredStation,
+          UNDOCK_ENEMY_SPEED_CONFIG.maxStrafeSpeed,
+        ) * mul,
     };
   }
 
@@ -702,7 +706,12 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (!stationId || !this.state.enemyAI || !this.state.combatEnabled || !this.state.player)
       return;
 
-    this.state.enemyAI.spawnSingleOppositeHorizontalSide(this.getUndockEnemyConfig());
+    const milestone = Math.max(1, this.state.unlockedStations?.size ?? 1);
+    const flybyCount = Math.ceil(milestone / 2);
+    const speedTierMultiplier = milestone % 2 === 0 ? 2 : 1;
+    const cfg = this.getUndockEnemyConfig(speedTierMultiplier);
+
+    this.state.enemyAI.spawnOppositeSideHorizontalFlybys(cfg, flybyCount);
   }
 
   private shouldTriggerVictoryForUndock(stationId?: string): boolean {

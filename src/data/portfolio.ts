@@ -4,23 +4,12 @@ import type { ProjectData, SkillData, ResumeData } from "@/types/game";
 export const portfolioData = {
   projects: [
     {
-      id: "portfolio-quest",
-      title: "Portfolio Quest",
-      roles: ["Frontend Engineer", "Game Systems"],
-      description:
-        "Interactive 3D portfolio experience combining Vue 3, Three.js, and Phaser for an immersive space-themed showcase of skills and projects.",
-      technologies: ["Vue 3", "TypeScript", "Three.js", "Phaser", "Vite", "Jest"],
-      type: "game" as const,
-      demoUrl: "#",
-      image: "assets/images/portfolio/portfolio-quest.jpg",
-    },
-    {
       id: "dell-xps-poc",
       title: "Dell XPS Proof of Concept",
-      roles: ["UI Developer", "UX"],
+      roles: ["Designer", "Architect", "UI Developer", "UX"],
       description:
         "Showcased Dell UI development possibilities through design and architecture. Resonated with Dell leadership and led to a Premium Branding initiative—a redesign touching Home, Category, and Brand as Dell progressed through digital transformation.",
-      technologies: ["HTML5", "CSS3", "JavaScript", "Performance", "UX"],
+      technologies: ["HTML5", "CSS3", "JavaScript", "Performance", "UX", ".NET"],
       type: "web" as const,
       demoUrl: "https://www.theweblife.com/dell/xps/",
       image: "assets/images/portfolio/dell-xps-poc.jpg",
@@ -31,7 +20,7 @@ export const portfolioData = {
       roles: ["Frontend Developer"],
       description:
         "Shipped by Dell design after winning leadership support from the XPS proof of concept.",
-      technologies: ["HTML5", "CSS3", "JavaScript"],
+      technologies: ["Architecture", "HTML5", "CSS3", "JavaScript"],
       type: "web" as const,
       demoUrl: "https://www.theweblife.com/dell/franchise/",
       image: "assets/images/portfolio/dell-xps-landing.jpg",
@@ -42,7 +31,7 @@ export const portfolioData = {
       roles: ["Frontend Developer"],
       description:
         "Homepage proof of concept—same vein as the XPS work—that informed what became Dell’s production home experience.",
-      technologies: ["HTML5", "CSS3", "JavaScript"],
+      technologies: ["Design", "Architecture", "HTML5", "CSS3", "JavaScript"],
       type: "web" as const,
       demoUrl: "https://www.theweblife.com/dell/home/",
       image: "assets/images/portfolio/dell-home-poc.jpg",
@@ -50,7 +39,7 @@ export const portfolioData = {
     {
       id: "dell-home-live",
       title: "Dell Home Page (Live)",
-      roles: ["Senior Frontend Engineer", "Tiger-team collaborator"],
+      roles: ["Architect", "Senior Frontend Engineer", "Tiger-team collaborator"],
       description:
         "Tiger-team collaboration across nearly every Dell org. Experiment in a handful of countries quickly rolled out globally—with a redesigned experience and greenfield architecture delivered in under a month.",
       technologies: ["AngularJS", "ASP.NET MVC", "Performance", "Micro Frontends"],
@@ -81,7 +70,7 @@ export const portfolioData = {
     {
       id: "bcbs-data-ux",
       title: "BCBS",
-      roles: ["UX", "Data Visualization"],
+      roles: ["Designer", "UX", "HTML5", "CSS3", "JavaScript", "Data Visualization"],
       description:
         "Made complex healthcare data approachable—focused on intuitively understandable visualizations rather than brute-force density.",
       technologies: ["JavaScript", "Data Visualization", "UX"],
@@ -94,7 +83,7 @@ export const portfolioData = {
       roles: ["Content Strategy", "UX Writing", "IA"],
       description:
         "Stepped beyond the usual hats to own concept and storytelling for this experience—hands-on narrative and IA, not only UI.",
-      technologies: ["Content Strategy", "UX Writing", "Web"],
+      technologies: ["Designer", "Content Strategy", "UX Writing"],
       type: "web" as const,
       image: "assets/images/portfolio/vsi-full.jpg",
     },
@@ -103,7 +92,7 @@ export const portfolioData = {
       title: "Joe Parker Guitars",
       roles: ["Web Designer"],
       description: "Close friend launching a brand—partnered on his very first guitar site.",
-      technologies: ["Web", "Typography", "Branding"],
+      technologies: ["Designer", "Web", "Typography", "Branding"],
       type: "web" as const,
       image: "assets/images/portfolio/joe-parker-guitars.jpg",
     },
@@ -113,7 +102,7 @@ export const portfolioData = {
       roles: ["Graphic Designer", "Print"],
       description:
         "Earlier-career milestone: constrained two-plate printing that still reads rich and colorful—favorite kind of crafty constraints.",
-      technologies: ["Print", "Logo Design"],
+      technologies: ["Print Designer", "Logo Design"],
       type: "web" as const,
       image: "assets/images/portfolio/decision-tree-logo.jpg",
     },
@@ -122,7 +111,7 @@ export const portfolioData = {
       title: "BizAtomic Logo",
       roles: ["Brand Designer"],
       description: "Another personal favorite—a bold mark that leaned into kinetic energy.",
-      technologies: ["Branding", "Logo Design"],
+      technologies: ["Print Designer", "Logo Design"],
       type: "web" as const,
       image: "assets/images/portfolio/bizatomic-logo.jpg",
     },
