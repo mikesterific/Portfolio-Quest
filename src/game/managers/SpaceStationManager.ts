@@ -16,6 +16,29 @@ export interface SpaceStationData {
   sector: "development" | "infrastructure" | "innovation";
 }
 
+interface MarkStationVisitedOptions {
+  animate?: boolean;
+}
+
+type VisitedMarkerObject = Phaser.GameObjects.GameObject & {
+  setVisible(visible?: boolean): VisitedMarkerObject;
+  setAlpha(alpha?: number): VisitedMarkerObject;
+  setScale(x?: number, y?: number): VisitedMarkerObject;
+};
+
+const VISITED_MARKER_CONFIG = {
+  haloRadius: 72,
+  haloColor: 0x00ff88,
+  haloAlpha: 0.72,
+  haloLineWidth: 2,
+  chipY: -82,
+  chipWidth: 76,
+  chipHeight: 18,
+  chipBackground: 0x07151d,
+  chipBackgroundAlpha: 0.86,
+  chipTextColor: "#9CFFCB",
+};
+
 export class SpaceStationManager {
   private scene: Phaser.Scene;
   private stations: Phaser.GameObjects.Group | null = null;
@@ -98,6 +121,59 @@ export class SpaceStationManager {
    */
   hasUndockSpawned(stationId: string): boolean {
     return this.undockSpawnedForStation.has(stationId);
+  }
+
+  markStationVisited(stationId: string, options: MarkStationVisitedOptions = {}): boolean {
+    const station = this.findStationContainerById(stationId);
+    if (!station || station.getData("isVisited")) {
+      return false;
+    }
+
+    const visitedMarkerObjects = station.getData("visitedMarkerObjects") as
+      | VisitedMarkerObject[]
+      | undefined;
+    visitedMarkerObjects?.forEach((marker) => marker.setVisible(true));
+    station.setData("isVisited", true);
+
+    if (options.animate) {
+      this.playVisitedMarkerPulse(station);
+    }
+
+    return true;
+  }
+
+  private findStationContainerById(stationId: string): Phaser.GameObjects.Container | null {
+    const stationObjects = this.stations?.getChildren() ?? [];
+    for (const stationObject of stationObjects) {
+      const station = stationObject as Phaser.GameObjects.Container;
+      const stationData = station.getData("stationData") as SpaceStationData | undefined;
+      if (stationData?.id === stationId) {
+        return station;
+      }
+    }
+    return null;
+  }
+
+  private playVisitedMarkerPulse(station: Phaser.GameObjects.Container): void {
+    const halo = station.getData("visitedHalo") as VisitedMarkerObject | undefined;
+    if (!halo) return;
+
+    halo.setAlpha(0).setScale(0.75);
+    this.scene.tweens.add({
+      targets: halo,
+      alpha: VISITED_MARKER_CONFIG.haloAlpha,
+      scale: 1.12,
+      duration: 260,
+      ease: "Cubic.Out",
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: halo,
+          scale: 1,
+          duration: 180,
+          ease: "Sine.Out",
+        });
+      },
+    });
   }
 
   private createSpaceStationsData(): SpaceStationData[] {
@@ -323,6 +399,43 @@ export class SpaceStationManager {
       }
     }
 
+    const visitedHalo = this.scene.add
+      .circle(0, 0, VISITED_MARKER_CONFIG.haloRadius)
+      .setStrokeStyle(
+        VISITED_MARKER_CONFIG.haloLineWidth,
+        VISITED_MARKER_CONFIG.haloColor,
+        VISITED_MARKER_CONFIG.haloAlpha,
+      )
+      .setAlpha(VISITED_MARKER_CONFIG.haloAlpha)
+      .setVisible(false);
+    visitedHalo.setBlendMode(Phaser.BlendModes.ADD);
+
+    const visitedChipBackground = this.scene.add
+      .rectangle(
+        0,
+        VISITED_MARKER_CONFIG.chipY,
+        VISITED_MARKER_CONFIG.chipWidth,
+        VISITED_MARKER_CONFIG.chipHeight,
+        VISITED_MARKER_CONFIG.chipBackground,
+        VISITED_MARKER_CONFIG.chipBackgroundAlpha,
+      )
+      .setStrokeStyle(1, VISITED_MARKER_CONFIG.haloColor, 0.72)
+      .setVisible(false);
+
+    const visitedChipText = this.scene.add
+      .text(0, VISITED_MARKER_CONFIG.chipY, "VISITED", {
+        fontSize: "10px",
+        fontFamily:
+          'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+        fontStyle: "bold",
+        color: VISITED_MARKER_CONFIG.chipTextColor,
+        align: "center",
+        stroke: "#001812",
+        strokeThickness: 2,
+      })
+      .setOrigin(0.5)
+      .setVisible(false);
+
     // Station label positioned below starbase - clean, no background
     const stationLabel = this.scene.add
       .text(0, 95, station.name, {
@@ -353,10 +466,26 @@ export class SpaceStationManager {
     const dockingPort1 = this.scene.add.rectangle(-30, 0, 6, 3, 0x95a5a6);
     const dockingPort2 = this.scene.add.rectangle(30, 0, 6, 3, 0x95a5a6);
 
-    stationContainer.add([stationBody, stationLabel, statusIndicator, dockingPort1, dockingPort2]);
+    stationContainer.add([
+      visitedHalo,
+      stationBody,
+      stationLabel,
+      statusIndicator,
+      dockingPort1,
+      dockingPort2,
+      visitedChipBackground,
+      visitedChipText,
+    ]);
 
     stationContainer.setData("stationData", station);
     stationContainer.setData("isStation", true);
+    stationContainer.setData("isVisited", false);
+    stationContainer.setData("visitedHalo", visitedHalo);
+    stationContainer.setData("visitedMarkerObjects", [
+      visitedHalo,
+      visitedChipBackground,
+      visitedChipText,
+    ]);
     stationContainer.setSize(80, 80);
     stationContainer.setInteractive();
     stationContainer.on("pointerdown", () => onInteract(station.skillId, station));

@@ -1,5 +1,30 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## Skills Space — visited station visual state (IMPLEMENT COMPLETE)
+
+**Date**: 2026-05-18  
+**Complexity**: Level 2 (Simple Gameplay Enhancement)  
+**Goal**: Visibly show when a Skills Space station has already been visited/explored.
+
+### Status
+- [x] Creative phase complete
+- [x] Add persistent visited marker to station containers
+- [x] Mark station visited on first successful dock
+- [x] Prevent repeat docks from replaying first-visit feedback or double-counting unlocks
+- [x] Add/update focused tests
+- [x] Validate lints/build
+- [ ] Reflection/archive after implementation
+
+### Notes
+- Existing progression state already tracks explored station IDs through `SkillSpaceScene.state.unlockedStations`.
+- Selected design: add a persistent neon visited halo plus compact status chip to each station container, hidden by default and revealed on first visit.
+- Keep the marker distinct from station force shields: thin stroke only, smaller radius, success colors, no filled bubble.
+- Implemented in `SpaceStationManager.markStationVisited`; `SkillSpaceScene.dockWithStation` now calls it only for newly unlocked stations and suppresses duplicate station-unlocked/progress-complete events on repeat docks.
+- Verification: `ReadLints` clean; `npx jest tests/game/managers/SpaceStationManager.spec.js tests/game/scenes/SkillSpaceScene.spec.js --runInBand --coverage=false` passed; `npm run build` passed with the existing large-chunk warning.
+- **Creative Document**: [Visited Space Station State](creative/creative-visited-space-stations.md)
+
+---
+
 ## Skills Space — undock enemy stacking + milestone waves (COMPLETE)
 
 **Date**: 2026-05-17  

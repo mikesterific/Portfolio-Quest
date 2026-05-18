@@ -369,7 +369,12 @@ describe("SkillSpaceScene", () => {
   test("create falls back to geometric shapes when starbase textures missing", () => {
     // Force textures.exists to return false before creating
     scene.textures.exists = jest.fn(() => false);
-    const strokeable = () => ({ setStrokeStyle: jest.fn().mockReturnThis() });
+    const strokeable = () => ({
+      setAlpha: jest.fn().mockReturnThis(),
+      setBlendMode: jest.fn().mockReturnThis(),
+      setStrokeStyle: jest.fn().mockReturnThis(),
+      setVisible: jest.fn().mockReturnThis(),
+    });
     const rectSpy = jest.spyOn(scene.add, "rectangle").mockImplementation(() => strokeable());
     const circleSpy = jest.spyOn(scene.add, "circle").mockImplementation(() => strokeable());
     const polySpy = jest.spyOn(scene.add, "polygon").mockImplementation(() => strokeable());
@@ -995,6 +1000,7 @@ describe("SkillSpaceScene", () => {
   test("docking unlocks station and emits station-unlocked and completion when all unlocked", () => {
     const emitSpy = jest.spyOn(gameEventBridge, "emitGameEvent");
     scene.create();
+    const visitedSpy = jest.spyOn(scene["stationManager"], "markStationVisited");
     // Simulate docking with a known station
     const station = scene.add.container(200, 220);
     station.setData("stationData", { id: "s-frontend", name: "Frontend Station" });
@@ -1011,11 +1017,35 @@ describe("SkillSpaceScene", () => {
     const stationUnlockedCall = calls.find((c) => c[0] === "game:station-unlocked");
     expect(stationUnlockedCall).toBeTruthy();
     expect(scene["state"].unlockedStations?.has("s-frontend")).toBe(true);
+    expect(visitedSpy).toHaveBeenCalledWith("s-frontend", { animate: true });
 
     const completionCall = calls.find((c) => c[0] === "game:progress-complete");
     expect(completionCall).toBeTruthy();
     expect(scene["state"].victoryPendingStationId).toBe("s-frontend");
     expect(scene["state"].hasShownVictory).toBe(false);
+  });
+
+  test("repeat docking keeps visited station from replaying unlock feedback", () => {
+    const emitSpy = jest.spyOn(gameEventBridge, "emitGameEvent");
+    scene.create();
+    const visitedSpy = jest.spyOn(scene["stationManager"], "markStationVisited");
+
+    const station = scene.add.container(200, 220);
+    station.setData("stationData", { id: "s-repeat", name: "Repeat Station" });
+    scene["state"].unlockedStations = new Set(["s-repeat"]);
+    scene["state"].totalStationCount = 7;
+    scene["state"].player = { x: 0, y: 0, body: { setVelocity: jest.fn() } };
+    scene["state"].isDocking = false;
+
+    scene["dockWithStation"](station, "frontend");
+
+    expect(visitedSpy).not.toHaveBeenCalled();
+    expect(emitSpy).not.toHaveBeenCalledWith(
+      "game:station-unlocked",
+      expect.objectContaining({ stationId: "s-repeat" }),
+    );
+    expect(emitSpy).not.toHaveBeenCalledWith("game:progress-complete", expect.anything());
+    expect(scene["state"].unlockedStations?.size).toBe(1);
   });
 
   test("final station undock triggers victory once and suppresses enemy spawn", () => {

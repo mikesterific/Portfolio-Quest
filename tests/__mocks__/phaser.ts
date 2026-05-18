@@ -85,6 +85,10 @@ export const BlendModes = { ADD: "ADD" };
 
 class GameObject {
   active = true;
+  visible = true;
+  alpha = 1;
+  scaleX = 1;
+  scaleY = 1;
   x = 0;
   y = 0;
   data = new Map<string, any>();
@@ -103,16 +107,24 @@ class GameObject {
   setDisplaySize() {
     return this;
   }
-  setAlpha() {
+  setAlpha(alpha?: number) {
+    if (typeof alpha === "number") this.alpha = alpha;
     return this;
   }
-  setScale() {
+  setScale(x?: number, y?: number) {
+    if (typeof x === "number") this.scaleX = x;
+    if (typeof y === "number") {
+      this.scaleY = y;
+    } else if (typeof x === "number") {
+      this.scaleY = x;
+    }
     return this;
   }
   setScrollFactor() {
     return this;
   }
-  setVisible() {
+  setVisible(visible?: boolean) {
+    this.visible = visible ?? true;
     return this;
   }
   setTint() {
@@ -129,6 +141,9 @@ class GameObject {
     return this;
   }
   setRotation() {
+    return this;
+  }
+  setStrokeStyle() {
     return this;
   }
   setTexture(_t?: string) {

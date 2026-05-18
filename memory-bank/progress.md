@@ -1,5 +1,26 @@
 # Progress - Resume Game Implementation
 
+## Latest Enhancement: Skills Space visited station markers ✅
+
+**Date**: May 18, 2026  
+**Feature**: Explored Skills Space stations now show persistent in-world visited feedback after first dock.  
+**Status**: Implemented and build verified; ready for reflection/archive.
+
+### Technical Implementation
+- `SpaceStationManager`: hidden visited halo + compact `VISITED` chip created with each station; `markStationVisited` reveals them and plays a one-shot pulse.
+- `SkillSpaceScene`: first successful dock marks the station visited; repeat docks no longer replay visited feedback or re-emit `game:station-unlocked` / `game:progress-complete`.
+- Tests: `SpaceStationManager.spec.js`, `SkillSpaceScene.spec.js`, Phaser mock visibility/alpha/scale support.
+
+### Verification
+- `ReadLints` — clean on touched files.
+- `npx jest tests/game/managers/SpaceStationManager.spec.js tests/game/scenes/SkillSpaceScene.spec.js --runInBand --coverage=false` — passed.
+- `npm run build` — passed; existing large-chunk warning remains.
+
+### Documentation
+- Creative: [Visited Space Station State](creative/creative-visited-space-stations.md)
+
+---
+
 ## Latest Enhancement: Skills Space undock combat wave UX ✅
 
 **Date**: May 17, 2026  

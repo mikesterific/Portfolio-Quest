@@ -40,6 +40,6 @@ ECS-driven victory cinematic + narrative card stack + audio fanfare layering now
 
 ## Current Focus
 
-Skills Space undock enemies **stack across milestones** (no wipe on spawn); each undock adds `ceil(N/2)` flybys where **N** is `unlockedStations.size`, with **2×** move stats on even **N** for that wave only (`EnemyAISystem`, `SkillSpaceScene`, tests updated).
+Skills Space visited station visual state is implemented. Stations now get hidden visited marker children at creation time, `SpaceStationManager.markStationVisited` reveals a neon halo + compact `VISITED` chip on first successful dock, and repeat docks no longer replay first-visit feedback or re-emit unlock/completion progress events.
 
-Ready for `/van` intake on next task when needed.
+Verification passed: focused station/scene Jest, `ReadLints`, and `npm run build` (existing large-chunk warning only). Ready for REFLECT mode.

@@ -628,22 +628,27 @@ export class SkillSpaceScene extends Phaser.Scene {
             const stationData = station.getData("stationData");
             const stationId = stationData?.id as string | undefined;
             if (stationId) {
+              const wasAlreadyUnlocked = this.state.unlockedStations?.has(stationId) ?? false;
               this.state.unlockedStations?.add(stationId);
               const totalUnlocked = this.state.unlockedStations?.size || 0;
               const totalStations = this.state.totalStationCount || 0;
-              gameEventBridge.emitGameEvent("game:station-unlocked", {
-                stationId,
-                skillId,
-                totalUnlocked,
-                totalStations,
-              });
 
-              // Check completion
-              if (totalStations > 0 && totalUnlocked >= totalStations) {
-                if (!this.state.hasShownVictory) {
-                  this.state.victoryPendingStationId = stationId;
+              if (!wasAlreadyUnlocked) {
+                this.stationManager.markStationVisited(stationId, { animate: true });
+                gameEventBridge.emitGameEvent("game:station-unlocked", {
+                  stationId,
+                  skillId,
+                  totalUnlocked,
+                  totalStations,
+                });
+
+                // Check completion
+                if (totalStations > 0 && totalUnlocked >= totalStations) {
+                  if (!this.state.hasShownVictory) {
+                    this.state.victoryPendingStationId = stationId;
+                  }
+                  gameEventBridge.emitGameEvent("game:progress-complete", { totalStations });
                 }
-                gameEventBridge.emitGameEvent("game:progress-complete", { totalStations });
               }
             }
 
