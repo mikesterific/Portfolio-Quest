@@ -17,7 +17,7 @@ export const portfolioData = {
     {
       id: "dell-xps-landing",
       title: "Dell XPS Landing Page",
-      roles: ["Frontend Developer"],
+      roles: ["Designer", "Architect", "Frontend Developer"],
       description:
         "Shipped by Dell design after winning leadership support from the XPS proof of concept.",
       technologies: ["Architecture", "HTML5", "CSS3", "JavaScript"],
@@ -28,7 +28,7 @@ export const portfolioData = {
     {
       id: "dell-home-poc",
       title: "Dell Home Proof of Concept",
-      roles: ["Frontend Developer"],
+      roles: ["Designer", "Architect", "Frontend Developer"],
       description:
         "Homepage proof of concept—same vein as the XPS work—that informed what became Dell’s production home experience.",
       technologies: ["Design", "Architecture", "HTML5", "CSS3", "JavaScript"],
@@ -50,7 +50,7 @@ export const portfolioData = {
     {
       id: "electronic-arts-support",
       title: "Electronic Arts — Support Experience",
-      roles: ["Tech Lead", "UX Design", "Architecture"],
+      roles: ["Designer"],
       description:
         "When EA Support green-lit a greenfield internal support site, partnered on design alongside architecture and tech lead responsibilities.",
       technologies: ["HTML5", "CSS3", "JavaScript", "UX Design", "Salesforce", "AWS"],
@@ -70,7 +70,7 @@ export const portfolioData = {
     {
       id: "bcbs-data-ux",
       title: "BCBS",
-      roles: ["Designer", "UX", "HTML5", "CSS3", "JavaScript", "Data Visualization"],
+      roles: ["Designer", "UI Architect", "Frontend Developer"],
       description:
         "Made complex healthcare data approachable—focused on intuitively understandable visualizations rather than brute-force density.",
       technologies: ["JavaScript", "Data Visualization", "UX"],
@@ -83,7 +83,7 @@ export const portfolioData = {
       roles: ["Content Strategy", "UX Writing", "IA"],
       description:
         "Stepped beyond the usual hats to own concept and storytelling for this experience—hands-on narrative and IA, not only UI.",
-      technologies: ["Designer", "Content Strategy", "UX Writing"],
+      technologies: ["Print Designer"],
       type: "web" as const,
       image: "assets/images/portfolio/vsi-full.jpg",
     },

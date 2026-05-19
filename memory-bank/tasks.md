@@ -1,5 +1,25 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## Level 1 — Space Shooter Q/R Spin Removal (COMPLETE)
+
+**Date**: 2026-05-18  
+**Complexity**: Level 1 (Quick Control Cleanup)  
+**Goal**: Remove the Q/R manual spin option from the Skills Space shooter so ship rotation is driven by movement direction only.
+
+### Status
+- [x] VAN analysis complete
+- [x] Remove Q/R manual rotation handling from `PlayerSystem`
+- [x] Update navigation hint text
+- [x] Update focused PlayerSystem tests
+- [x] Validate lints/tests
+
+### Notes
+- This keeps WASD/arrow movement, SPACE lasers, E dock/undock, and H home intact.
+- Q/R are no longer read by `updatePlayerVelocity`; rotation falls through the existing velocity-facing path.
+- Verification: `ReadLints` clean, focused `PlayerSystem` Jest passed, and `npm run type-check` passed.
+
+---
+
 ## Skills Space — visited station visual state (IMPLEMENT COMPLETE)
 
 **Date**: 2026-05-18  

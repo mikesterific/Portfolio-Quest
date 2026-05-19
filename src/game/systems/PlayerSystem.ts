@@ -10,7 +10,6 @@ const PLAYER_CONFIG = {
   SIZE: 128,
   SPEED: 200,
   DRAG: 500,
-  MANUAL_ROTATION_SPEED: 25, // degrees per frame for Q/R manual controls (R avoids conflict with E dock)
   AUTO_ROTATION_SPEED: 15, // degrees per frame for enhanced velocity-based rotation
   MIN_SPEED_FOR_ROTATION: 50, // minimum speed to trigger automatic rotation
 } as const;
@@ -62,28 +61,6 @@ const updatePlayerEngineState = (player: Phaser.GameObjects.Sprite, isMoving: bo
 };
 
 /**
- * Updates player manual rotation based on Q/R key input
- */
-const updatePlayerManualRotation = (
-  player: Phaser.GameObjects.Sprite,
-  isRotateLeftPressed: boolean,
-  isRotateRightPressed: boolean,
-): void => {
-  const rotationStep = PLAYER_CONFIG.MANUAL_ROTATION_SPEED * (Math.PI / 180);
-
-  if (isRotateLeftPressed) {
-    // Rotate counter-clockwise
-    player.rotation -= rotationStep;
-  } else if (isRotateRightPressed) {
-    // Rotate clockwise
-    player.rotation += rotationStep;
-  }
-
-  // Update target rotation to current rotation to maintain smooth fallback
-  player.setData("targetRotation", player.rotation);
-};
-
-/**
  * Updates player rotation based on velocity with smooth interpolation
  */
 const updatePlayerRotation = (
@@ -132,10 +109,6 @@ const updatePlayerVelocity = (
   const isUpPressed = cursors.up.isDown || keyboard.addKey("W").isDown;
   const isDownPressed = cursors.down.isDown || keyboard.addKey("S").isDown;
 
-  // Manual rotation controls (Q/R keys — E is reserved for dock/undock in Skills Space)
-  const isRotateLeftPressed = keyboard.addKey("Q").isDown;
-  const isRotateRightPressed = keyboard.addKey("R").isDown;
-
   // Check if any movement key is pressed
   const isMoving = isLeftPressed || isRightPressed || isUpPressed || isDownPressed;
 
@@ -148,13 +121,7 @@ const updatePlayerVelocity = (
   // Update engine state based on input
   updatePlayerEngineState(player, isMoving);
 
-  // Handle manual rotation with priority over velocity-based rotation
-  if (isRotateLeftPressed || isRotateRightPressed) {
-    updatePlayerManualRotation(player, isRotateLeftPressed, isRotateRightPressed);
-  } else {
-    // Fallback to enhanced velocity-based rotation when no manual input
-    updatePlayerRotation(player, { x: playerBody.velocity.x, y: playerBody.velocity.y });
-  }
+  updatePlayerRotation(player, { x: playerBody.velocity.x, y: playerBody.velocity.y });
 };
 
 /**
@@ -198,7 +165,6 @@ export default {
   createPlayer,
   updatePlayerVelocity,
   updatePlayerRotation,
-  updatePlayerManualRotation,
   updatePlayerEngineState,
   preloadPlayerAssets,
   findNearestObject,
@@ -210,7 +176,6 @@ export {
   createPlayer,
   updatePlayerVelocity,
   updatePlayerRotation,
-  updatePlayerManualRotation,
   updatePlayerEngineState,
   preloadPlayerAssets,
   findNearestObject,
