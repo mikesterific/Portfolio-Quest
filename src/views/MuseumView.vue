@@ -19,7 +19,6 @@ import type { ComponentPublicInstance } from "vue";
 import { useRouter } from "vue-router";
 import SpaceMuseum from "@/components/portfolio/SpaceMuseum.vue";
 import ProjectModal from "@/components/portfolio/ProjectModal.vue";
-import { getProjectById } from "@/data/portfolio";
 import type { ProjectData } from "@/types/game";
 
 export default defineComponent({
@@ -36,14 +35,9 @@ export default defineComponent({
       (ComponentPublicInstance & { resumeMuseumPointerLock?: () => void }) | null
     >(null);
 
-    const handleProjectSelected = (event: { projectId: string }) => {
-      // Don't open if we're in the process of closing
-      if (isClosing.value) return;
-
-      const project = getProjectById(event.projectId);
-      if (project) {
-        selectedProject.value = project;
-      }
+    const handleProjectSelected = (_event: { projectId: string }) => {
+      // Project modals disabled — keep handler wired for easy re-enable.
+      return;
     };
 
     const handleCloseProject = () => {

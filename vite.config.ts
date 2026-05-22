@@ -23,11 +23,14 @@ export default defineConfig({
     include: ["phaser"],
   },
   build: {
+    // Phaser (~1.5 MB) and Three.js (~530 KB) are isolated vendor chunks; sizes are expected.
+    chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ["vue", "vue-router"],
           phaser: ["phaser"],
+          three: ["three"],
         },
       },
     },

@@ -80,7 +80,7 @@ export const portfolioData = {
     {
       id: "vsi-content",
       title: "VSI",
-      roles: ["Content Strategy", "UX Writing", "IA"],
+      roles: ["Print Designer"],
       description:
         "Stepped beyond the usual hats to own concept and storytelling for this experience—hands-on narrative and IA, not only UI.",
       technologies: ["Print Designer"],

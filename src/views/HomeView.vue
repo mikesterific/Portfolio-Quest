@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useRouter } from "vue-router";
+
 const experiences = [
   {
     title: "Space Adventure Game",
@@ -23,6 +25,11 @@ const experiences = [
 ];
 
 const highlights = ["Vue 3", "Three.js", "Phaser.js"];
+const router = useRouter();
+
+const navigateToExperience = (to: string) => {
+  void router.push(to);
+};
 </script>
 
 <template>
@@ -45,12 +52,13 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
       </section>
 
       <section class="experience-options" aria-label="Choose an experience">
-        <router-link
+        <button
           v-for="experience in experiences"
           :key="experience.to"
-          :to="experience.to"
+          type="button"
           class="experience-card"
           :class="`accent-${experience.accent}`"
+          @click="navigateToExperience(experience.to)"
         >
           <div class="card-header">
             <span class="card-orb" aria-hidden="true"></span>
@@ -89,7 +97,7 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
             {{ experience.cta }}
             <span aria-hidden="true">→</span>
           </span>
-        </router-link>
+        </button>
       </section>
 
       <footer class="home-footer">
@@ -271,6 +279,7 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
 }
 
 .experience-card {
+  appearance: none;
   position: relative;
   overflow: hidden;
   min-height: 21rem;
@@ -283,13 +292,30 @@ const highlights = ["Vue 3", "Three.js", "Phaser.js"];
   backdrop-filter: blur(18px);
   display: flex;
   flex-direction: column;
+  width: 100%;
+  font: inherit;
+  text-align: left;
   text-decoration: none;
+  text-decoration-line: none;
   color: inherit;
+  cursor: pointer;
   transition:
     transform 0.25s ease,
     border-color 0.25s ease,
     background-color 0.25s ease,
     box-shadow 0.25s ease;
+}
+
+.experience-card:hover,
+.experience-card:focus,
+.experience-card:active {
+  text-decoration: none;
+  text-decoration-line: none;
+}
+
+.experience-card * {
+  text-decoration: none;
+  text-decoration-line: none;
 }
 
 .experience-card::before {

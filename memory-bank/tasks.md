@@ -1,5 +1,23 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## Level 1 — Museum Project Modal Disable (COMPLETE)
+
+**Date**: 2026-05-18  
+**Complexity**: Level 1 (Quick UX Toggle)  
+**Goal**: Disable popup modals in the Space Museum while keeping portfolio data and modal components intact.
+
+### Status
+- [x] VAN analysis complete
+- [x] Disable click-to-open in `SpaceMuseum.handleProjectInteraction`
+- [x] No-op `MuseumView.handleProjectSelected` as safeguard
+- [x] Validate type-check
+
+### Notes
+- Portfolio frames and `ProjectModal` remain in place for easy re-enable.
+- Clicks on museum art no longer exit pointer lock or open project modals.
+
+---
+
 ## Level 1 — Space Shooter Q/R Spin Removal (COMPLETE)
 
 **Date**: 2026-05-18  

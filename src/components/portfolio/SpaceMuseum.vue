@@ -1768,12 +1768,9 @@ export default defineComponent({
     };
 
     // Handle project interaction - emit event instead of using game bridge
-    const handleProjectInteraction = (projectId: string): void => {
-      // Release pointer lock when opening a modal
-      if (state.isPointerLocked) {
-        document.exitPointerLock();
-      }
-      emit("project-selected", { projectId });
+    const handleProjectInteraction = (_projectId: string): void => {
+      // Project modals disabled — portfolio frames remain visible but clicks do not open them.
+      return;
     };
 
     // Exit museum - emit event instead of using game bridge
