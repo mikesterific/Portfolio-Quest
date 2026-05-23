@@ -40,6 +40,7 @@ const navigateToExperience = (to: string) => {
     <main class="home-shell">
       <section class="hero-section" aria-labelledby="home-title">
         <p class="hero-kicker">Portfolio Quest</p>
+        <p class="hero-name">Michael Garrett Jones</p>
         <h1 id="home-title" class="hero-title">Explore my work in motion.</h1>
         <p class="hero-subtitle">
           Choose a playable quest, wander a 3D gallery, or jump straight into a polished portfolio
@@ -203,6 +204,16 @@ const navigateToExperience = (to: string) => {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hero-name {
+  margin: 0 0 0.75rem;
+  color: var(--color-warm);
+  font-family: "Orbitron", sans-serif;
+  font-size: clamp(1.1rem, 2.2vw, 1.65rem);
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
@@ -508,6 +519,10 @@ const navigateToExperience = (to: string) => {
 }
 
 @media (max-width: 768px) {
+  .hero-name {
+    letter-spacing: 0.1em;
+  }
+
   .hero-title {
     letter-spacing: -0.022em;
   }
